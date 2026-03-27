@@ -158,10 +158,14 @@ function updateUI() {
         let creditsText = `${userState.credits} Credits`;
         if (userState.isAdmin) {
             creditsText = "Admin";
-        } else if (hasLocalKey) {
-            creditsText = `Unlimited (API Key)`;
         }
         elements.profileCreditsModal.innerText = creditsText;
+
+        // Hide Buy License for Admin
+        const licenseSection = document.querySelector('button[onclick*="licenseModal"]')?.parentElement;
+        if (licenseSection) {
+            licenseSection.style.display = userState.isAdmin ? 'none' : 'block';
+        }
 
         // Admin Panel Logic
         if (userState.isAdmin) {
@@ -219,6 +223,9 @@ window.openAdminPanel = async () => {
                 </div>
                 <div class="user-card-body">
                     <div class="credit-badge-large">${data.credits || 0} <small>Credits</small></div>
+                    <div style="font-size: 0.7rem; color: var(--text-muted);">
+                        <i class="fa-solid fa-chart-line"></i> Analysis Used: <strong>${data.usedCredits || 0}</strong>
+                    </div>
                     <div class="user-actions">
                         ${isPending ? `<button class="action-btn approve" style="background:#ffd700;" onclick="grantCredits('${data.id}', 10, true)">Approve & Add 10</button>` : ''}
                         <button class="action-btn approve" onclick="grantCredits('${data.id}', 10)">Add 10</button>
@@ -239,7 +246,7 @@ window.resetUserCredits = async (uid) => {
     if (!confirm("Are you sure you want to reset this user's credits to 0?")) return;
     const userRef = doc(db, "users", uid);
     try {
-        await updateDoc(userRef, { credits: 0 });
+        await updateDoc(userRef, { credits: 0, usedCredits: 0 }); // Reset usedCredits as well
         alert("Credits reset successfully.");
         openAdminPanel();
     } catch (e) {
