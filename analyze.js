@@ -699,17 +699,45 @@ window.printAnalysis = () => {
     window.print();
 };
 
+window.shareAnalysis = () => {
+    const text = `DesignCheck Analysis Result\nOverall Score: ${document.getElementById('overallScoreText').innerText}/100\nCheck it out here: ${window.location.href}`;
+    if (navigator.share) {
+        navigator.share({
+            title: 'DesignCheck Analysis',
+            text: text,
+            url: window.location.href
+        }).catch(err => console.error("Share failed:", err));
+    } else {
+        const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+        window.open(whatsappUrl, '_blank');
+    }
+};
+
 window.exportAnalysis = async (format) => {
     const element = elements.resultsCard;
     if (!element) return;
 
-    // Show loading or something if needed
+    // Use a white background for PDF to fix "white-white" issue
+    const options = {
+        backgroundColor: format === 'pdf' ? "#ffffff" : "#02060c",
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        onclone: (clonedDoc) => {
+            if (format === 'pdf') {
+                const card = clonedDoc.querySelector('.results-card');
+                card.style.background = "#fff";
+                card.style.color = "#000";
+                clonedDoc.querySelectorAll('.result-label, .color-code, .copy-hint, #overallScoreText, .font-name').forEach(el => {
+                    el.style.color = "#000";
+                });
+                clonedDoc.querySelectorAll('.export-group').forEach(el => el.style.display = "none");
+            }
+        }
+    };
+
     try {
-        const canvas = await html2canvas(element, {
-            backgroundColor: "#02060c",
-            scale: 2, // Higher quality
-            useCORS: true
-        });
+        const canvas = await html2canvas(element, options);
 
         if (format === 'png') {
             const link = document.createElement('a');
@@ -719,12 +747,11 @@ window.exportAnalysis = async (format) => {
         } else if (format === 'pdf') {
             const { jsPDF } = window.jspdf;
             const pdf = new jsPDF('p', 'mm', 'a4');
-            const imgData = canvas.toDataURL('image/png');
-            const imgProps = pdf.getImageProperties(imgData);
+            const imgData = canvas.toDataURL('image/jpeg', 1.0);
             const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+            const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
             
-            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+            pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
             pdf.save(`DesignCheck-Analysis-${Date.now()}.pdf`);
         }
     } catch (err) {
