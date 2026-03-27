@@ -155,7 +155,12 @@ function updateUI() {
             elements.modalIcon.classList.remove('hidden');
         }
 
-        const creditsText = hasLocalKey ? "Unlimited (Local Key)" : `${userState.credits}`;
+        let creditsText = `${userState.credits}`;
+        if (userState.isAdmin) {
+            creditsText = "Unlimited";
+        } else if (hasLocalKey) {
+            creditsText = "Unlimited (API Key)";
+        }
         elements.profileCreditsModal.innerText = creditsText;
 
         // Admin Panel Logic
