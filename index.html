@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ur" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DesignCheck - Premium AI Critique</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="background-backdrop"></div>
+
+    <nav class="top-nav">
+        <div class="nav-left">
+            <div class="brand-logo">
+                <div class="logo-icon"><i class="fa-solid fa-check"></i></div>
+                <span class="brand-name">DesignCheck</span>
+                <span class="ai-badge">AI</span>
+            </div>
+        </div>
+        <div class="nav-right">
+            <div id="authContainer" class="hidden" style="display: flex; align-items: center; gap: 15px;">
+                <div class="profile-chip" onclick="toggleModal('profileModal', true)">
+                    <span id="profileEmail" style="font-size: 0.85rem; direction: ltr;"></span>
+                    <i class="fa-solid fa-circle-user" style="font-size: 1.2rem; color: var(--neon-cyan);"></i>
+                </div>
+            </div>
+            <button class="btn primary-btn" id="loginBtn" onclick="login()">
+                <i class="fa-brands fa-google"></i> لاگ ان کریں
+            </button>
+            <button class="btn" style="background:rgba(255,255,255,0.05); color:white;" onclick="toggleModal('apiSettingsModal', true)">
+                <i class="fa-solid fa-key"></i>
+            </button>
+        </div>
+    </nav>
+
+    <main class="app-container">
+        <!-- Results Column -->
+        <div class="dash-card">
+            <div class="card-header">
+                <span class="card-title">تجزیہ کے نتائج</span>
+                <span id="profileCredits" style="font-size: 0.8rem; color: var(--neon-purple); font-weight: 700;"></span>
+            </div>
+            <div class="card-content" id="resultsPanel">
+                <div id="initialAnalysisMsg" style="text-align:center; height:100%; display:flex; flex-direction:column; justify-content:center; align-items:center; opacity: 0.3;">
+                    <i class="fa-solid fa-microchip" style="font-size:4rem; margin-bottom:20px;"></i>
+                    <p>ڈیزائن اپلوڈ کریں اور AI تجزیہ حاصل کریں</p>
+                </div>
+
+                <div id="analysisResults" class="hidden">
+                    <div class="score-orb">
+                        <div class="score-inner">
+                            <div style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase;">Score</div>
+                            <div style="font-size:2.5rem; font-weight:800; color:#fff;" id="overallScoreText">--</div>
+                        </div>
+                    </div>
+
+                    <div class="result-item">
+                        <div class="result-label" style="font-size: 0.75rem; color: var(--text-muted);"><i class="fa-solid fa-eye"></i> ایکسیسبلٹی</div>
+                        <div id="accessOut" style="font-size: 0.95rem; margin-top: 5px;"></div>
+                    </div>
+
+                    <div class="result-item">
+                        <div class="result-label" style="font-size: 0.75rem; color: var(--text-muted);"><i class="fa-solid fa-palette"></i> کلر کنٹراسٹ</div>
+                        <div id="contrastOut" style="font-size: 0.95rem; margin-top: 5px;"></div>
+                    </div>
+
+                    <div style="margin-top: 20px;">
+                        <div style="font-weight: 700; font-size: 0.85rem; margin-bottom: 10px; color: var(--success-green);">خوبیاں:</div>
+                        <div id="reportGoodOut"></div>
+                    </div>
+
+                    <div style="margin-top: 20px;">
+                        <div style="font-weight: 700; font-size: 0.85rem; margin-bottom: 10px; color: var(--warning-orange);">بہتری کی گنجائش:</div>
+                        <div id="reportBadOut"></div>
+                    </div>
+
+                    <button class="btn primary-btn" style="width: 100%; margin-top: 30px;" onclick="runAnalysis()">
+                        <i class="fa-solid fa-arrows-rotate"></i> دوبارہ چیک کریں
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Workspace Column -->
+        <div class="dash-card">
+            <div class="card-header">
+                <span class="card-title">ورک اسپیس</span>
+                <button class="btn primary-btn" style="padding:6px 15px; font-size:0.8rem;" onclick="document.getElementById('fileInput').click()">
+                    <i class="fa-solid fa-cloud-arrow-up"></i> اپلوڈ
+                </button>
+            </div>
+            <div class="card-content" style="display: flex; flex-direction: column;">
+                <input type="file" id="fileInput" accept="image/*" hidden>
+                
+                <div class="workspace-preview">
+                    <div id="canvasPlaceholder" style="text-align:center; opacity: 0.2;">
+                        <i class="fa-solid fa-image" style="font-size:4rem; margin-bottom:20px;"></i>
+                        <p>اپنا ڈیزائن یہاں لائیں</p>
+                    </div>
+                    <img id="designPreview" class="hidden" alt="Design Preview">
+                </div>
+
+                <div id="workspaceActions" class="hidden" style="margin-top: 20px;">
+                    <button class="btn primary-btn" style="width: 100%; font-size: 1.1rem; padding: 15px;" onclick="runAnalysis()">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> AI کے ساتھ تجزیہ کریں
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modals -->
+    <div id="apiSettingsModal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-btn" onclick="toggleModal('apiSettingsModal', false)">&times;</span>
+            <h3 style="margin-bottom: 15px;"><i class="fa-solid fa-key"></i> API سیٹنگز</h3>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 20px;">
+                Gemini API Key ڈالیں تاکہ AI تجزیہ کیا جا سکے۔ یہ آپ کے براؤزر میں محفوظ رہے گی۔
+            </p>
+            <input type="password" id="apiKeyInput" style="width:100%; padding:12px; border-radius:10px; background:rgba(255,255,255,0.05); border:1px solid var(--border-glow); color:white; margin-bottom:15px;" placeholder="Sk-...">
+            <button onclick="saveApiKey()" class="btn primary-btn" style="width: 100%;">سیو کریں</button>
+            <p id="saveStatusMsg" style="color: var(--success-green); font-size: 0.8rem; margin-top: 10px; display: none;">Key محفوظ کر لی گئی ہے!</p>
+        </div>
+    </div>
+
+    <div id="profileModal" class="modal hidden">
+        <div class="modal-content" style="text-align: center;">
+            <span class="close-btn" onclick="toggleModal('profileModal', false)">&times;</span>
+            <i class="fa-solid fa-circle-user" style="font-size: 4rem; color: var(--neon-cyan); margin-bottom: 15px;"></i>
+            <h3 id="profileEmailVal"></h3>
+            <p id="profileCreditsModal" style="color: var(--neon-purple); font-weight: 700; margin-top: 10px;"></p>
+            <button onclick="logout()" class="btn" style="width: 100%; margin-top: 20px; background: #ff5252; color: white;">لاگ آؤٹ</button>
+        </div>
+    </div>
+
+    <!-- AI Scanning Modal -->
+    <div id="scanningModal" class="modal hidden">
+        <div class="modal-content" style="text-align: center; border-color: var(--neon-cyan);">
+            <div class="spinner" style="margin: 0 auto 20px;"></div>
+            <h2 style="color: var(--neon-cyan);">AI اسکیننگ</h2>
+            <p>ڈیزائن کا جائزہ لیا جا رہا ہے، تھوڑا انتظار کریں...</p>
+        </div>
+    </div>
+
+    <footer>
+        <div>Powered by <strong>Gemini AI</strong></div>
+        <div>© 2024 DesignCheck SaaS</div>
+    </footer>
+
+    <script type="module" src="analyze.js"></script>
+</body>
+</html>

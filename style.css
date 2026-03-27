@@ -1,0 +1,205 @@
+:root {
+    --bg-dark: #02060c;
+    --bg-card: rgba(8, 14, 25, 0.8);
+    --bg-card-hover: rgba(12, 22, 38, 0.9);
+    --text-main: #f0f4f8;
+    --text-muted: #94a3b8;
+    --neon-cyan: #00e5ff;
+    --neon-purple: #9d00ff;
+    --border-dim: rgba(0, 229, 255, 0.12);
+    --border-glow: rgba(0, 229, 255, 0.4);
+    --panel-bg: #030a16;
+    --success-green: #00ff9d;
+    --warning-orange: #ffb300;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    background-color: var(--bg-dark);
+    color: var(--text-main);
+    min-height: 100vh;
+    font-family: 'Outfit', 'Noto Nastaliq Urdu', sans-serif;
+    line-height: 1.6;
+    overflow-x: hidden;
+    position: relative;
+    direction: rtl; /* Force RTL for Urdu */
+}
+
+.background-backdrop {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
+    background: 
+        radial-gradient(circle at 10% 10%, rgba(0, 229, 255, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 90% 90%, rgba(157, 0, 255, 0.08) 0%, transparent 40%);
+    pointer-events: none;
+}
+
+/* Nav Bar */
+.top-nav {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 40px; background: rgba(2, 6, 12, 0.85); backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border-dim); font-size: 14px; z-index: 1000;
+    height: 70px; sticky: top;
+}
+
+.nav-left, .nav-right { display: flex; align-items: center; gap: 20px; }
+
+.brand-logo {
+    display: flex; align-items: center; font-size: 1.6rem; font-weight: 800;
+    font-family: 'Outfit', sans-serif; color: #fff; direction: ltr;
+    text-decoration: none;
+}
+
+.logo-icon {
+    width: 38px; height: 38px; background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
+    border-radius: 10px; display: flex; justify-content: center; align-items: center;
+    margin-right: 12px; color: #fff; font-size: 1.2rem; 
+    box-shadow: 0 0 20px rgba(0, 229, 255, 0.4);
+}
+
+.ai-badge {
+    font-size: 0.65rem; background: linear-gradient(90deg, var(--neon-cyan), var(--neon-purple)); 
+    padding: 3px 8px; border-radius: 5px; margin-left: 8px; color: white;
+    letter-spacing: 1.5px; font-weight: 800;
+}
+
+/* Dashboard Layout */
+.app-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+    height: calc(100vh - 70px);
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* Two columns as per preference */
+    gap: 20px;
+    width: 100%;
+}
+
+.dash-card {
+    background: rgba(13, 22, 38, 0.4);
+    border: 1px solid var(--border-dim);
+    border-radius: 30px;
+    backdrop-filter: blur(50px) saturate(220%);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+    transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+
+.dash-card:hover { 
+    background: rgba(13, 22, 38, 0.5);
+    border-color: var(--neon-cyan); 
+    transform: translateY(-5px);
+}
+
+.card-header {
+    padding: 16px 25px;
+    border-bottom: 1px solid var(--border-dim);
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.04), transparent);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.card-title {
+    font-size: 0.9rem;
+    font-weight: 800;
+    color: var(--neon-cyan);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.card-content {
+    flex: 1;
+    padding: 25px;
+    overflow-y: auto;
+}
+
+/* Analysis UI */
+.score-orb {
+    width: 150px; height: 150px; border-radius: 50%; margin: 0 auto 25px;
+    background: conic-gradient(from 0deg, var(--neon-cyan), var(--neon-purple), var(--neon-cyan));
+    padding: 3px; position: relative;
+}
+
+.score-inner {
+    width: 100%; height: 100%; background: #030a16; border-radius: 50%;
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+}
+
+.result-item {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 15px;
+    padding: 15px;
+    margin-bottom: 12px;
+    transition: 0.3s;
+}
+
+.result-item:hover { background: rgba(255, 255, 255, 0.05); border-color: var(--neon-cyan); }
+
+.chip {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 6px 12px; border-radius: 8px; font-size: 0.75rem; 
+    margin: 4px; font-weight: 700;
+}
+.chip-success { background: rgba(0, 255, 157, 0.1); color: var(--success-green); border: 1px solid rgba(0, 255, 157, 0.2); }
+.chip-warning { background: rgba(255, 179, 0, 0.1); color: var(--warning-orange); border: 1px solid rgba(255, 179, 0, 0.2); }
+
+/* Buttons */
+.btn {
+    padding: 12px 24px; border-radius: 12px; border: none; cursor: pointer;
+    font-weight: 700; font-family: 'Outfit', sans-serif; transition: 0.3s;
+}
+
+.primary-btn {
+    background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
+    color: #fff; box-shadow: 0 5px 15px rgba(0, 229, 255, 0.3);
+}
+.primary-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0, 229, 255, 0.5); }
+
+/* Workspace */
+.workspace-preview {
+    width: 100%; height: 100%; min-height: 400px;
+    background: rgba(0,0,0,0.3); border-radius: 20px; 
+    border: 2px dashed var(--border-dim);
+    display: flex; justify-content: center; align-items: center;
+    position: relative; overflow: hidden;
+}
+
+#designPreview { max-width: 95%; max-height: 95%; box-shadow: 0 10px 40px rgba(0,0,0,0.5); border-radius: 8px; }
+
+/* Modals */
+.modal {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(10px);
+    display: flex; justify-content: center; align-items: center;
+    z-index: 2000;
+}
+
+.modal-content {
+    background: var(--bg-card); border: 1px solid var(--border-glow);
+    border-radius: 25px; padding: 30px; position: relative;
+    max-width: 500px; width: 90%;
+}
+
+.close-btn { position: absolute; top: 15px; right: 20px; font-size: 1.5rem; color: var(--text-muted); cursor: pointer; }
+
+/* Footer */
+footer {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 40px; border-top: 1px solid var(--border-dim);
+    font-size: 0.8rem; color: var(--text-muted);
+}
+
+.hidden { display: none !important; }
+
+@media (max-width: 900px) {
+    .app-container { grid-template-columns: 1fr; }
+}
+
+/* Animations */
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.spinner { width: 40px; height: 40px; border: 4px solid rgba(0, 240, 255, 0.1); border-top-color: var(--neon-cyan); border-radius: 50%; animation: spin 1s linear infinite; }
