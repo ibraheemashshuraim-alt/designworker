@@ -155,11 +155,11 @@ function updateUI() {
             elements.modalIcon.classList.remove('hidden');
         }
 
-        let creditsText = `${userState.credits}`;
+        let creditsText = `${userState.credits} Credits`;
         if (userState.isAdmin) {
-            creditsText = "Unlimited";
+            creditsText = "Admin";
         } else if (hasLocalKey) {
-            creditsText = "Unlimited (API Key)";
+            creditsText = `Unlimited (API Key)`;
         }
         elements.profileCreditsModal.innerText = creditsText;
 
@@ -190,12 +190,12 @@ function updateUI() {
     }
 }
 
-// Admin Dashboard Logic
+// Admin Dashboard Logic (Advanced Card Layout)
 window.openAdminPanel = async () => {
     const adminView = document.getElementById('adminDashboardView');
     adminView.classList.remove('hidden');
     
-    elements.adminUsersList.innerHTML = "<tr><td colspan='3'>لوڈ ہو رہا ہے...</td></tr>";
+    elements.adminUsersList.innerHTML = "<div class='loading-spinner-container'><div class='spinner'></div><p>لوڈ ہو رہا ہے...</p></div>";
     
     try {
         const querySnapshot = await getDocs(collection(db, "users"));
@@ -203,20 +203,41 @@ window.openAdminPanel = async () => {
         
         querySnapshot.forEach((userDoc) => {
             const data = userDoc.data();
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${data.email}</td>
-                <td><span class="badge">${data.credits || 0}</span></td>
-                <td>
-                    <button class="action-btn approve" onclick="grantCredits('${userDoc.id}', 10)">+10</button>
-                    <button class="action-btn approve" onclick="grantCredits('${userDoc.id}', 50)">+50</button>
-                </td>
+            const lastActive = data.createdAt ? new Date(data.createdAt.seconds * 1000).toLocaleDateString() : 'N/A';
+            
+            const card = document.createElement('div');
+            card.className = 'admin-user-card';
+            card.innerHTML = `
+                <div class="user-card-header">
+                    <span class="user-email-chip">${data.email}</span>
+                    <span class="user-date">Joined: ${lastActive}</span>
+                </div>
+                <div class="user-card-body">
+                    <div class="credit-badge-large">${data.credits || 0} <small>Credits</small></div>
+                    <div class="user-actions">
+                        <button class="action-btn approve" onclick="grantCredits('${userDoc.id}', 10)">Add 10</button>
+                        <button class="action-btn approve" onclick="grantCredits('${userDoc.id}', 50)">Add 50</button>
+                        <button class="action-btn danger-btn" onclick="resetUserCredits('${userDoc.id}')">Reset</button>
+                    </div>
+                </div>
             `;
-            elements.adminUsersList.appendChild(tr);
+            elements.adminUsersList.appendChild(card);
         });
     } catch (e) {
         console.error("Admin Fetch Error:", e);
-        elements.adminUsersList.innerHTML = "<tr><td colspan='3'>ڈیٹا لوڈ کرنے میں مسئلہ ہوا۔</td></tr>";
+        elements.adminUsersList.innerHTML = "<p style='color:red;'>ڈیٹا لوڈ کرنے میں مسئلہ ہوا۔</p>";
+    }
+};
+
+window.resetUserCredits = async (uid) => {
+    if (!confirm("Are you sure you want to reset this user's credits to 0?")) return;
+    const userRef = doc(db, "users", uid);
+    try {
+        await updateDoc(userRef, { credits: 0 });
+        alert("Credits reset successfully.");
+        openAdminPanel();
+    } catch (e) {
+        alert("Error resetting credits.");
     }
 };
 
