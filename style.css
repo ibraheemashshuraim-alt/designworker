@@ -39,7 +39,7 @@ body {
     display: flex; justify-content: space-between; align-items: center;
     padding: 12px 40px; background: rgba(2, 6, 12, 0.85); backdrop-filter: blur(20px);
     border-bottom: 1px solid var(--border-dim); font-size: 14px; z-index: 1000;
-    height: 70px; sticky: top;
+    height: 70px; position: sticky; top: 0;
 }
 
 .nav-left, .nav-right { display: flex; align-items: center; gap: 20px; }
@@ -185,7 +185,60 @@ body {
     max-width: 500px; width: 90%;
 }
 
-.close-btn { position: absolute; top: 15px; right: 20px; font-size: 1.5rem; color: var(--text-muted); cursor: pointer; }
+.close-btn { position: absolute; top: 15px; left: 20px; font-size: 1.5rem; color: var(--text-muted); cursor: pointer; transition: 0.3s; }
+.close-btn:hover { color: #fff; transform: scale(1.1); }
+
+/* New Profile Modal Styles */
+.profile-modal-content { max-width: 450px; text-align: center; }
+.profile-header {
+    display: flex; flex-direction: column; align-items: center; gap: 10px; margin-bottom: 20px;
+}
+.modal-avatar { width: 70px; height: 70px; border-radius: 50%; border: 2px solid var(--neon-cyan); box-shadow: 0 0 15px rgba(0, 229, 255, 0.4); object-fit: cover; }
+.avatar-placeholder { font-size: 70px; color: var(--neon-cyan); text-shadow: 0 0 20px rgba(0, 229, 255, 0.4); }
+.profile-email-text { font-size: 1.2rem; font-weight: 700; margin-top: 10px; direction: ltr; color: #fff; }
+
+.credit-box {
+    background: rgba(0,0,0,0.4); border: 1px solid var(--border-dim);
+    border-radius: 15px; padding: 15px; margin-bottom: 20px;
+    box-shadow: inset 0 0 10px rgba(157, 0, 255, 0.1);
+}
+.credit-box-title { font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+.credit-box-value { font-size: 2rem; color: var(--neon-purple); font-weight: 800; text-shadow: 0 0 15px rgba(157, 0, 255, 0.5); }
+
+.modal-section {
+    background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 15px; padding: 20px; margin-bottom: 15px; text-align: right;
+    transition: 0.3s;
+}
+.modal-section:hover { background: rgba(255, 255, 255, 0.05); border-color: var(--border-dim); }
+.modal-section h4 { margin-bottom: 8px; font-size: 1.1rem; color: #fff; }
+.modal-section p { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 12px; }
+
+.payment-card {
+    background: rgba(0, 0, 0, 0.6); border: 1px dashed var(--neon-purple);
+    padding: 15px; border-radius: 10px; margin-top: 15px; text-align: center;
+}
+.selectable-text { 
+    user-select: all; cursor: copy; margin-right: 10px; font-size: 1.2rem;
+    color: var(--neon-cyan); font-weight: bold; background: rgba(0, 229, 255, 0.1); 
+    padding: 3px 8px; border-radius: 5px; direction: ltr; display: inline-block;
+}
+
+.custom-input { width: 100%; padding: 12px; border-radius: 10px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-glow); color: white; margin-bottom: 10px; direction: ltr; text-align: left; }
+.custom-input:focus { outline: none; border-color: var(--neon-cyan); box-shadow: 0 0 10px rgba(0, 229, 255, 0.3); }
+
+.secondary-btn { background: rgba(255,255,255,0.08); color: white; border: 1px solid rgba(255,255,255,0.1); }
+.secondary-btn:hover { background: rgba(255,255,255,0.15); border-color: var(--neon-cyan); color: var(--neon-cyan); }
+
+.admin-btn { background: transparent; border: 1px solid #ffb300; color: #ffb300; width: 100%; }
+.admin-btn:hover { background: rgba(255, 179, 0, 0.1); box-shadow: 0 0 15px rgba(255, 179, 0, 0.3); }
+
+.logout-btn { background: rgba(255, 82, 82, 0.1); color: #ff5252; border: 1px solid #ff5252; width: 100%; margin-top: 10px; }
+.logout-btn:hover { background: #ff5252; color: white; box-shadow: 0 0 20px rgba(255, 82, 82, 0.4); }
+
+.profile-chip { padding: 8px 15px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: 0.3s; }
+.profile-chip:hover { background: rgba(255,255,255,0.1); border-color: var(--neon-cyan); }
+.profile-avatar { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; }
 
 /* Footer */
 footer {

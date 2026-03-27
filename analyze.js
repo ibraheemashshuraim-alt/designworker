@@ -52,9 +52,14 @@ const elements = {
     apiKeyInput: document.getElementById('apiKeyInput'),
     profileEmail: document.getElementById('profileEmail'),
     profileEmailVal: document.getElementById('profileEmailVal'),
-    profileCredits: document.getElementById('profileCredits'),
     profileCreditsModal: document.getElementById('profileCreditsModal'),
-    saveStatusMsg: document.getElementById('saveStatusMsg')
+    saveStatusMsg: document.getElementById('saveStatusMsg'),
+    profileAvatar: document.getElementById('profileAvatar'),
+    profileIcon: document.getElementById('profileIcon'),
+    modalAvatar: document.getElementById('modalAvatar'),
+    modalIcon: document.getElementById('modalIcon'),
+    adminPanelSection: document.getElementById('adminPanelSection'),
+    buyCreditsSection: document.getElementById('buyCreditsSection')
 };
 
 // ================ AUTH FLOW ================
@@ -63,6 +68,7 @@ onAuthStateChanged(auth, async (user) => {
         userState.loggedIn = true;
         userState.uid = user.uid;
         userState.email = user.email;
+        userState.photoURL = user.photoURL;
         userState.isAdmin = (user.email === ADMIN_EMAIL);
         
         setupUserPersistence(user);
@@ -70,6 +76,7 @@ onAuthStateChanged(auth, async (user) => {
     } else {
         userState.loggedIn = false;
         userState.uid = null;
+        userState.photoURL = null;
         updateUI();
     }
 });
@@ -108,23 +115,62 @@ function updateUI() {
     if (userState.loggedIn) {
         elements.loginBtn.classList.add('hidden');
         elements.authContainer.classList.remove('hidden');
-        elements.profileEmail.innerText = userState.email;
+        
+        const emailDisplay = userState.email.split('@')[0];
+        elements.profileEmail.innerText = emailDisplay;
         elements.profileEmailVal.innerText = userState.email;
-        const creditsText = hasLocalKey ? "Unlimited (Local Key)" : `${userState.credits} Credits`;
-        elements.profileCredits.innerText = creditsText;
+
+        // Display Avatar from Google Account
+        if (userState.photoURL) {
+            elements.profileAvatar.src = userState.photoURL;
+            elements.profileAvatar.classList.remove('hidden');
+            elements.profileIcon.classList.add('hidden');
+            
+            elements.modalAvatar.src = userState.photoURL;
+            elements.modalAvatar.classList.remove('hidden');
+            elements.modalIcon.classList.add('hidden');
+        } else {
+            elements.profileAvatar.classList.add('hidden');
+            elements.profileIcon.classList.remove('hidden');
+            
+            elements.modalAvatar.classList.add('hidden');
+            elements.modalIcon.classList.remove('hidden');
+        }
+
+        const creditsText = hasLocalKey ? "Unlimited (Local Key)" : `${userState.credits}`;
         elements.profileCreditsModal.innerText = creditsText;
+
+        // Admin Panel Logic
+        if (userState.isAdmin) {
+            elements.adminPanelSection.classList.remove('hidden');
+        } else {
+            elements.adminPanelSection.classList.add('hidden');
+        }
+
+        // Check if credits are low to prompt buying
+        if (userState.credits <= 0 && !hasLocalKey && !userState.isAdmin) {
+            elements.buyCreditsSection.classList.remove('hidden');
+        } else {
+            elements.buyCreditsSection.classList.add('hidden');
+        }
+
     } else {
         elements.loginBtn.classList.remove('hidden');
         elements.authContainer.classList.add('hidden');
         if (hasLocalKey) {
-            elements.loginBtn.innerText = "Local Key Active";
+            elements.loginBtn.innerHTML = "<i class='fa-solid fa-key'></i> API Key دائیں طرف موجود ہے";
             elements.loginBtn.style.background = "var(--neon-purple)";
         } else {
-            elements.loginBtn.innerText = "لاگ ان کریں";
+            elements.loginBtn.innerHTML = "<i class='fa-brands fa-google'></i> لاگ ان کریں";
             elements.loginBtn.style.background = "";
         }
     }
 }
+
+// Add admin panel function stub
+window.openAdminPanel = () => {
+    alert("Admin Panel opens here (Under Construction)");
+};
 
 // ================ FILE HANDLING ================
 elements.fileInput.onchange = (e) => {
@@ -148,7 +194,10 @@ window.saveApiKey = () => {
     if (key) {
         localStorage.setItem('gemini_api_key', key);
         elements.saveStatusMsg.style.display = 'block';
-        setTimeout(() => elements.apiSettingsModal.classList.add('hidden'), 1000);
+        updateUI();
+        setTimeout(() => {
+            elements.saveStatusMsg.style.display = 'none';
+        }, 3000);
     }
 };
 
@@ -160,18 +209,19 @@ function getApiKey() {
 window.runAnalysis = async () => {
     let keyToUse = getApiKey() || elements.apiKeyInput.value.trim();
     
-    // If no key is provided and user has no credits (or just no key provided)
     if (!keyToUse) {
-        alert("تجزیہ شروع کرنے کے لیے براہ کرم اپنی Gemini API Key سیٹ کریں۔");
-        elements.apiSettingsModal.classList.remove('hidden');
-        return;
-    }
+        // If no global API key
+        if (!userState.loggedIn) {
+            alert("تجزیہ شروع کرنے کے لیے پہلے لاگ ان کریں یا اپنی API Key استعمال کریں۔");
+            toggleModal('profileModal', true);
+            return;
+        }
 
-    // If logged in, check credits
-    if (userState.loggedIn && userState.credits <= 0) {
-        // Technically they can use their own key, so we allow it if they entered one.
-        // But if they rely on our credits, they must have some.
-        // For now, if they provided a key, let them proceed.
+        if (userState.credits <= 0 && !userState.isAdmin) {
+            alert("آپ کے کریڈٹس ختم ہو چکے ہیں۔ براہ کرم پریمیم کریڈٹس حاصل کریں یا اپنی API Key استعمال کریں۔ (تفصیلات کے لیے پروفائل دیکھیں)");
+            toggleModal('profileModal', true);
+            return;
+        }
     }
 
     elements.scanningModal.classList.remove('hidden');

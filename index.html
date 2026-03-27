@@ -23,14 +23,12 @@
             <div id="authContainer" class="hidden" style="display: flex; align-items: center; gap: 15px;">
                 <div class="profile-chip" onclick="toggleModal('profileModal', true)">
                     <span id="profileEmail" style="font-size: 0.85rem; direction: ltr;"></span>
-                    <i class="fa-solid fa-circle-user" style="font-size: 1.2rem; color: var(--neon-cyan);"></i>
+                    <img id="profileAvatar" src="" alt="Avatar" class="profile-avatar hidden">
+                    <i id="profileIcon" class="fa-solid fa-circle-user" style="font-size: 1.2rem; color: var(--neon-cyan);"></i>
                 </div>
             </div>
             <button class="btn primary-btn" id="loginBtn" onclick="login()">
                 <i class="fa-brands fa-google"></i> لاگ ان کریں
-            </button>
-            <button class="btn" style="background:rgba(255,255,255,0.05); color:white;" onclick="toggleModal('apiSettingsModal', true)">
-                <i class="fa-solid fa-key"></i>
             </button>
         </div>
     </nav>
@@ -111,27 +109,48 @@
         </div>
     </main>
 
-    <!-- Modals -->
-    <div id="apiSettingsModal" class="modal hidden">
-        <div class="modal-content">
-            <span class="close-btn" onclick="toggleModal('apiSettingsModal', false)">&times;</span>
-            <h3 style="margin-bottom: 15px;"><i class="fa-solid fa-key"></i> API سیٹنگز</h3>
-            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 20px;">
-                Gemini API Key ڈالیں تاکہ AI تجزیہ کیا جا سکے۔ یہ آپ کے براؤزر میں محفوظ رہے گی۔
-            </p>
-            <input type="password" id="apiKeyInput" style="width:100%; padding:12px; border-radius:10px; background:rgba(255,255,255,0.05); border:1px solid var(--border-glow); color:white; margin-bottom:15px;" placeholder="Sk-...">
-            <button onclick="saveApiKey()" class="btn primary-btn" style="width: 100%;">سیو کریں</button>
-            <p id="saveStatusMsg" style="color: var(--success-green); font-size: 0.8rem; margin-top: 10px; display: none;">Key محفوظ کر لی گئی ہے!</p>
-        </div>
-    </div>
-
+    <!-- Unified Profile Modal -->
     <div id="profileModal" class="modal hidden">
-        <div class="modal-content" style="text-align: center;">
+        <div class="modal-content profile-modal-content">
             <span class="close-btn" onclick="toggleModal('profileModal', false)">&times;</span>
-            <i class="fa-solid fa-circle-user" style="font-size: 4rem; color: var(--neon-cyan); margin-bottom: 15px;"></i>
-            <h3 id="profileEmailVal"></h3>
-            <p id="profileCreditsModal" style="color: var(--neon-purple); font-weight: 700; margin-top: 10px;"></p>
-            <button onclick="logout()" class="btn" style="width: 100%; margin-top: 20px; background: #ff5252; color: white;">لاگ آؤٹ</button>
+            
+            <div class="profile-header">
+                <img id="modalAvatar" src="" alt="Avatar" class="modal-avatar hidden">
+                <i id="modalIcon" class="fa-solid fa-circle-user avatar-placeholder"></i>
+                <h3 id="profileEmailVal" class="profile-email-text"></h3>
+            </div>
+
+            <div class="credit-box">
+                <div class="credit-box-title">آپ کے کریڈٹس</div>
+                <div id="profileCreditsModal" class="credit-box-value">--</div>
+            </div>
+
+            <div id="buyCreditsSection" class="modal-section hidden">
+                <h4><i class="fa-solid fa-gem" style="color:var(--neon-purple);"></i> پریمیم کریڈٹس حاصل کریں</h4>
+                <p>ایک بار 500 روپے ادا کریں اور مزید کریڈٹس حاصل کریں۔ اپنا فیس مندرجہ ذیل اکاؤنٹ پر بھیجیں:</p>
+                <div class="payment-card">
+                    <div><strong>SadaPay:</strong> <span class="selectable-text">03703603184</span></div>
+                    <div style="font-size:0.8rem; margin-top:5px; color:var(--text-muted);">پیمنٹ کرنے کے بعد ایڈمن سے رابطہ کریں</div>
+                </div>
+            </div>
+
+            <div class="modal-section">
+                <h4><i class="fa-solid fa-key" style="color:var(--neon-cyan);"></i> اپنی API Key استعمال کریں</h4>
+                <p style="font-size: 0.8rem; margin-bottom: 10px;">اگر آپ کے پاس اپنی Google Gemini API Key ہے تو یہاں لگائیں، پھر کریڈٹس کی ضرورت نہیں ہوگی۔</p>
+                <input type="password" id="apiKeyInput" class="custom-input" placeholder="AIzaSy...">
+                <button onclick="saveApiKey()" class="btn secondary-btn" style="width: 100%; margin-top:10px;">سیو کریں</button>
+                <p id="saveStatusMsg" style="color: var(--success-green); font-size: 0.8rem; margin-top: 10px; display: none;">Key محفوظ کر لی گئی ہے!</p>
+            </div>
+
+            <div id="adminPanelSection" class="modal-section hidden">
+                <button onclick="openAdminPanel()" class="btn admin-btn">
+                    <i class="fa-solid fa-shield-halved"></i> ایڈمن پینل کھولیں
+                </button>
+            </div>
+
+            <button onclick="logout()" class="btn logout-btn">
+                <i class="fa-solid fa-right-from-bracket"></i> لاگ آؤٹ
+            </button>
         </div>
     </div>
 
