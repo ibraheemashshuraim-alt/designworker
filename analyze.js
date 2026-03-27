@@ -37,7 +37,8 @@ const elements = {
     authContainer: document.getElementById('authContainer'),
     fileInput: document.getElementById('fileInput'),
     designPreview: document.getElementById('designPreview'),
-    canvasPlaceholder: document.getElementById('canvasPlaceholder'),
+    dropZone: document.getElementById('dropZone'),
+    previewContainer: document.getElementById('previewContainer'),
     workspaceActions: document.getElementById('workspaceActions'),
     resultsPanel: document.getElementById('resultsPanel'),
     initialAnalysisMsg: document.getElementById('initialAnalysisMsg'),
@@ -462,9 +463,8 @@ elements.fileInput.onchange = (e) => {
     reader.onload = (event) => {
         currentImageBase64 = event.target.result;
         elements.designPreview.src = currentImageBase64;
-        elements.designPreview.classList.remove('hidden');
-        elements.canvasPlaceholder.classList.add('hidden');
-        elements.workspaceActions.classList.remove('hidden');
+        elements.previewContainer.classList.remove('hidden');
+        elements.dropZone.classList.add('hidden');
     };
     reader.readAsDataURL(file);
 };

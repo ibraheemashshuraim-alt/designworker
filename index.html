@@ -89,21 +89,25 @@
             </button>
         </div>
     </nav>
+ 
+    <header class="hero-section">
+        <h1 class="hero-title">Professional Design Analyzer</h1>
+        <p class="hero-subtitle">اپنے ڈیزائن کو AI کی مدد سے بہتر بنائیں</p>
+    </header>
 
     <main class="app-container">
         <!-- Results Column -->
-        <div class="dash-card">
-            <div class="card-header">
-                <span class="card-title">تجزیہ کے نتائج</span>
-                <span id="profileCredits" style="font-size: 0.8rem; color: var(--neon-purple); font-weight: 700;"></span>
+        <div class="dash-card results-card">
+            <div class="card-header-status">
+                <span class="status-indicator">...WAITING FOR DESIGN</span>
             </div>
             <div class="card-content" id="resultsPanel">
-                <div id="initialAnalysisMsg" style="text-align:center; height:100%; display:flex; flex-direction:column; justify-content:center; align-items:center; opacity: 0.3;">
-                    <i class="fa-solid fa-microchip" style="font-size:4rem; margin-bottom:20px;"></i>
-                    <p>ڈیزائن اپلوڈ کریں اور AI تجزیہ حاصل کریں</p>
+                <div id="initialAnalysisMsg" class="empty-state">
+                    <p>Upload a design to see analysis</p>
                 </div>
 
                 <div id="analysisResults" class="hidden">
+                    <!-- ... existing analysis content ... -->
                     <div class="score-orb">
                         <div class="score-inner">
                             <div style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase;">Score</div>
@@ -139,28 +143,32 @@
         </div>
 
         <!-- Workspace Column -->
-        <div class="dash-card">
-            <div class="card-header">
-                <span class="card-title">ورک اسپیس</span>
-                <button class="btn primary-btn" style="padding:6px 15px; font-size:0.8rem;" onclick="document.getElementById('fileInput').click()">
-                    <i class="fa-solid fa-cloud-arrow-up"></i> اپلوڈ
-                </button>
-            </div>
-            <div class="card-content" style="display: flex; flex-direction: column;">
-                <input type="file" id="fileInput" accept="image/*" hidden>
-                
-                <div class="workspace-preview">
-                    <div id="canvasPlaceholder" style="text-align:center; opacity: 0.2;">
-                        <i class="fa-solid fa-image" style="font-size:4rem; margin-bottom:20px;"></i>
-                        <p>اپنا ڈیزائن یہاں لائیں</p>
+        <div class="dash-card workspace-card">
+            <div class="card-content">
+                <div id="dropZone" class="upload-drop-zone" onclick="document.getElementById('fileInput').click()">
+                    <div class="upload-icon-wrapper">
+                        <div class="cloud-icon">
+                            <i class="fa-solid fa-cloud"></i>
+                            <i class="fa-solid fa-bolt bolt-overlay"></i>
+                        </div>
                     </div>
-                    <img id="designPreview" class="hidden" alt="Design Preview">
+                    <h2 class="upload-text">اپنا ڈیزائن ڈریگ کر کے یہاں لائیں</h2>
+                    <div class="format-badges">
+                        <span class="badge">PNG</span>
+                        <span class="badge">JPG</span>
+                        <span class="badge">PDF</span>
+                    </div>
+                    <button class="btn browse-btn">براؤز کریں</button>
+                    <input type="file" id="fileInput" accept="image/*" hidden>
                 </div>
-
-                <div id="workspaceActions" class="hidden" style="margin-top: 20px;">
-                    <button class="btn primary-btn" style="width: 100%; font-size: 1.1rem; padding: 15px;" onclick="runAnalysis()">
-                        <i class="fa-solid fa-wand-magic-sparkles"></i> AI کے ساتھ تجزیہ کریں
-                    </button>
+                
+                <div class="workspace-preview hidden" id="previewContainer">
+                    <img id="designPreview" alt="Design Preview">
+                    <div id="workspaceActions" style="margin-top: 20px; width: 100%;">
+                        <button class="btn primary-btn" style="width: 100%; font-size: 1.1rem; padding: 15px;" onclick="runAnalysis()">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> AI کے ساتھ تجزیہ کریں
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
