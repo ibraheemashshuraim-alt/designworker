@@ -62,7 +62,10 @@ const elements = {
     adminPanelSection: document.getElementById('adminPanelSection'),
     buyCreditsSection: document.getElementById('buyCreditsSection'),
     profileDropdown: document.getElementById('profileDropdown'),
-    adminUsersList: document.getElementById('adminUsersList')
+    adminUsersList: document.getElementById('adminUsersList'),
+    colorPaletteOut: document.getElementById('colorPaletteOut'),
+    fontsUsedOut: document.getElementById('fontsUsedOut'),
+    resultsCard: document.querySelector('.results-card')
 };
 
 // Ensure session persistence
@@ -525,7 +528,9 @@ window.runAnalysis = async () => {
                 "accessibility": "ایکسیسبلٹی کے بارے میں ایک جملہ",
                 "contrast": "رنگوں کے تضاد کے بارے میں ایک جملہ",
                 "strengths": ["پہلی خوبی", "دوسری خوبی", "تیسری خوبی"],
-                "improvements": ["پہلی بہتری", "دوسری بہتری", "تیسری بہتری"]
+                "improvements": ["پہلی بہتری", "دوسری بہتری", "تیسری بہتری"],
+                "colors": ["Hex Code 1", "Hex Code 2", "Hex Code 3"],
+                "fonts": ["Font Family 1", "Font Family 2"]
             }
             جواب صرف اردو (Urdu) میں ہونا چاہیے۔ صرف JSON واپس کریں، کوئی اضافی ٹیکسٹ نہ لکھیں۔
         `;
@@ -662,7 +667,71 @@ function displayResults(data) {
     
     elements.reportGoodOut.innerHTML = data.strengths.map(s => `<div class="chip chip-success">${s}</div>`).join('');
     elements.reportBadOut.innerHTML = data.improvements.map(i => `<div class="chip chip-warning">${i}</div>`).join('');
+
+    // Render Color Palette
+    if (data.colors && data.colors.length > 0) {
+        elements.colorPaletteOut.innerHTML = data.colors.map(hex => `
+            <div class="color-swatch-wrapper">
+                <div class="color-swatch" style="background: ${hex};" onclick="copyToClipboard('${hex}', 'Color Code copied!')"></div>
+                <span class="color-code">${hex}</span>
+            </div>
+        `).join('');
+    }
+
+    // Render Fonts
+    if (data.fonts && data.fonts.length > 0) {
+        elements.fontsUsedOut.innerHTML = data.fonts.map(font => `
+            <div class="font-item" onclick="copyToClipboard('${font}', 'Font Name copied!')">
+                <span class="font-name">${font}</span>
+                <span class="copy-hint">Click to Copy</span>
+            </div>
+        `).join('');
+    }
 }
+
+// ================ EXPORT & UTILS ================
+window.copyToClipboard = (text, msg) => {
+    navigator.clipboard.writeText(text);
+    alert(msg);
+};
+
+window.printAnalysis = () => {
+    window.print();
+};
+
+window.exportAnalysis = async (format) => {
+    const element = elements.resultsCard;
+    if (!element) return;
+
+    // Show loading or something if needed
+    try {
+        const canvas = await html2canvas(element, {
+            backgroundColor: "#02060c",
+            scale: 2, // Higher quality
+            useCORS: true
+        });
+
+        if (format === 'png') {
+            const link = document.createElement('a');
+            link.download = `DesignCheck-Analysis-${Date.now()}.png`;
+            link.href = canvas.toDataURL("image/png");
+            link.click();
+        } else if (format === 'pdf') {
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const imgData = canvas.toDataURL('image/png');
+            const imgProps = pdf.getImageProperties(imgData);
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+            
+            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+            pdf.save(`DesignCheck-Analysis-${Date.now()}.pdf`);
+        }
+    } catch (err) {
+        console.error("Export Error:", err);
+        alert("ایکسپورٹ کے دوران مسئلہ پیش آیا۔");
+    }
+};
 
 // Global modal/dropdown helpers
 window.toggleModal = (id, show) => {
