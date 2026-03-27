@@ -184,11 +184,10 @@ function updateUI() {
     } else {
         elements.loginBtn.classList.remove('hidden');
         elements.authContainer.classList.add('hidden');
+        elements.loginBtn.innerHTML = "<i class='fa-brands fa-google'></i> Google سے سائن ان کریں";
         if (hasLocalKey) {
-            elements.loginBtn.innerHTML = "<i class='fa-solid fa-key'></i> API Key دائیں طرف موجود ہے";
             elements.loginBtn.style.background = "var(--neon-purple)";
         } else {
-            elements.loginBtn.innerHTML = "<i class='fa-brands fa-google'></i> Google سے سائن ان کریں";
             elements.loginBtn.style.background = "";
         }
     }
@@ -213,24 +212,38 @@ window.openAdminPanel = async () => {
         users.forEach((data) => {
             const lastActive = data.createdAt ? new Date(data.createdAt.seconds * 1000).toLocaleDateString() : 'N/A';
             const isPending = data.paymentStatus === 'pending';
+            const isPremium = data.paymentStatus === 'approved';
             
+            let statusBadge = `<span class="status-badge badge-trial">Free Trial</span>`;
+            if (isPending) statusBadge = `<span class="status-badge badge-pending">Pending Approval</span>`;
+            if (isPremium) statusBadge = `<span class="status-badge badge-premium">Premium User Indicator</span>`;
+
             const card = document.createElement('div');
             card.className = `admin-user-card ${isPending ? 'pending-highlight' : ''}`;
             card.innerHTML = `
                 <div class="user-card-header">
-                    <span class="user-email-chip">${data.email}</span>
-                    <span class="user-date">${isPending ? '⚠️ PENDING CLAIM' : `Joined: ${lastActive}`}</span>
-                </div>
-                <div class="user-card-body">
-                    <div class="credit-badge-large">${data.credits || 0} <small>Credits</small></div>
-                    <div style="font-size: 0.7rem; color: var(--text-muted);">
-                        <i class="fa-solid fa-chart-line"></i> Analysis Used: <strong>${data.usedCredits || 0}</strong>
+                    <div style="display:flex; flex-direction:column; gap:5px;">
+                        <span class="user-email-chip">${data.email}</span>
+                        ${statusBadge}
                     </div>
-                    <div class="user-actions">
-                        ${isPending ? `<button class="action-btn approve" style="background:#ffd700;" onclick="grantCredits('${data.id}', 10, true)">Approve & Add 10</button>` : ''}
-                        <button class="action-btn approve" onclick="grantCredits('${data.id}', 10)">Add 10</button>
-                        <button class="action-btn approve" onclick="grantCredits('${data.id}', 50)">Add 50</button>
-                        <button class="action-btn danger-btn" onclick="resetUserCredits('${data.id}')">Reset</button>
+                </div>
+                <div class="user-card-body" style="flex-direction:column; align-items:flex-start; gap:10px;">
+                    <div style="display:flex; justify-content:space-between; width:100%; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:10px;">
+                        <div class="credit-badge-large">${data.credits || 0} <small>Credits</small></div>
+                        <div style="text-align:right;">
+                            <div style="font-size: 0.75rem; color: var(--text-muted);"><i class="fa-solid fa-chart-bar"></i> Used: <strong>${data.usedCredits || 0}</strong></div>
+                            <div style="font-size: 0.65rem; color: var(--text-muted);">Joined: ${lastActive}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="user-actions" style="width:100%;">
+                        ${isPending ? `
+                            <button class="action-btn approve" style="background:#ffd700;" onclick="grantCredits('${data.id}', 10, true)">Approve (Add 10)</button>
+                            <button class="action-btn reject-btn" onclick="rejectClaim('${data.id}')">Reject Claim</button>
+                        ` : ''}
+                        <button class="action-btn approve" onclick="grantCredits('${data.id}', 10)">+10 Creds</button>
+                        <button class="action-btn approve" onclick="grantCredits('${data.id}', 50)">+50 Creds</button>
+                        <button class="action-btn danger-btn" onclick="resetUserCredits('${data.id}')">Reset All</button>
                     </div>
                 </div>
             `;
@@ -266,10 +279,31 @@ window.grantCredits = async (uid, amount, isApproval = false) => {
         if (isApproval) updates.paymentStatus = 'approved';
 
         await updateDoc(userRef, updates);
-        alert(`کامیابی! ${amount} کریڈٹس شامل کر دیے گئے۔`);
+        alert(`کامیابی! کریڈٹس اپ ڈیٹ کر دیے گئے۔`);
         openAdminPanel(); // Refresh list
     } catch (e) {
         alert("کریڈٹ اپ ڈیٹ کرنے میں مسئلہ ہوا۔");
+    }
+};
+
+window.rejectClaim = async (uid) => {
+    if (!confirm("Are you sure you want to REJECT this claim? This will remove the 5 temporary credits given.")) return;
+    const userRef = doc(db, "users", uid);
+    try {
+        const querySnapshot = await getDocs(collection(db, "users"));
+        const userDoc = querySnapshot.docs.find(d => d.id === uid);
+        const data = userDoc.data();
+        
+        // Subtract 5 credits (the temp ones) and clear status
+        await updateDoc(userRef, {
+            credits: Math.max(0, (data.credits || 0) - 5),
+            paymentStatus: 'rejected'
+        });
+        
+        alert("Claim Rejected. Temporary credits removed.");
+        openAdminPanel();
+    } catch (e) {
+        alert("Error rejecting claim.");
     }
 };
 
