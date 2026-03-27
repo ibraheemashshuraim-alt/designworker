@@ -193,65 +193,109 @@ function updateUI() {
     }
 }
 
-// Admin Dashboard Logic (Advanced Card Layout)
+// Admin Dashboard Logic (VIP Card Layout)
 window.openAdminPanel = async () => {
     const adminView = document.getElementById('adminDashboardView');
     adminView.classList.remove('hidden');
     
-    elements.adminUsersList.innerHTML = "<div class='loading-spinner-container'><div class='spinner'></div><p>لوڈ ہو رہا ہے...</p></div>";
+    elements.adminUsersList.innerHTML = "<div class='loading-spinner-container' style='grid-column: 1/-1; text-align: center; padding: 50px;'><div class='spinner' style='margin: 0 auto;'></div><p style='margin-top:15px;'>VIP ڈیٹا لوڈ ہو رہا ہے...</p></div>";
     
     try {
         const querySnapshot = await getDocs(collection(db, "users"));
         elements.adminUsersList.innerHTML = "";
         
-        // Sorting users to show pending first
         const users = [];
-        querySnapshot.forEach(doc => users.push({id: doc.id, ...doc.data()}));
-        users.sort((a, b) => (b.paymentStatus === 'pending') - (a.paymentStatus === 'pending'));
+        querySnapshot.forEach(doc => {
+            const data = doc.data();
+            // Filter out admin
+            if (data.email !== ADMIN_EMAIL) {
+                users.push({id: doc.id, ...data});
+            }
+        });
+
+        // Sorting: Pending claims first, then license claims, then recently active
+        users.sort((a, b) => {
+            if (a.paymentStatus === 'pending' || a.licenseStatus === 'pending') return -1;
+            if (b.paymentStatus === 'pending' || b.licenseStatus === 'pending') return 1;
+            return (b.lastActive?.seconds || 0) - (a.lastActive?.seconds || 0);
+        });
+
+        if (users.length === 0) {
+            elements.adminUsersList.innerHTML = "<p style='grid-column: 1/-1; text-align: center; opacity: 0.5; padding: 50px;'>کوئی ممبر دستیاب نہیں ہے۔</p>";
+            return;
+        }
 
         users.forEach((data) => {
-            const lastActive = data.createdAt ? new Date(data.createdAt.seconds * 1000).toLocaleDateString() : 'N/A';
-            const isPending = data.paymentStatus === 'pending';
-            const isPremium = data.paymentStatus === 'approved';
+            const lastActive = data.createdAt ? new Date(data.createdAt.seconds * 1000).toLocaleDateString() : 'New';
+            const isPendingCredit = data.paymentStatus === 'pending';
+            const isPendingLicense = data.licenseStatus === 'pending';
+            const hasLicense = data.licenseStatus === 'approved';
             
-            let statusBadge = `<span class="status-badge badge-trial">Free Trial</span>`;
-            if (isPending) statusBadge = `<span class="status-badge badge-pending">Pending Approval</span>`;
-            if (isPremium) statusBadge = `<span class="status-badge badge-premium">Premium User Indicator</span>`;
+            let statusBadge = `<span class="status-badge badge-trial">Free User</span>`;
+            if (hasLicense) statusBadge = `<span class="status-badge badge-license"><i class="fa-solid fa-crown"></i> Licensed</span>`;
+            else if (isPendingLicense) statusBadge = `<span class="status-badge badge-pending">License Pending</span>`;
+            else if (isPendingCredit) statusBadge = `<span class="status-badge badge-pending">Payment Pending</span>`;
+            else if (data.credits > 10) statusBadge = `<span class="status-badge badge-premium">Premium User</span>`;
 
             const card = document.createElement('div');
-            card.className = `admin-user-card ${isPending ? 'pending-highlight' : ''}`;
+            card.className = `admin-user-card ${(isPendingCredit || isPendingLicense) ? 'pending-highlight' : ''}`;
+            
             card.innerHTML = `
                 <div class="user-card-header">
-                    <div style="display:flex; flex-direction:column; gap:5px;">
+                    <div class="user-info-main">
                         <span class="user-email-chip">${data.email}</span>
-                        ${statusBadge}
+                        <div style="margin-top:5px;">${statusBadge}</div>
                     </div>
                 </div>
-                <div class="user-card-body" style="flex-direction:column; align-items:flex-start; gap:10px;">
-                    <div style="display:flex; justify-content:space-between; width:100%; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:10px;">
-                        <div class="credit-badge-large">${data.credits || 0} <small>Credits</small></div>
-                        <div style="text-align:right;">
-                            <div style="font-size: 0.75rem; color: var(--text-muted);"><i class="fa-solid fa-chart-bar"></i> Used: <strong>${data.usedCredits || 0}</strong></div>
-                            <div style="font-size: 0.65rem; color: var(--text-muted);">Joined: ${lastActive}</div>
-                        </div>
+
+                ${(isPendingCredit || isPendingLicense) ? `
+                <div class="claim-details-box">
+                    <span class="claim-label">${isPendingLicense ? 'License Claim' : 'Credit Claim'} Details:</span>
+                    <div class="claim-value"><i class="fa-solid fa-user"></i> ${data.claimName || 'N/A'}</div>
+                    <div class="claim-value" style="font-size: 0.8rem; color: var(--neon-cyan); direction: ltr; text-align: left; margin-top:5px;">
+                        <i class="fa-solid fa-hashtag"></i> TID: ${data.claimTid || 'N/A'}
                     </div>
+                </div>
+                ` : ''}
+
+                <div class="user-stats-row">
+                    <div class="stat-item">
+                        <div class="stat-label">Credits</div>
+                        <div class="stat-value" style="color: var(--neon-purple);">${data.credits || 0}</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Analyzed</div>
+                        <div class="stat-value">${data.usedCredits || 0}</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Joined</div>
+                        <div class="stat-value" style="font-size: 0.7rem; opacity: 0.7;">${lastActive}</div>
+                    </div>
+                </div>
+                
+                <div class="user-actions">
+                    ${isPendingCredit ? `
+                        <button class="action-btn claim-approve" onclick="grantCredits('${data.id}', 50, true)">Approve Payment (+50)</button>
+                    ` : ''}
+                    ${isPendingLicense ? `
+                        <button class="action-btn claim-approve" style="background: #ffd700;" onclick="approveLicense('${data.id}')">Approve Full License</button>
+                    ` : ''}
                     
-                    <div class="user-actions" style="width:100%;">
-                        ${isPending ? `
-                            <button class="action-btn approve" style="background:#ffd700;" onclick="grantCredits('${data.id}', 10, true)">Approve (Add 10)</button>
-                            <button class="action-btn reject-btn" onclick="rejectClaim('${data.id}')">Reject Claim</button>
-                        ` : ''}
-                        <button class="action-btn approve" onclick="grantCredits('${data.id}', 10)">+10 Creds</button>
-                        <button class="action-btn approve" onclick="grantCredits('${data.id}', 50)">+50 Creds</button>
-                        <button class="action-btn danger-btn" onclick="resetUserCredits('${data.id}')">Reset All</button>
-                    </div>
+                    ${(isPendingCredit || isPendingLicense) ? `
+                        <button class="action-btn danger-btn" style="grid-column: span 2;" onclick="rejectClaim('${data.id}')">Reject Claim</button>
+                    ` : ''}
+
+                    <button class="action-btn approve" onclick="grantCredits('${data.id}', 10)">+10 Creds</button>
+                    <button class="action-btn approve" onclick="grantCredits('${data.id}', 100)">+100 Creds</button>
+                    <button class="action-btn danger-btn" onclick="resetUserCredits('${data.id}')">Reset</button>
+                    <button class="action-btn danger-btn" onclick="deleteUser('${data.id}')">Delete</button>
                 </div>
             `;
             elements.adminUsersList.appendChild(card);
         });
     } catch (e) {
         console.error("Admin Fetch Error:", e);
-        elements.adminUsersList.innerHTML = "<p style='color:red;'>ڈیٹا لوڈ کرنے میں مسئلہ ہوا۔</p>";
+        elements.adminUsersList.innerHTML = "<p style='color:red; grid-column: 1/-1; text-align: center;'>ڈیٹا لوڈ کرنے میں مسئلہ ہوا۔</p>";
     }
 };
 
@@ -270,13 +314,16 @@ window.resetUserCredits = async (uid) => {
 window.grantCredits = async (uid, amount, isApproval = false) => {
     const userRef = doc(db, "users", uid);
     try {
-        // Fetch current credits correctly
+        // Increment credits
         const querySnapshot = await getDocs(collection(db, "users"));
         const userDoc = querySnapshot.docs.find(d => d.id === uid);
         const currentCredits = userDoc.data().credits || 0;
         
         const updates = { credits: currentCredits + amount };
-        if (isApproval) updates.paymentStatus = 'approved';
+        if (isApproval) {
+            updates.paymentStatus = 'approved';
+            updates.claimApprovedAt = serverTimestamp();
+        }
 
         await updateDoc(userRef, updates);
         alert(`کامیابی! کریڈٹس اپ ڈیٹ کر دیے گئے۔`);
@@ -286,18 +333,51 @@ window.grantCredits = async (uid, amount, isApproval = false) => {
     }
 };
 
-window.rejectClaim = async (uid) => {
-    if (!confirm("Are you sure you want to REJECT this claim? This will remove the 5 temporary credits given.")) return;
+window.approveLicense = async (uid) => {
+    if (!confirm("Are you sure you want to approve the FULL LICENSE for this user?")) return;
     const userRef = doc(db, "users", uid);
     try {
+        await updateDoc(userRef, {
+            licenseStatus: 'approved',
+            credits: 99999, // Infinite-like credits
+            licenseApprovedAt: serverTimestamp()
+        });
+        alert("License Approved Successfully!");
+        openAdminPanel();
+    } catch (e) {
+        alert("Error approving license.");
+    }
+};
+
+window.deleteUser = async (uid) => {
+    if (!confirm("Are you sure you want to delete this user? This cannot be undone.")) return;
+    // Note: Firestore delete is usually via deleteDoc, but let's assume I shouldn't delete docs often.
+    // However, the user asked for a better admin panel, so let's add delete.
+    const { deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js");
+    try {
+        await deleteDoc(doc(db, "users", uid));
+        alert("User deleted.");
+        openAdminPanel();
+    } catch (e) {
+        alert("Error deleting user.");
+    }
+};
+
+window.rejectClaim = async (uid) => {
+    if (!confirm("Are you sure you want to REJECT this claim? This will remove the 5 temporary credits and clear claim data.")) return;
+    const userRef = doc(db, "users", uid);
+    try {
+        // Subtract 5 credits (the temp ones) and clear status
         const querySnapshot = await getDocs(collection(db, "users"));
         const userDoc = querySnapshot.docs.find(d => d.id === uid);
         const data = userDoc.data();
         
-        // Subtract 5 credits (the temp ones) and clear status
         await updateDoc(userRef, {
             credits: Math.max(0, (data.credits || 0) - 5),
-            paymentStatus: 'rejected'
+            paymentStatus: 'rejected',
+            licenseStatus: 'rejected',
+            claimName: null,
+            claimTid: null
         });
         
         alert("Claim Rejected. Temporary credits removed.");
@@ -312,24 +392,56 @@ window.closeAdminPanel = () => {
 };
 
 // ================ NEW PAYMENT & SHARE FEATURES ================
-window.claimPayment = async () => {
+window.submitCreditClaim = async () => {
+    const name = document.getElementById('creditNameInput').value.trim();
+    const tid = document.getElementById('creditTidInput').value.trim();
+
+    if (!name || !tid) return alert("براہ کرم اپنا نام اور TID درج کریں۔");
     if (!userState.loggedIn) return alert("پہلے لاگ ان کریں!");
     
     const userRef = doc(db, "users", userState.uid);
     try {
-        // Give 5 temporary credits and mark as pending
+        // Give 5 temporary credits immediately and mark as pending
         await updateDoc(userRef, {
             credits: userState.credits + 5,
             paymentStatus: 'pending',
+            claimName: name,
+            claimTid: tid,
             lastClaimAt: serverTimestamp()
         });
         
+        toggleModal('creditClaimModal', false);
         document.getElementById('claimStatus').style.display = 'block';
         document.getElementById('claimBtn').disabled = true;
         alert("آپ کو 5 عارضی کریڈٹس دے دیے گئے ہیں۔ ایڈمن جلد آپ کی پیمنٹ چیک کر کے اسے اپروو کر دے گا۔");
     } catch (e) {
         console.error("Claim Error:", e);
-        alert("درخواست بھیجنے میں مسئلہ ہوا۔ شاید آپ پہلے ہی درخواست بھیج چکے ہیں۔");
+        alert("درخواست بھیجنے میں مسئلہ ہوا۔");
+    }
+};
+
+window.submitLicenseClaim = async () => {
+    const name = document.getElementById('licenseNameInput').value.trim();
+    const tid = document.getElementById('licenseTidInput').value.trim();
+
+    if (!name || !tid) return alert("براہ کرم اپنا نام اور TID درج کریں۔");
+    if (!userState.loggedIn) return alert("پہلے لاگ ان کریں!");
+    
+    const userRef = doc(db, "users", userState.uid);
+    try {
+        await updateDoc(userRef, {
+            licenseStatus: 'pending',
+            claimName: name,
+            claimTid: tid,
+            lastLicenseClaimAt: serverTimestamp()
+        });
+        
+        toggleModal('licenseClaimModal', false);
+        toggleModal('licenseModal', false);
+        alert("آپ کی لائسنس کی درخواست بھیج دی گئی ہے۔ ایڈمن جلد آپ سے رابطہ کرے گا۔");
+    } catch (e) {
+        console.error("License Claim Error:", e);
+        alert("درخواست بھیجنے میں مسئلہ ہوا۔");
     }
 };
 
@@ -533,8 +645,10 @@ window.runAnalysis = async () => {
 
 async function deductCredit() {
     const userRef = doc(db, "users", userState.uid);
+    const updatedUsed = (userState.usedCredits || 0) + 1;
     await updateDoc(userRef, {
-        credits: userState.credits - 1
+        credits: userState.credits - 1,
+        usedCredits: updatedUsed
     });
 }
 

@@ -46,8 +46,8 @@
                         <div class="payment-card">
                             <span class="selectable-text">03703603184</span>
                         </div>
-                        <button id="claimBtn" onclick="claimPayment()" class="btn approve" style="width: 100%; margin-top: 10px; font-size: 0.8rem;">
-                            میں نے پیمنٹ کر دی ہے (5 عارضی کریڈٹس مانگیں)
+                        <button id="claimBtn" onclick="toggleModal('creditClaimModal', true)" class="btn approve" style="width: 100%; margin-top: 10px; font-size: 0.8rem;">
+                            میں نے پیمنٹ کر دی ہے (تفصیلات دیں)
                         </button>
                         <p id="claimStatus" style="font-size: 0.65rem; color: var(--warning-orange); margin-top: 5px; display: none;">درخواست بھیج دی گئی ہے!</p>
                     </div>
@@ -193,12 +193,47 @@
 
                 <div class="modal-section" style="background: rgba(255, 215, 0, 0.05); border: 1px solid rgba(255, 215, 0, 0.2); border-radius: 15px; padding: 15px;">
                     <p>پیمنٹ کے لیے SadaPay استعمال کریں:</p>
-                    <div style="font-size: 1.5rem; font-weight: 700; color: #ffd700;" class="selectable-text">03703603184</div>
-                    <p style="font-size: 0.8rem; margin-top: 10px; color: var(--text-muted);">پیمنٹ کے بعد ایڈمن سے واٹس ایپ پر رابطہ کریں۔</p>
+                    <div style="font-size: 1.5rem; font-weight: 700; color: #ffd700; direction: ltr;" class="selectable-text">03703603184</div>
+                    <p style="font-size: 0.8rem; margin-top: 10px; color: var(--text-muted);">پیمنٹ کے بعد یہاں سے کلیم کریں یا ایڈمن سے رابطہ کریں۔</p>
                 </div>
 
-                <button onclick="toggleModal('licenseModal', false)" class="btn primary-btn" style="margin-top: 20px; width: 100%;">ٹھیک ہے</button>
+                <button onclick="toggleModal('licenseClaimModal', true)" class="btn primary-btn" style="margin-top: 20px; width: 100%; background: #ffd700; color: #000;">
+                    <i class="fa-solid fa-file-invoice-dollar"></i> پیمنٹ کلیم فارم
+                </button>
             </div>
+        </div>
+    </div>
+
+    <!-- Credit Claim Form Modal -->
+    <div id="creditClaimModal" class="modal hidden">
+        <div class="modal-content" style="max-width: 400px; border-color: var(--neon-purple);">
+            <span class="close-btn" onclick="toggleModal('creditClaimModal', false)">&times;</span>
+            <h3 style="color: var(--neon-purple); margin-bottom: 15px;"><i class="fa-solid fa-receipt"></i> پیمنٹ کلیم (Credits)</h3>
+            <p style="font-size:0.8rem; margin-bottom:15px;">براہ کرم پیمنٹ کی تفصیلات درج کریں:</p>
+            
+            <input type="text" id="creditNameInput" class="custom-input" placeholder="آپ کا نام" style="direction: rtl; text-align: right;">
+            <input type="text" id="creditTidInput" class="custom-input" placeholder="Transaction ID (TID)" style="direction: ltr; text-align: left;">
+            <p style="font-size: 0.65rem; color: var(--text-muted);">نوٹ: فارم جمع کرنے پر آپ کو 5 عارضی کریڈٹس فوری مل جائیں گے۔</p>
+            
+            <button onclick="submitCreditClaim()" class="btn primary-btn" style="width: 100%; margin-top: 15px;">
+                درخواست جمع کریں
+            </button>
+        </div>
+    </div>
+
+    <!-- License Claim Form Modal -->
+    <div id="licenseClaimModal" class="modal hidden">
+        <div class="modal-content" style="max-width: 400px; border-color: #ffd700;">
+            <span class="close-btn" onclick="toggleModal('licenseClaimModal', false)">&times;</span>
+            <h3 style="color: #ffd700; margin-bottom: 15px;"><i class="fa-solid fa-crown"></i> لائسنس کلیم فارم</h3>
+            <p style="font-size:0.8rem; margin-bottom:15px;">لائسنس کے لیے تفصیلات درج کریں:</p>
+            
+            <input type="text" id="licenseNameInput" class="custom-input" placeholder="آپ کا نام" style="direction: rtl; text-align: right;">
+            <input type="text" id="licenseTidInput" class="custom-input" placeholder="Transaction ID (TID)" style="direction: ltr; text-align: left;">
+            
+            <button onclick="submitLicenseClaim()" class="btn primary-btn" style="width: 100%; margin-top: 15px; background: #ffd700; color: #000;">
+                لائسنس کلیم کریں
+            </button>
         </div>
     </div>
 
