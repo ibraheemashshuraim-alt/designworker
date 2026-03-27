@@ -46,6 +46,10 @@
                         <div class="payment-card">
                             <span class="selectable-text">03703603184</span>
                         </div>
+                        <button id="claimBtn" onclick="claimPayment()" class="btn approve" style="width: 100%; margin-top: 10px; font-size: 0.8rem;">
+                            میں نے پیمنٹ کر دی ہے (5 عارضی کریڈٹس مانگیں)
+                        </button>
+                        <p id="claimStatus" style="font-size: 0.65rem; color: var(--warning-orange); margin-top: 5px; display: none;">درخواست بھیج دی گئی ہے!</p>
                     </div>
 
                     <div class="modal-section">
@@ -55,10 +59,24 @@
                         <p id="saveStatusMsg" style="color: var(--success-green); font-size: 0.7rem; margin-top: 5px; display: none;">محفوظ کر لی گئی!</p>
                     </div>
 
+                    <div class="modal-section">
+                        <button onclick="toggleModal('licenseModal', true)" class="btn secondary-btn" style="width: 100%; background: linear-gradient(45deg, #ffd700, #ffb300); color: #000; font-weight: 800;">
+                            <i class="fa-solid fa-crown"></i> ٹول کا لائسنس خریدیں (1.5 Lakh)
+                        </button>
+                    </div>
+
                     <div id="adminPanelSection" class="modal-section hidden">
                         <button onclick="openAdminPanel()" class="btn admin-btn">
-                            <i class="fa-solid fa-shield-halved"></i> ایڈمن پینل
+                            <i class="fa-solid fa-shield-halved"></i> ایڈمن ڈیش بورڈ
                         </button>
+                    </div>
+
+                    <div class="modal-section" style="border-top: 1px solid var(--border-dim); padding-top: 15px;">
+                        <p style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 5px;">ٹول کا لنک شیئر کریں:</p>
+                        <div class="share-link-box">
+                            <input type="text" readonly value="https://ibraheemashshuraim-alt.github.io/designworker/" id="shareLinkInput" style="background: rgba(0,0,0,0.3); border: none; font-size: 0.7rem; color: var(--neon-cyan); padding: 5px; border-radius: 5px; width: 70%;">
+                            <button onclick="copyShareLink()" class="btn approve" style="padding: 5px 10px; font-size: 0.6rem;">Copy</button>
+                        </div>
                     </div>
 
                     <button onclick="logout()" class="btn logout-btn">
@@ -156,6 +174,30 @@
             
             <div id="adminUsersList" class="admin-user-grid">
                 <!-- User cards will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Tool License Modal -->
+    <div id="licenseModal" class="modal hidden">
+        <div class="modal-content" style="max-width: 500px; border-color: #ffd700;">
+            <span class="close-btn" onclick="toggleModal('licenseModal', false)">&times;</span>
+            <div style="text-align: center;">
+                <i class="fa-solid fa-crown" style="font-size: 3rem; color: #ffd700; margin-bottom: 15px; filter: drop-shadow(0 0 10px #ffd700);"></i>
+                <h2 style="color: #ffd700; margin-bottom: 10px;">ٹول کا مکمل لائسنس</h2>
+                <p style="font-size: 0.9rem; color: #fff; margin-bottom: 20px;">اس ٹول کا مکمل کوڈ اور ملکیت (Full Ownership) حاصل کریں۔</p>
+                
+                <div class="price-tag" style="font-size: 2rem; font-weight: 800; color: #fff; margin-bottom: 20px;">
+                    1,50,000 <small style="font-size: 1rem;">PKR</small>
+                </div>
+
+                <div class="modal-section" style="background: rgba(255, 215, 0, 0.05); border: 1px solid rgba(255, 215, 0, 0.2); border-radius: 15px; padding: 15px;">
+                    <p>پیمنٹ کے لیے SadaPay استعمال کریں:</p>
+                    <div style="font-size: 1.5rem; font-weight: 700; color: #ffd700;" class="selectable-text">03703603184</div>
+                    <p style="font-size: 0.8rem; margin-top: 10px; color: var(--text-muted);">پیمنٹ کے بعد ایڈمن سے واٹس ایپ پر رابطہ کریں۔</p>
+                </div>
+
+                <button onclick="toggleModal('licenseModal', false)" class="btn primary-btn" style="margin-top: 20px; width: 100%;">ٹھیک ہے</button>
             </div>
         </div>
     </div>

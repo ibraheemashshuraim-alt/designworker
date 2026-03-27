@@ -184,7 +184,7 @@ function updateUI() {
             elements.loginBtn.innerHTML = "<i class='fa-solid fa-key'></i> API Key دائیں طرف موجود ہے";
             elements.loginBtn.style.background = "var(--neon-purple)";
         } else {
-            elements.loginBtn.innerHTML = "<i class='fa-brands fa-google'></i> لاگ ان کریں";
+            elements.loginBtn.innerHTML = "<i class='fa-brands fa-google'></i> Google سے سائن ان کریں";
             elements.loginBtn.style.background = "";
         }
     }
@@ -201,23 +201,29 @@ window.openAdminPanel = async () => {
         const querySnapshot = await getDocs(collection(db, "users"));
         elements.adminUsersList.innerHTML = "";
         
-        querySnapshot.forEach((userDoc) => {
-            const data = userDoc.data();
+        // Sorting users to show pending first
+        const users = [];
+        querySnapshot.forEach(doc => users.push({id: doc.id, ...doc.data()}));
+        users.sort((a, b) => (b.paymentStatus === 'pending') - (a.paymentStatus === 'pending'));
+
+        users.forEach((data) => {
             const lastActive = data.createdAt ? new Date(data.createdAt.seconds * 1000).toLocaleDateString() : 'N/A';
+            const isPending = data.paymentStatus === 'pending';
             
             const card = document.createElement('div');
-            card.className = 'admin-user-card';
+            card.className = `admin-user-card ${isPending ? 'pending-highlight' : ''}`;
             card.innerHTML = `
                 <div class="user-card-header">
                     <span class="user-email-chip">${data.email}</span>
-                    <span class="user-date">Joined: ${lastActive}</span>
+                    <span class="user-date">${isPending ? '⚠️ PENDING CLAIM' : `Joined: ${lastActive}`}</span>
                 </div>
                 <div class="user-card-body">
                     <div class="credit-badge-large">${data.credits || 0} <small>Credits</small></div>
                     <div class="user-actions">
-                        <button class="action-btn approve" onclick="grantCredits('${userDoc.id}', 10)">Add 10</button>
-                        <button class="action-btn approve" onclick="grantCredits('${userDoc.id}', 50)">Add 50</button>
-                        <button class="action-btn danger-btn" onclick="resetUserCredits('${userDoc.id}')">Reset</button>
+                        ${isPending ? `<button class="action-btn approve" style="background:#ffd700;" onclick="grantCredits('${data.id}', 10, true)">Approve & Add 10</button>` : ''}
+                        <button class="action-btn approve" onclick="grantCredits('${data.id}', 10)">Add 10</button>
+                        <button class="action-btn approve" onclick="grantCredits('${data.id}', 50)">Add 50</button>
+                        <button class="action-btn danger-btn" onclick="resetUserCredits('${data.id}')">Reset</button>
                     </div>
                 </div>
             `;
@@ -241,16 +247,18 @@ window.resetUserCredits = async (uid) => {
     }
 };
 
-window.grantCredits = async (uid, amount) => {
+window.grantCredits = async (uid, amount, isApproval = false) => {
     const userRef = doc(db, "users", uid);
     try {
+        // Fetch current credits correctly
         const querySnapshot = await getDocs(collection(db, "users"));
         const userDoc = querySnapshot.docs.find(d => d.id === uid);
         const currentCredits = userDoc.data().credits || 0;
         
-        await updateDoc(userRef, {
-            credits: currentCredits + amount
-        });
+        const updates = { credits: currentCredits + amount };
+        if (isApproval) updates.paymentStatus = 'approved';
+
+        await updateDoc(userRef, updates);
         alert(`کامیابی! ${amount} کریڈٹس شامل کر دیے گئے۔`);
         openAdminPanel(); // Refresh list
     } catch (e) {
@@ -260,6 +268,36 @@ window.grantCredits = async (uid, amount) => {
 
 window.closeAdminPanel = () => {
     document.getElementById('adminDashboardView').classList.add('hidden');
+};
+
+// ================ NEW PAYMENT & SHARE FEATURES ================
+window.claimPayment = async () => {
+    if (!userState.loggedIn) return alert("پہلے لاگ ان کریں!");
+    
+    const userRef = doc(db, "users", userState.uid);
+    try {
+        // Give 5 temporary credits and mark as pending
+        await updateDoc(userRef, {
+            credits: userState.credits + 5,
+            paymentStatus: 'pending',
+            lastClaimAt: serverTimestamp()
+        });
+        
+        document.getElementById('claimStatus').style.display = 'block';
+        document.getElementById('claimBtn').disabled = true;
+        alert("آپ کو 5 عارضی کریڈٹس دے دیے گئے ہیں۔ ایڈمن جلد آپ کی پیمنٹ چیک کر کے اسے اپروو کر دے گا۔");
+    } catch (e) {
+        console.error("Claim Error:", e);
+        alert("درخواست بھیجنے میں مسئلہ ہوا۔ شاید آپ پہلے ہی درخواست بھیج چکے ہیں۔");
+    }
+};
+
+window.copyShareLink = () => {
+    const copyText = document.getElementById("shareLinkInput");
+    copyText.select();
+    copyText.setSelectionRange(0, 99999);
+    navigator.clipboard.writeText(copyText.value);
+    alert("ٹول کا لنک کاپی کر لیا گیا ہے!");
 };
 
 // ================ FILE HANDLING ================
