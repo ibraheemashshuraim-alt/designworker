@@ -96,6 +96,37 @@
     </header>
 
     <main class="app-container">
+        <!-- Workspace Column -->
+        <div class="dash-card workspace-card">
+            <div class="card-content">
+                <div id="dropZone" class="upload-drop-zone" onclick="document.getElementById('fileInput').click()">
+                    <div class="upload-icon-wrapper">
+                        <div class="cloud-icon">
+                            <i class="fa-solid fa-cloud"></i>
+                            <i class="fa-solid fa-bolt bolt-overlay"></i>
+                        </div>
+                    </div>
+                    <h2 class="upload-text">اپنا ڈیزائن ڈریگ کر کے یہاں لائیں</h2>
+                    <div class="format-badges">
+                        <span class="badge">PNG</span>
+                        <span class="badge">JPG</span>
+                        <span class="badge">PDF</span>
+                    </div>
+                    <button class="btn browse-btn">براؤز کریں</button>
+                    <input type="file" id="fileInput" accept="image/*" hidden>
+                </div>
+                
+                <div class="workspace-preview hidden" id="previewContainer">
+                    <img id="designPreview" alt="Design Preview">
+                    <div id="workspaceActions" style="margin-top: 20px; width: 100%;">
+                        <button class="btn primary-btn" style="width: 100%; font-size: 1.1rem; padding: 15px;" onclick="runAnalysis()">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> AI کے ساتھ تجزیہ کریں
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Results Column -->
         <div class="dash-card results-card">
             <div class="card-header-status">
@@ -138,37 +169,6 @@
                     <button class="btn primary-btn" style="width: 100%; margin-top: 30px;" onclick="runAnalysis()">
                         <i class="fa-solid fa-arrows-rotate"></i> دوبارہ چیک کریں
                     </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Workspace Column -->
-        <div class="dash-card workspace-card">
-            <div class="card-content">
-                <div id="dropZone" class="upload-drop-zone" onclick="document.getElementById('fileInput').click()">
-                    <div class="upload-icon-wrapper">
-                        <div class="cloud-icon">
-                            <i class="fa-solid fa-cloud"></i>
-                            <i class="fa-solid fa-bolt bolt-overlay"></i>
-                        </div>
-                    </div>
-                    <h2 class="upload-text">اپنا ڈیزائن ڈریگ کر کے یہاں لائیں</h2>
-                    <div class="format-badges">
-                        <span class="badge">PNG</span>
-                        <span class="badge">JPG</span>
-                        <span class="badge">PDF</span>
-                    </div>
-                    <button class="btn browse-btn">براؤز کریں</button>
-                    <input type="file" id="fileInput" accept="image/*" hidden>
-                </div>
-                
-                <div class="workspace-preview hidden" id="previewContainer">
-                    <img id="designPreview" alt="Design Preview">
-                    <div id="workspaceActions" style="margin-top: 20px; width: 100%;">
-                        <button class="btn primary-btn" style="width: 100%; font-size: 1.1rem; padding: 15px;" onclick="runAnalysis()">
-                            <i class="fa-solid fa-wand-magic-sparkles"></i> AI کے ساتھ تجزیہ کریں
-                        </button>
-                    </div>
                 </div>
             </div>
         </div>
