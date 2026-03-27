@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
-import { getFirestore, doc, setDoc, updateDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
+import { getFirestore, doc, setDoc, updateDoc, onSnapshot, serverTimestamp, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
 import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
 
 // Firebase Configuration
@@ -59,8 +59,13 @@ const elements = {
     modalAvatar: document.getElementById('modalAvatar'),
     modalIcon: document.getElementById('modalIcon'),
     adminPanelSection: document.getElementById('adminPanelSection'),
-    buyCreditsSection: document.getElementById('buyCreditsSection')
+    buyCreditsSection: document.getElementById('buyCreditsSection'),
+    profileDropdown: document.getElementById('profileDropdown'),
+    adminUsersList: document.getElementById('adminUsersList')
 };
+
+// Ensure session persistence
+setPersistence(auth, browserLocalPersistence);
 
 // ================ AUTH FLOW ================
 onAuthStateChanged(auth, async (user) => {
@@ -99,6 +104,8 @@ async function setupUserPersistence(user) {
 
 window.login = async () => {
     const provider = new GoogleAuthProvider();
+    // Force account selection so user can switch accounts
+    provider.setCustomParameters({ prompt: 'select_account' });
     try {
         await signInWithPopup(auth, provider);
     } catch (e) {
@@ -107,7 +114,18 @@ window.login = async () => {
     }
 };
 
-window.logout = () => signOut(auth);
+window.logout = async () => {
+    try {
+        await signOut(auth);
+        // Reset local state manually as a backup
+        userState = { loggedIn: false, uid: null, email: null, credits: 0, isAdmin: false };
+        updateUI();
+        toggleModal('profileDropdown', false);
+        window.location.reload(); // Hard refresh to ensure clean state
+    } catch (e) {
+        console.error("Logout Error:", e);
+    }
+};
 
 // ================ UI UPDATES ================
 function updateUI() {
@@ -167,9 +185,55 @@ function updateUI() {
     }
 }
 
-// Add admin panel function stub
-window.openAdminPanel = () => {
-    alert("Admin Panel opens here (Under Construction)");
+// Admin Dashboard Logic
+window.openAdminPanel = async () => {
+    const adminView = document.getElementById('adminDashboardView');
+    adminView.classList.remove('hidden');
+    
+    elements.adminUsersList.innerHTML = "<tr><td colspan='3'>لوڈ ہو رہا ہے...</td></tr>";
+    
+    try {
+        const querySnapshot = await getDocs(collection(db, "users"));
+        elements.adminUsersList.innerHTML = "";
+        
+        querySnapshot.forEach((userDoc) => {
+            const data = userDoc.data();
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${data.email}</td>
+                <td><span class="badge">${data.credits || 0}</span></td>
+                <td>
+                    <button class="action-btn approve" onclick="grantCredits('${userDoc.id}', 10)">+10</button>
+                    <button class="action-btn approve" onclick="grantCredits('${userDoc.id}', 50)">+50</button>
+                </td>
+            `;
+            elements.adminUsersList.appendChild(tr);
+        });
+    } catch (e) {
+        console.error("Admin Fetch Error:", e);
+        elements.adminUsersList.innerHTML = "<tr><td colspan='3'>ڈیٹا لوڈ کرنے میں مسئلہ ہوا۔</td></tr>";
+    }
+};
+
+window.grantCredits = async (uid, amount) => {
+    const userRef = doc(db, "users", uid);
+    try {
+        const querySnapshot = await getDocs(collection(db, "users"));
+        const userDoc = querySnapshot.docs.find(d => d.id === uid);
+        const currentCredits = userDoc.data().credits || 0;
+        
+        await updateDoc(userRef, {
+            credits: currentCredits + amount
+        });
+        alert(`کامیابی! ${amount} کریڈٹس شامل کر دیے گئے۔`);
+        openAdminPanel(); // Refresh list
+    } catch (e) {
+        alert("کریڈٹ اپ ڈیٹ کرنے میں مسئلہ ہوا۔");
+    }
+};
+
+window.closeAdminPanel = () => {
+    document.getElementById('adminDashboardView').classList.add('hidden');
 };
 
 // ================ FILE HANDLING ================
@@ -381,11 +445,20 @@ function displayResults(data) {
     elements.reportBadOut.innerHTML = data.improvements.map(i => `<div class="chip chip-warning">${i}</div>`).join('');
 }
 
-// Global modal helpers
+// Global modal/dropdown helpers
 window.toggleModal = (id, show) => {
     const modal = document.getElementById(id);
+    if (!modal) return;
     if (show) modal.classList.remove('hidden');
     else modal.classList.add('hidden');
+};
+
+// Close dropdown if clicked outside
+window.onclick = function(event) {
+    if (!event.target.closest('.profile-chip') && !event.target.closest('.dropdown-menu')) {
+        const dropdown = document.getElementById('profileDropdown');
+        if (dropdown) dropdown.classList.add('hidden');
+    }
 };
 
 // Initial setup
