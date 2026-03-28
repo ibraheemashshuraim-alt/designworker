@@ -169,7 +169,7 @@ function updateUI() {
             elements.modalIcon.classList.remove('hidden');
         }
 
-        let creditsText = `${userState.credits} Credits`;
+        let creditsText = `Credits ${userState.credits || 0}`;
         if (userState.isAdmin) {
             creditsText = "Admin";
         } else if (userState.licenseStatus === 'approved') {
@@ -663,13 +663,26 @@ window.runAnalysis = async () => {
 };
 
 async function deductCredit() {
-    if (userState.licenseStatus === 'approved') return; // Don't deduct from licensed users
+    if (userState.isAdmin) return; // Admin is free
+    if (userState.licenseStatus === 'approved') return; // Licensed is free
     
+    if (!userState.uid) {
+        console.error("DeductCredit: No user ID");
+        return;
+    }
+
     const userRef = doc(db, "users", userState.uid);
-    await updateDoc(userRef, {
-        credits: increment(-1),
-        usedCredits: increment(1)
-    });
+    try {
+        await updateDoc(userRef, {
+            credits: increment(-1),
+            usedCredits: increment(1),
+            lastActive: serverTimestamp()
+        });
+        console.log("Credit deducted successfully for:", userState.uid);
+    } catch (err) {
+        console.error("Firestore Deduction Error:", err);
+        throw err; // Re-throw to handle in runAnalysis
+    }
 }
 
 function displayResults(data) {
