@@ -619,65 +619,46 @@ window.runAnalysis = async () => {
             { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
         ];
 
-        const modelsToTry = ["gemini-1.5-flash-latest", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-2.0-flash-exp"];
-        const endpoints = ["v1beta", "v1"];
-        let response = null;
-        let dataJson = null;
-        let lastErrorMsg = null;
-        let quotaHit = false;
+        // v4.4.0: Single fixed path to avoid fallback confusion
+        const modelName = "gemini-1.5-flash-latest";
+        const endpoint = "v1beta";
+        
+        console.log(`v4.4.0 Final Attempt: ${modelName} (${endpoint})`);
+        const controller = new AbortController();
+        const url = `https://generativelanguage.googleapis.com/${endpoint}/models/${modelName}:generateContent?key=${keyToUse}`;
+        
+        try {
+            const fetchSignal = AbortSignal.timeout ? AbortSignal.timeout(12000) : controller.signal;
+            if (!AbortSignal.timeout) setTimeout(() => controller.abort(), 12000);
 
-        const sleep = ms => new Promise(r => setTimeout(r, ms));
+            const payload = {
+                contents: [{ parts: [{ text: prompt }, { inline_data: { mime_type: mimeType, data: base64Data } }] }],
+                generationConfig: { response_mime_type: "application/json" },
+                safetySettings: safetySettings
+            };
 
-        for (const modelName of modelsToTry) {
-            for (const endpoint of endpoints) {
-                console.log(`v4.2.0 Attempt: ${modelName} (${endpoint})`);
-                await sleep(1500); // v4.2.0: Mandatory cool-down delay
-                
-                const controller = new AbortController();
-                const url = `https://generativelanguage.googleapis.com/${endpoint}/models/${modelName}:generateContent?key=${keyToUse}`;
-                
-                try {
-                    const fetchSignal = AbortSignal.timeout ? AbortSignal.timeout(10000) : controller.signal;
-                    if (!AbortSignal.timeout) setTimeout(() => controller.abort(), 10000);
-
-                    const payload = {
-                        contents: [{ parts: [{ text: prompt }, { inline_data: { mime_type: mimeType, data: base64Data } }] }],
-                        safetySettings: safetySettings
-                    };
-                    if (endpoint === "v1beta") {
-                        payload.generationConfig = { response_mime_type: "application/json" };
-                    }
-
-                    response = await fetch(url, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload),
-                        signal: fetchSignal
-                    });
-                    
-                    dataJson = await response.json();
-                    if (response.ok) {
-                        console.log(`v4.1.2 SUCCESS: ${modelName} (${endpoint})`);
-                        break;
-                    }
-                    
-                    if (response.status === 429) quotaHit = true;
-
-                    lastErrorMsg = `${modelName} (${endpoint}): ${dataJson.error?.message || response.statusText} (${response.status})`;
-                    if (response.status === 404 || response.status === 400) continue; 
-                } catch (err) {
-                    lastErrorMsg = `${modelName}: ${err.message}`;
-                    continue;
-                }
+            response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+                signal: fetchSignal
+            });
+            
+            dataJson = await response.json();
+            if (response.ok) {
+                console.log(`v4.4.0 SUCCESS: ${modelName}`);
+            } else {
+                lastErrorMsg = dataJson.error?.message || response.statusText;
+                if (response.status === 429) quotaHit = true;
             }
-            if (response?.ok) break;
+        } catch (err) {
+            lastErrorMsg = err.message;
         }
 
         if (!response?.ok) {
-            if (quotaHit) {
+            if (quotaHit || (lastErrorMsg && lastErrorMsg.includes("quota"))) {
                 const source = isDefaultKey ? "سسٹم کی لمیٹ ختم ہے" : `آپ کی Key (${keyToUse.substring(0, 6)}...${keyToUse.substring(keyToUse.length - 4)}) کی لمیٹ ختم ہے`;
-                const debugInfo = lastErrorMsg || "No details";
-                throw new Error(`فری لمیٹ مکمل ہے (${source})۔\n\n[Raw Debug: ${debugInfo}]\n\n(اگر یہ نئی Key ہے تو موبائل ڈیٹا ٹرائی کریں)`);
+                throw new Error(`فری لمیٹ مکمل ہے (${source})۔\n\n[Google Error: ${lastErrorMsg}]\n\n(حل: موبائل ڈیٹا یا VPN ٹرائی کریں)`);
             }
             throw new Error(`ٹیکنیکل ایرر: ${lastErrorMsg || "رابطہ سست ہے"}`);
         }
