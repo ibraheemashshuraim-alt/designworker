@@ -514,7 +514,7 @@ function getApiKey() {
 }
 
 // IMAGE COMPRESSION (v3.9+)
-async function compressImage(base64Str, maxWidth = 1024, maxHeight = 1024) {
+async function compressImage(base64Str, maxWidth = 800, maxHeight = 800) {
     return new Promise((resolve) => {
         const img = new Image();
         const timeout = setTimeout(() => {
@@ -581,7 +581,7 @@ window.runAnalysis = async () => {
         if (runBtn) runBtn.disabled = false;
         console.warn("Safety Kill: Analysis forced closed due to timeout.");
         alert("تجزیہ بہت دیر لے رہا ہے۔ براہ کرم انٹرنیٹ چیک کریں اور دوبارہ کوشش کریں۔");
-    }, 30000);
+    }, 15000);
 
     const controller = new AbortController();
 
@@ -626,8 +626,8 @@ window.runAnalysis = async () => {
             
             try {
                 // Compatibility for AbortSignal.timeout
-                const fetchSignal = AbortSignal.timeout ? AbortSignal.timeout(15000) : controller.signal;
-                if (!AbortSignal.timeout) setTimeout(() => controller.abort(), 15000);
+                const fetchSignal = AbortSignal.timeout ? AbortSignal.timeout(7000) : controller.signal;
+                if (!AbortSignal.timeout) setTimeout(() => controller.abort(), 7000);
 
                 response = await fetch(url, {
                     method: 'POST',
