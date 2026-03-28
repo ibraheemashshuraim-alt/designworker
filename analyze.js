@@ -612,7 +612,7 @@ window.runAnalysis = async () => {
             جواب صرف اردو میں دیں۔
         `;
 
-        const modelsToTry = ["gemini-2.0-flash-exp", "gemini-2.0-flash", "gemini-1.5-flash-latest", "gemini-1.5-flash"];
+        const modelsToTry = ["gemini-1.5-flash-latest", "gemini-2.0-flash", "gemini-2.0-flash-exp", "gemini-1.5-flash"];
         const endpoints = ["v1beta", "v1"];
         let response = null;
         let dataJson = null;
@@ -621,7 +621,7 @@ window.runAnalysis = async () => {
 
         for (const modelName of modelsToTry) {
             for (const endpoint of endpoints) {
-                console.log(`v4.1.1 Attempt: ${modelName} (${endpoint})`);
+                console.log(`v4.1.2 Attempt: ${modelName} (${endpoint})`);
                 const controller = new AbortController();
                 const url = `https://generativelanguage.googleapis.com/${endpoint}/models/${modelName}:generateContent?key=${keyToUse}`;
                 
@@ -646,7 +646,7 @@ window.runAnalysis = async () => {
                     
                     dataJson = await response.json();
                     if (response.ok) {
-                        console.log(`v4.1.1 SUCCESS: ${modelName} (${endpoint})`);
+                        console.log(`v4.1.2 SUCCESS: ${modelName} (${endpoint})`);
                         break;
                     }
                     
@@ -664,7 +664,7 @@ window.runAnalysis = async () => {
 
         if (!response?.ok) {
             if (quotaHit) {
-                const source = isDefaultKey ? "سسٹم کی لمیٹ ختم ہے" : "آپ کی مخصوص Key کی لمیٹ ختم ہے";
+                const source = isDefaultKey ? "سسٹم کی لمیٹ ختم ہے" : `آپ کی Key (${keyToUse.substring(0, 6)}...${keyToUse.substring(keyToUse.length - 4)}) کی لمیٹ ختم ہے`;
                 throw new Error(`فری لمیٹ مکمل ہے (${source})۔ براہ کرم 1 منٹ انتظار کریں یا نئی Key آزمائیں۔`);
             }
             throw new Error(`ٹیکنیکل ایرر: ${lastErrorMsg || "رابطہ سست ہے"}`);
