@@ -50,7 +50,9 @@ const elements = {
     workspaceActions: document.getElementById('workspaceActions'),
     resultsPanel: document.getElementById('resultsPanel'),
     initialAnalysisMsg: document.getElementById('initialAnalysisMsg'),
-    analysisResults: document.getElementById('analysisResults'),
+    runAnalysisBtn: document.getElementById('runAnalysisBtn'),
+    buyCreditsBtn: document.getElementById('buyCreditsBtn'),
+    scanningModal: document.getElementById('scanningModal'),
     overallScoreText: document.getElementById('overallScoreText'),
     accessOut: document.getElementById('accessOut'),
     contrastOut: document.getElementById('contrastOut'),
@@ -212,23 +214,12 @@ function updateUI() {
         
         if (isOutOfCredits) {
             elements.buyCreditsSection.classList.remove('hidden');
-            // Swap Analyze button for Buy button on main screen if 0 credits
-            const mainAnalyzeBtn = document.querySelector('button[onclick="runAnalysis()"]');
-            if (mainAnalyzeBtn) {
-                mainAnalyzeBtn.innerHTML = "<i class='fa-solid fa-gem'></i> اپگریڈ کریں (Buy Credits)";
-                mainAnalyzeBtn.style.background = "linear-gradient(45deg, #ffd700, #ffb300)";
-                mainAnalyzeBtn.style.color = "#000";
-                mainAnalyzeBtn.setAttribute("onclick", "toggleModal('profileDropdown', true)");
-            }
+            if (elements.runAnalysisBtn) elements.runAnalysisBtn.classList.add('hidden');
+            if (elements.buyCreditsBtn) elements.buyCreditsBtn.classList.remove('hidden');
         } else {
             elements.buyCreditsSection.classList.add('hidden');
-            const mainAnalyzeBtn = document.querySelector('button[onclick*="profileDropdown"]');
-            if (mainAnalyzeBtn && mainAnalyzeBtn.innerText.includes("اپگریڈ")) {
-                mainAnalyzeBtn.innerHTML = "<i class='fa-solid fa-wand-magic-sparkles'></i> اینالائز کریں (Analyze)";
-                mainAnalyzeBtn.style.background = "";
-                mainAnalyzeBtn.style.color = "";
-                mainAnalyzeBtn.setAttribute("onclick", "runAnalysis()");
-            }
+            if (elements.runAnalysisBtn) elements.runAnalysisBtn.classList.remove('hidden');
+            if (elements.buyCreditsBtn) elements.buyCreditsBtn.classList.add('hidden');
         }
 
         // Management Visibility

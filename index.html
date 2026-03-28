@@ -121,8 +121,13 @@
                 <div class="workspace-preview hidden" id="previewContainer">
                     <img id="designPreview" alt="Design Preview">
                     <div id="workspaceActions" style="margin-top: 20px; width: 100%;">
-                        <button class="btn primary-btn" style="width: 100%; font-size: 1.1rem; padding: 15px;" onclick="runAnalysis()">
+                        <!-- Normal Analyze Button -->
+                        <button id="runAnalysisBtn" class="btn primary-btn" style="width: 100%; font-size: 1.1rem; padding: 15px;" onclick="runAnalysis()">
                             <i class="fa-solid fa-wand-magic-sparkles"></i> AI کے ساتھ تجزیہ کریں
+                        </button>
+                        <!-- Premium Buy Credits Button (Hidden by default) -->
+                        <button id="buyCreditsBtn" class="btn hidden" style="width: 100%; font-size: 1.1rem; padding: 15px; background: linear-gradient(45deg, #ffd700, #ffb300); color: #000; font-weight: 800; box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);" onclick="toggleModal('profileDropdown', true)">
+                            <i class="fa-solid fa-gem"></i> کریڈٹس خریدیں (Upgrade Now)
                         </button>
                     </div>
                 </div>
