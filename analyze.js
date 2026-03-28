@@ -178,8 +178,8 @@ window.logout = async () => {
 };
 
 // --- VERSION TAG ---
-window.DESIGN_VERSION = "3.6";
-console.log("DesignCheck v3.6 Production Final Loaded");
+window.DESIGN_VERSION = "3.7";
+console.log("DesignCheck v3.7 Stability Final Loaded");
 
 // Global Modal Toggle
 window.toggleModal = (id, show) => {
@@ -511,27 +511,23 @@ function getApiKey() {
     return localStorage.getItem('gemini_api_key');
 }
 
-// ================ AI ANALYSIS ================
+// ================ AI ANALYSIS (v3.7) ================
 window.runAnalysis = async () => {
+    console.time("AnalysisPhase");
     if (!currentImageBase64) {
         alert("پہلے ڈیزائن اپلوڈ کریں۔");
         return;
     }
 
-    let keyToUse = getApiKey() || elements.apiKeyInput.value.trim();
-    
-    // Compulsory Credit Check for all logged-in users (except Admin/License)
-    if (userState.loggedIn && !userState.isAdmin && userState.licenseStatus !== 'approved') {
-        if (Number(userState.credits || 0) <= 0) {
-            alert("آپ کے پاس کریڈٹس ختم ہو گئے ہیں۔ براہ کرم مزید کریڈٹس خریدیں۔");
-            toggleModal('profileDropdown', true);
-            return;
-        }
-    }
+    const runBtn = document.getElementById('runAnalysisBtn');
+    if (runBtn) runBtn.disabled = true;
 
+    let keyToUse = getApiKey() || elements.apiKeyInput.value.trim();
     if (!keyToUse) keyToUse = "AIzaSyC7f4QH6CSRN6dAhGNm7P4kMHTv12mtdEo";
 
-    elements.scanningModal.classList.remove('hidden');
+    const scanModal = document.getElementById('scanningModal');
+    if (scanModal) scanModal.classList.remove('hidden');
+    
     elements.initialAnalysisMsg.classList.add('hidden');
     elements.analysisResults.classList.add('hidden');
 
@@ -561,7 +557,7 @@ window.runAnalysis = async () => {
         let lastErrorMsg = null;
 
         for (const modelName of modelsToTry) {
-            console.log(`Trying ${modelName}...`);
+            console.log(`Starting ${modelName}...`);
             const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${keyToUse}`;
             try {
                 response = await fetch(url, {
@@ -571,34 +567,42 @@ window.runAnalysis = async () => {
                         contents: [{ parts: [{ text: prompt }, { inline_data: { mime_type: mimeType || "image/jpeg", data: base64Data } }] }],
                         generationConfig: { response_mime_type: "application/json" }
                     }),
-                    signal: AbortSignal.timeout(10000)
+                    signal: AbortSignal.timeout(7000) // Tight 7s timeout
                 });
                 dataJson = await response.json();
-                if (response.ok) break;
+                if (response.ok) {
+                    console.log(`${modelName} Success!`);
+                    break;
+                }
                 lastErrorMsg = dataJson.error?.message || response.statusText;
             } catch (err) {
+                console.warn(`${modelName} failed/timed out:`, err.message);
                 lastErrorMsg = err.message;
             }
         }
 
-        if (!response || !dataJson) throw new Error(lastErrorMsg || "All models failed.");
+        if (!response?.ok) throw new Error(lastErrorMsg || "AI Server busy. Please try again.");
 
         const text = dataJson.candidates?.[0]?.content?.parts?.[0]?.text;
         if (!text) throw new Error("AI نے کوئی جواب نہیں دیا۔");
 
+        console.log("Parsing results...");
         const data = JSON.parse(text);
         displayResults(data);
 
-        // Deduct Credit
+        // Deduct Credit (Don't await it to keep UI fast)
         if (userState.loggedIn && !userState.isAdmin && userState.licenseStatus !== 'approved') {
-            deductCredit().catch(e => console.error("Deduction error:", e));
+            deductCredit().catch(e => console.error("Credit deduction failed:", e));
         }
 
+        console.timeEnd("AnalysisPhase");
+
     } catch (err) {
-        console.error("ANALYSIS FAILED:", err);
+        console.error("CRITICAL ANALYSIS ERROR:", err);
         alert("تجزیہ کے دوران مسئلہ پیش آیا: " + err.message);
     } finally {
-        elements.scanningModal.classList.add('hidden');
+        if (scanModal) scanModal.classList.add('hidden');
+        if (runBtn) runBtn.disabled = false;
     }
 };
 
