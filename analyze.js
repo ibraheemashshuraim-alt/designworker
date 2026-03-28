@@ -7,7 +7,7 @@ import { getAnalytics, isSupported } from "https://www.gstatic.com/firebasejs/10
 // import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai"; // Removed unused
 window.addEventListener('error', (e) => {
     console.error("GLOBAL SCRIPT ERROR:", e);
-    // alert("فنی خرابی: " + e.message); 
+    alert("فنی خرابی: " + e.message + " (" + e.lineno + ":" + e.colno + ")"); 
 });
 console.log("Analyze script loading started...");
 
@@ -178,8 +178,8 @@ window.logout = async () => {
 };
 
 // --- VERSION TAG ---
-window.DESIGN_VERSION = "3.5.2";
-console.log("DesignCheck v3.5.2 Full UI Recovery Loaded");
+window.DESIGN_VERSION = "3.6";
+console.log("DesignCheck v3.6 Production Final Loaded");
 
 // Global Modal Toggle
 window.toggleModal = (id, show) => {
@@ -302,12 +302,14 @@ window.openAdminPanel = async () => {
 
         users.forEach((data) => {
             const lastActive = data.createdAt ? new Date(data.createdAt.seconds * 1000).toLocaleDateString() : 'New';
+            const isPendingCredit = data.paymentStatus === 'pending';
+            
             let statusBadge = `<span class="status-badge badge-trial">Free User</span>`;
             if (isPendingCredit) statusBadge = `<span class="status-badge badge-pending">Payment Pending</span>`;
             else if (data.credits > 10) statusBadge = `<span class="status-badge badge-premium">Premium User</span>`;
 
             const card = document.createElement('div');
-            card.className = `admin-user-card ${(isPendingCredit || isPendingLicense) ? 'pending-highlight' : ''}`;
+            card.className = `admin-user-card ${isPendingCredit ? 'pending-highlight' : ''}`;
             
             card.innerHTML = `
                 <div class="user-card-header">
@@ -317,9 +319,9 @@ window.openAdminPanel = async () => {
                     </div>
                 </div>
 
-                ${(isPendingCredit || isPendingLicense) ? `
+                ${isPendingCredit ? `
                 <div class="claim-details-box">
-                    <span class="claim-label">${isPendingLicense ? 'License Claim' : 'Credit Claim'} Details:</span>
+                    <span class="claim-label">Credit Claim Details:</span>
                     <div class="claim-value"><i class="fa-solid fa-user"></i> ${data.claimName || 'N/A'}</div>
                     <div class="claim-value" style="font-size: 0.8rem; color: var(--neon-cyan); direction: ltr; text-align: left; margin-top:5px;">
                         <i class="fa-solid fa-hashtag"></i> TID: ${data.claimTid || 'N/A'}
@@ -569,7 +571,7 @@ window.runAnalysis = async () => {
                         contents: [{ parts: [{ text: prompt }, { inline_data: { mime_type: mimeType || "image/jpeg", data: base64Data } }] }],
                         generationConfig: { response_mime_type: "application/json" }
                     }),
-                    signal: AbortSignal.timeout(15000)
+                    signal: AbortSignal.timeout(10000)
                 });
                 dataJson = await response.json();
                 if (response.ok) break;
