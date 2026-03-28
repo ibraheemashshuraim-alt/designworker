@@ -90,7 +90,7 @@ onAuthStateChanged(auth, async (user) => {
         userState.uid = user.uid;
         userState.email = user.email;
         userState.photoURL = user.photoURL;
-        userState.isAdmin = (user.email === ADMIN_EMAIL);
+        userState.isAdmin = ADMIN_EMAILS.includes(user.email);
         
         setupUserPersistence(user);
         updateUI();
