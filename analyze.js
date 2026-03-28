@@ -1,6 +1,8 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
-import { getFirestore, doc, setDoc, updateDoc, onSnapshot, serverTimestamp, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
+import { 
+    getFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot, collection, query, where, getDocs, deleteDoc, increment 
+} from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
 import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
 
 // Firebase Configuration
@@ -651,11 +653,12 @@ window.runAnalysis = async () => {
 };
 
 async function deductCredit() {
+    if (userState.licenseStatus === 'approved') return; // Don't deduct from licensed users
+    
     const userRef = doc(db, "users", userState.uid);
-    const updatedUsed = (userState.usedCredits || 0) + 1;
     await updateDoc(userRef, {
-        credits: userState.credits - 1,
-        usedCredits: updatedUsed
+        credits: increment(-1),
+        usedCredits: increment(1)
     });
 }
 
