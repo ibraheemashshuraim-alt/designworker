@@ -513,8 +513,8 @@ function getApiKey() {
     return localStorage.getItem('gemini_api_key');
 }
 
-// IMAGE COMPRESSION (v3.9+)
-async function compressImage(base64Str, maxWidth = 800, maxHeight = 800) {
+// IMAGE COMPRESSION (v4.0.8 Optimized)
+async function compressImage(base64Str, maxWidth = 700, maxHeight = 700) {
     return new Promise((resolve) => {
         const img = new Image();
         const timeout = setTimeout(() => {
@@ -584,11 +584,18 @@ window.runAnalysis = async () => {
     }, 15000);
 
     try {
-        let keyToUse = getApiKey() || (elements.apiKeyInput ? elements.apiKeyInput.value.trim() : "");
-        if (!keyToUse) keyToUse = "AIzaSyC7f4QH6CSRN6dAhGNm7P4kMHTv12mtdEo";
+        // v4.0.8 Fix: Prioritize typed key over saved key
+        const typedKey = elements.apiKeyInput ? elements.apiKeyInput.value.trim() : "";
+        let keyToUse = typedKey || getApiKey();
+        let isDefaultKey = false;
+        
+        if (!keyToUse) {
+            keyToUse = "AIzaSyC7f4QH6CSRN6dAhGNm7P4kMHTv12mtdEo";
+            isDefaultKey = true;
+        }
 
         // Step 1: Compress
-        console.log("v4.0.7: Compressing image...");
+        console.log("v4.0.8: Processing design (Key Type: " + (typedKey ? "Typed" : (isDefaultKey ? "Default" : "Saved")) + ")");
         const compressedBase64 = await compressImage(currentImageBase64);
         
         const mimeType = "image/jpeg";
