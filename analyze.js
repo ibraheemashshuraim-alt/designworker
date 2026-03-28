@@ -102,22 +102,28 @@ onAuthStateChanged(auth, async (user) => {
 
 async function setupUserPersistence(user) {
     const userRef = doc(db, "users", user.uid);
+    
+    // Listen for real-time updates
     onSnapshot(userRef, (docSnap) => {
         if (docSnap.exists()) {
             const data = docSnap.data();
-            // Merge Firestore data into userState
+            // Merge all Firestore data into our local state
             Object.assign(userState, data);
+            userState.loggedIn = true;
             updateUI();
         } else {
-            // New user initialization
+            // New User: Initialize with 10 credits
             const newUser = {
                 email: user.email,
                 credits: 10,
                 usedCredits: 0,
-                createdAt: serverTimestamp(),
+                joinDate: serverTimestamp(),
+                lastActive: serverTimestamp(),
                 status: 'active'
             };
-            setDoc(userRef, newUser);
+            setDoc(userRef, newUser).then(() => {
+                console.log("New user initialized with 10 credits");
+            }).catch(err => console.error("User init error:", err));
         }
     });
 }
@@ -158,48 +164,45 @@ function updateUI() {
         elements.profileEmail.innerText = emailDisplay;
         elements.profileEmailVal.innerText = userState.email;
 
-        // Display Avatar from Google Account
+        // Avatar Handling
         if (userState.photoURL) {
             elements.profileAvatar.src = userState.photoURL;
             elements.profileAvatar.classList.remove('hidden');
             elements.profileIcon.classList.add('hidden');
-            
             elements.modalAvatar.src = userState.photoURL;
             elements.modalAvatar.classList.remove('hidden');
             elements.modalIcon.classList.add('hidden');
-        } else {
-            elements.profileAvatar.classList.add('hidden');
-            elements.profileIcon.classList.remove('hidden');
-            
-            elements.modalAvatar.classList.add('hidden');
-            elements.modalIcon.classList.remove('hidden');
         }
 
-        let creditsText = `Credits ${userState.credits || 0}`;
-        if (userState.isAdmin) {
-            creditsText = "Admin";
-        } else if (userState.licenseStatus === 'approved') {
-            creditsText = "Unlimited";
-        }
+        // --- CREDIT DISPLAY LOGIC ---
+        let creditsToDisplay = userState.credits || 0;
+        let displayStr = `Credits ${creditsToDisplay}`;
         
-        if (elements.profileCredits) elements.profileCredits.innerText = creditsText;
-        if (elements.profileCreditsModal) elements.profileCreditsModal.innerText = creditsText;
-
-        // Hide Buy License for Admin
-        const licenseSection = document.querySelector('button[onclick*="licenseModal"]')?.parentElement;
-        if (licenseSection) {
-            licenseSection.style.display = userState.isAdmin ? 'none' : 'block';
+        if (userState.isAdmin) {
+            displayStr = "Admin";
+        } else if (userState.licenseStatus === 'approved') {
+            displayStr = "Unlimited";
         }
 
-        // Admin Panel Logic
+        // Update Header Badge
+        if (elements.profileCredits) {
+            elements.profileCredits.innerText = displayStr;
+        }
+
+        // Update Modal Card
+        if (elements.profileCreditsModal) {
+            elements.profileCreditsModal.innerText = displayStr;
+        }
+
+        // Management Visibility
         if (userState.isAdmin) {
             elements.adminPanelSection.classList.remove('hidden');
         } else {
             elements.adminPanelSection.classList.add('hidden');
         }
 
-        // Check if credits are low to prompt buying
-        if (userState.credits <= 0 && !hasLocalKey && !userState.isAdmin) {
+        // Upgrade Prompt (Buy Credits)
+        if (creditsToDisplay <= 0 && !hasLocalKey && !userState.isAdmin && userState.licenseStatus !== 'approved') {
             elements.buyCreditsSection.classList.remove('hidden');
         } else {
             elements.buyCreditsSection.classList.add('hidden');
@@ -209,11 +212,6 @@ function updateUI() {
         elements.loginBtn.classList.remove('hidden');
         elements.authContainer.classList.add('hidden');
         elements.loginBtn.innerHTML = "<i class='fa-brands fa-google'></i> Google سے سائن ان کریں";
-        if (hasLocalKey) {
-            elements.loginBtn.style.background = "var(--neon-purple)";
-        } else {
-            elements.loginBtn.style.background = "";
-        }
     }
 }
 
@@ -511,21 +509,32 @@ function getApiKey() {
 
 // ================ AI ANALYSIS ================
 window.runAnalysis = async () => {
+    if (!currentImageBase64) {
+        alert("پہلے ڈیزائن اپلوڈ کریں۔");
+        return;
+    }
+
     let keyToUse = getApiKey() || elements.apiKeyInput.value.trim();
+    const isUsingOwnKey = !!keyToUse;
     
-    if (!keyToUse) {
-        // If no global API key
+    // Credit Check for users without their own API Key
+    if (!isUsingOwnKey) {
         if (!userState.loggedIn) {
-            alert("تجزیہ شروع کرنے کے لیے پہلے لاگ ان کریں یا اپنی API Key استعمال کریں۔");
-            toggleModal('profileModal', true);
+            alert("فری 10 کریڈٹس حاصل کرنے اور ٹیسٹ کرنے کے لیے پہلے لاگ ان کریں۔");
+            toggleModal('profileDropdown', true);
             return;
         }
 
-        if (userState.credits <= 0 && !userState.isAdmin) {
-            alert("آپ کے کریڈٹس ختم ہو چکے ہیں۔ براہ کرم پریمیم کریڈٹس حاصل کریں یا اپنی API Key استعمال کریں۔ (تفصیلات کے لیے پروفائل دیکھیں)");
-            toggleModal('profileModal', true);
+        if (userState.credits <= 0 && !userState.isAdmin && userState.licenseStatus !== 'approved') {
+            alert("آپ کے پاس تجزیہ کے لیے کریڈٹس ختم ہو گئے ہیں۔ براہ کرم اپگریڈ کریں یا اپنی API Key استعمال کریں۔");
+            toggleModal('profileDropdown', true);
             return;
         }
+    }
+
+    // Default API Key Fallback if none provided
+    if (!keyToUse) {
+        keyToUse = "AIzaSyC7f4QH6CSRN6dAhGNm7P4kMHTv12mtdEo"; // Default system key
     }
 
     elements.scanningModal.classList.remove('hidden');
@@ -634,9 +643,8 @@ window.runAnalysis = async () => {
             
             displayResults(data);
             
-            // Only deduct credit if they are logged in and using default fallback
-            // Assuming if they are logged in without a local key, it means we deduct.
-            if (userState.loggedIn && !getApiKey()) {
+            // Only deduct credit if using default system capacity (no own key)
+            if (userState.loggedIn && !isUsingOwnKey) {
                 deductCredit();
             }
         } else {
@@ -669,13 +677,10 @@ window.runAnalysis = async () => {
 };
 
 async function deductCredit() {
-    if (userState.isAdmin) return; // Admin is free
-    if (userState.licenseStatus === 'approved') return; // Licensed is free
+    if (userState.isAdmin) return; 
+    if (userState.licenseStatus === 'approved') return; 
     
-    if (!userState.uid) {
-        console.error("DeductCredit: No user ID");
-        return;
-    }
+    if (!userState.uid) return;
 
     const userRef = doc(db, "users", userState.uid);
     try {
@@ -684,10 +689,10 @@ async function deductCredit() {
             usedCredits: increment(1),
             lastActive: serverTimestamp()
         });
-        console.log("Credit deducted successfully for:", userState.uid);
+        console.log("Usage recorded successfully.");
     } catch (err) {
-        console.error("Firestore Deduction Error:", err);
-        throw err; // Re-throw to handle in runAnalysis
+        console.error("Credit Error:", err);
+        throw err; 
     }
 }
 
