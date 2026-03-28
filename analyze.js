@@ -4,7 +4,12 @@ import {
     getFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot, collection, query, where, getDocs, deleteDoc, increment, serverTimestamp 
 } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
 import { getAnalytics, isSupported } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-analytics.js";
-import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
+// import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai"; // Removed unused
+window.addEventListener('error', (e) => {
+    console.error("GLOBAL SCRIPT ERROR:", e);
+    // alert("فنی خرابی: " + e.message); 
+});
+console.log("Analyze script loading started...");
 
 // Firebase Configuration
 const firebaseConfig = {
@@ -173,8 +178,17 @@ window.logout = async () => {
 };
 
 // --- VERSION TAG ---
-window.DESIGN_VERSION = "3.5";
-console.log("DesignCheck v3.5 Production Fixes Loaded");
+window.DESIGN_VERSION = "3.5.2";
+console.log("DesignCheck v3.5.2 Full UI Recovery Loaded");
+
+// Global Modal Toggle
+window.toggleModal = (id, show) => {
+    const modal = document.getElementById(id);
+    if (modal) {
+        if (show) modal.classList.remove('hidden');
+        else modal.classList.add('hidden');
+    }
+};
 
 // ================ UI UPDATES ================
 function updateUI() {
@@ -382,21 +396,6 @@ window.grantCredits = async (uid, amount, isApproval = false) => {
     }
 };
 
-window.approveLicense = async (uid) => {
-    if (!confirm("Are you sure you want to approve the FULL LICENSE for this user?")) return;
-    const userRef = doc(db, "users", uid);
-    try {
-        await updateDoc(userRef, {
-            licenseStatus: 'approved',
-            credits: 99999, // Infinite-like credits
-            licenseApprovedAt: serverTimestamp()
-        });
-        alert("License Approved Successfully!");
-        openAdminPanel();
-    } catch (e) {
-        alert("Error approving license.");
-    }
-};
 
 window.deleteUser = async (uid) => {
     if (!confirm("Are you sure you want to delete this user? This cannot be undone.")) return;
@@ -469,30 +468,6 @@ window.submitCreditClaim = async () => {
     }
 };
 
-window.submitLicenseClaim = async () => {
-    const name = document.getElementById('licenseNameInput').value.trim();
-    const tid = document.getElementById('licenseTidInput').value.trim();
-
-    if (!name || !tid) return alert("براہ کرم اپنا نام اور TID درج کریں۔");
-    if (!userState.loggedIn) return alert("پہلے لاگ ان کریں!");
-    
-    const userRef = doc(db, "users", userState.uid);
-    try {
-        await updateDoc(userRef, {
-            licenseStatus: 'pending',
-            claimName: name,
-            claimTid: tid,
-            lastLicenseClaimAt: serverTimestamp()
-        });
-        
-        toggleModal('licenseClaimModal', false);
-        toggleModal('licenseModal', false);
-        alert("آپ کی لائسنس کی درخواست بھیج دی گئی ہے۔ ایڈمن جلد آپ سے رابطہ کرے گا۔");
-    } catch (e) {
-        console.error("License Claim Error:", e);
-        alert("درخواست بھیجنے میں مسئلہ ہوا۔");
-    }
-};
 
 window.copyShareLink = () => {
     const copyText = document.getElementById("shareLinkInput");
