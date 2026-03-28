@@ -10,6 +10,7 @@ window.addEventListener('error', (e) => {
     alert("فنی خرابی: " + e.message + " (" + e.lineno + ":" + e.colno + ")"); 
 });
 console.log("Analyze script loading started...");
+alert("DesignCheck Script v3.9 Loaded! (Please confirm)");
 
 // Firebase Configuration
 const firebaseConfig = {
@@ -178,8 +179,8 @@ window.logout = async () => {
 };
 
 // --- VERSION TAG ---
-window.DESIGN_VERSION = "3.8";
-console.log("DesignCheck v3.8 Bulletproof Final Loaded");
+window.DESIGN_VERSION = "3.9";
+console.log("DesignCheck v3.9 Stability Final Loaded");
 
 // Global Modal Toggle
 window.toggleModal = (id, show) => {
@@ -511,6 +512,38 @@ function getApiKey() {
     return localStorage.getItem('gemini_api_key');
 }
 
+// IMAGE COMPRESSION (v3.9)
+async function compressImage(base64Str, maxWidth = 1024, maxHeight = 1024) {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.src = base64Str;
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            let width = img.width;
+            let height = img.height;
+
+            if (width > height) {
+                if (width > maxWidth) {
+                    height *= maxWidth / width;
+                    width = maxWidth;
+                }
+            } else {
+                if (height > maxHeight) {
+                    width *= maxHeight / height;
+                    height = maxHeight;
+                }
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            resolve(canvas.toDataURL('image/jpeg', 0.8)); // 80% quality
+        };
+        img.onerror = () => resolve(base64Str); // Fallback to original
+    });
+}
+
 // ================ AI ANALYSIS (v3.7) ================
 window.runAnalysis = async () => {
     console.time("AnalysisPhase");
@@ -522,84 +555,90 @@ window.runAnalysis = async () => {
     const runBtn = document.getElementById('runAnalysisBtn');
     if (runBtn) runBtn.disabled = true;
 
-    let keyToUse = getApiKey() || elements.apiKeyInput.value.trim();
-    if (!keyToUse) keyToUse = "AIzaSyC7f4QH6CSRN6dAhGNm7P4kMHTv12mtdEo";
-
     const scanModal = document.getElementById('scanningModal');
     if (scanModal) scanModal.classList.remove('hidden');
     
     elements.initialAnalysisMsg.classList.add('hidden');
     elements.analysisResults.classList.add('hidden');
 
-    // 15s Safety Kill Switch for Modal
+    // 20s Ultimate Safety Kill Switch
     const killSwitch = setTimeout(() => {
         if (scanModal) scanModal.classList.add('hidden');
         if (runBtn) runBtn.disabled = false;
-        console.warn("Safety Kill: Analysis took too long, modal forced closed.");
-    }, 15000);
+        console.warn("Safety Kill: Analysis forced closed.");
+    }, 20000);
 
     try {
+        let keyToUse = getApiKey() || elements.apiKeyInput.value.trim();
+        if (!keyToUse) keyToUse = "AIzaSyC7f4QH6CSRN6dAhGNm7P4kMHTv12mtdEo";
+
+        // Step 1: Compress
+        console.log("v3.9: Compressing image...");
+        const compressedBase64 = await compressImage(currentImageBase64);
+        const mimeType = "image/jpeg";
+        const base64Data = compressedBase64.split(',')[1];
+
+        // Step 2: Setup Prompt
         const prompt = `
-            تم ایک سینئر گرافک ڈیزائنر اور نقاد ہو (Senior Graphic Designer & Critic)۔
+            تم ایک سینئر گرافک ڈیزائنر ہو (Senior Graphic Designer)۔
             دیے گئے ڈیزائن کا گہرائی سے جائزہ لو (Detailed Critique)۔
-            نتیجہ صرف JSON فارمیٹ میں فراہم کریں اس ڈھانچے کے ساتھ:
+            نتیجہ صرف JSON فارمیٹ میں دیں:
             {
-                "score": 0 سے 100 کے درمیان ایک نمبر,
-                "accessibility": "ایکسیسبلٹی کے بارے میں ایک جملہ (اردو)",
-                "contrast": "رنگوں کے تضاد کے بارے میں ایک جملہ (اردو)",
-                "strengths": ["خوبی 1", "خوبی 2", "خوبی 3"],
-                "improvements": ["بہتری 1", "بہتری 2", "بہتری 3"],
+                "score": Number (0-100),
+                "accessibility": "ایکسیسبلٹی (اردو)",
+                "contrast": "تضاد (اردو)",
+                "strengths": ["خوبی1", "خوبی2"],
+                "improvements": ["بہتری1", "بہتری2"],
                 "colors": ["#hex1", "#hex2"],
                 "fonts": ["Font1", "Font2"]
             }
-            جواب صرف اردو میں ہونا چاہیے۔
+            جواب صرف اردو میں دیں۔
         `;
 
-        const mimeType = currentImageBase64.substring(currentImageBase64.indexOf(':') + 1, currentImageBase64.indexOf(';'));
-        const base64Data = currentImageBase64.split(',')[1];
         const modelsToTry = ["gemini-2.0-flash", "gemini-1.5-flash"];
-
         let response = null;
         let dataJson = null;
+        let lastErrorMsg = null;
 
+        // Step 3: Fetch Loop
         for (const modelName of modelsToTry) {
-            console.log(`Starting ${modelName}...`);
+            console.log(`v3.9: Trying ${modelName}...`);
             const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${keyToUse}`;
             try {
                 response = await fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        contents: [{ parts: [{ text: prompt }, { inline_data: { mime_type: mimeType || "image/jpeg", data: base64Data } }] }],
+                        contents: [{ parts: [{ text: prompt }, { inline_data: { mime_type: mimeType, data: base64Data } }] }],
                         generationConfig: { response_mime_type: "application/json" }
                     }),
-                    signal: AbortSignal.timeout(5000) // Super tight 5s timeout
+                    signal: AbortSignal.timeout(10000) // 10s timeout
                 });
                 dataJson = await response.json();
-                if (response.ok) {
-                    console.log(`${modelName} Success!`);
-                    break;
-                }
+                if (response.ok) break;
+                lastErrorMsg = dataJson.error?.message || response.statusText;
             } catch (err) {
-                console.warn(`${modelName} hang/timeout:`, err.message);
+                lastErrorMsg = err.message;
+                console.warn(`${modelName} error:`, err.message);
             }
         }
 
-        if (!response?.ok) throw new Error("AI Server busy or Network slow. Please check your internet and try again.");
+        if (!response?.ok) throw new Error(lastErrorMsg || "Connection slow or AI busy. Try again.");
 
+        // Step 4: Display
         const text = dataJson.candidates?.[0]?.content?.parts?.[0]?.text;
         if (!text) throw new Error("AI نے کوئی جواب نہیں دیا۔");
+        
+        displayResults(JSON.parse(text));
 
-        const data = JSON.parse(text);
-        displayResults(data);
-
+        // Background: Deduct
         if (userState.loggedIn && !userState.isAdmin && userState.licenseStatus !== 'approved') {
             deductCredit().catch(e => console.error("Credit fail:", e));
         }
 
     } catch (err) {
         console.error("ANALYSIS ERROR:", err);
-        alert("تجزیہ کے دوران مسئلہ پیش آیا: " + err.message);
+        alert("مسلہ: " + err.message);
     } finally {
         clearTimeout(killSwitch);
         if (scanModal) scanModal.classList.add('hidden');
