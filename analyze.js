@@ -513,8 +513,8 @@ function getApiKey() {
     return localStorage.getItem('gemini_api_key');
 }
 
-// IMAGE COMPRESSION (v4.1.3 Optimized)
-async function compressImage(base64Str, maxWidth = 600, maxHeight = 600) {
+// IMAGE COMPRESSION (v4.2.0 Optimized)
+async function compressImage(base64Str, maxWidth = 500, maxHeight = 500) {
     return new Promise((resolve) => {
         const img = new Image();
         const timeout = setTimeout(() => {
@@ -612,26 +612,37 @@ window.runAnalysis = async () => {
             جواب صرف اردو میں دیں۔
         `;
 
-        const modelsToTry = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash-latest", "gemini-2.0-flash-lite"];
+        const safetySettings = [
+            { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+            { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+            { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+            { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
+        ];
+
+        const modelsToTry = ["gemini-1.5-flash-latest", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-2.0-flash-exp"];
         const endpoints = ["v1beta", "v1"];
         let response = null;
         let dataJson = null;
         let lastErrorMsg = null;
         let quotaHit = false;
 
+        const sleep = ms => new Promise(r => setTimeout(r, ms));
+
         for (const modelName of modelsToTry) {
             for (const endpoint of endpoints) {
-                console.log(`v4.1.2 Attempt: ${modelName} (${endpoint})`);
+                console.log(`v4.2.0 Attempt: ${modelName} (${endpoint})`);
+                await sleep(1500); // v4.2.0: Mandatory cool-down delay
+                
                 const controller = new AbortController();
                 const url = `https://generativelanguage.googleapis.com/${endpoint}/models/${modelName}:generateContent?key=${keyToUse}`;
                 
                 try {
-                    const fetchSignal = AbortSignal.timeout ? AbortSignal.timeout(8000) : controller.signal;
-                    if (!AbortSignal.timeout) setTimeout(() => controller.abort(), 8000);
+                    const fetchSignal = AbortSignal.timeout ? AbortSignal.timeout(10000) : controller.signal;
+                    if (!AbortSignal.timeout) setTimeout(() => controller.abort(), 10000);
 
-                    // v1 endpoint doesn't support response_mime_type in generationConfig for all models
                     const payload = {
-                        contents: [{ parts: [{ text: prompt }, { inline_data: { mime_type: mimeType, data: base64Data } }] }]
+                        contents: [{ parts: [{ text: prompt }, { inline_data: { mime_type: mimeType, data: base64Data } }] }],
+                        safetySettings: safetySettings
                     };
                     if (endpoint === "v1beta") {
                         payload.generationConfig = { response_mime_type: "application/json" };
