@@ -101,17 +101,29 @@ onAuthStateChanged(auth, async (user) => {
 });
 
 async function setupUserPersistence(user) {
+    if (!user) return;
     const userRef = doc(db, "users", user.uid);
     
     // Listen for real-time updates
     onSnapshot(userRef, (docSnap) => {
         if (docSnap.exists()) {
             const data = docSnap.data();
-            // Merge all Firestore data into our local state
-            Object.assign(userState, data);
+            console.log("Firestore Data Received:", data);
+            
+            // Critical merge
+            userState.credits = data.credits !== undefined ? data.credits : 0;
+            userState.usedCredits = data.usedCredits || 0;
+            userState.licenseStatus = data.licenseStatus || 'none';
+            userState.paymentStatus = data.paymentStatus || 'none';
             userState.loggedIn = true;
+            userState.email = user.email;
+            userState.uid = user.uid;
+            userState.photoURL = user.photoURL;
+            userState.isAdmin = (user.email === ADMIN_EMAIL);
+            
             updateUI();
         } else {
+            console.log("No user document found. Creating one...");
             // New User: Initialize with 10 credits
             const newUser = {
                 email: user.email,
@@ -119,12 +131,18 @@ async function setupUserPersistence(user) {
                 usedCredits: 0,
                 joinDate: serverTimestamp(),
                 lastActive: serverTimestamp(),
-                status: 'active'
+                status: 'active',
+                licenseStatus: 'none',
+                paymentStatus: 'none'
             };
-            setDoc(userRef, newUser).then(() => {
-                console.log("New user initialized with 10 credits");
-            }).catch(err => console.error("User init error:", err));
+            setDoc(userRef, newUser).catch(err => {
+                console.error("User init error:", err);
+                alert("Firebase Error (Init): " + err.message);
+            });
         }
+    }, (error) => {
+        console.error("Snapshot Error:", error);
+        alert("Firebase Sync Error: " + error.message);
     });
 }
 
@@ -643,9 +661,11 @@ window.runAnalysis = async () => {
             
             displayResults(data);
             
-            // Only deduct credit if using default system capacity (no own key)
-            if (userState.loggedIn && !isUsingOwnKey) {
-                deductCredit();
+            // --- COMPULSORY CREDIT DEDUCTION ---
+            if (userState.loggedIn) {
+                deductCredit().catch(err => {
+                    alert("Credit deduction failed! Your analysis might not have been recorded. Error: " + err.message);
+                });
             }
         } else {
             throw new Error("Invalid AI Response Structure (No JSON found)");
