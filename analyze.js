@@ -724,14 +724,25 @@ window.exportAnalysis = async (format) => {
         useCORS: true,
         logging: false,
         onclone: (clonedDoc) => {
-            if (format === 'pdf') {
-                const card = clonedDoc.querySelector('.results-card');
+            const card = clonedDoc.querySelector('.results-card');
+            if (format === 'pdf' && card) {
                 card.style.background = "#fff";
                 card.style.color = "#000";
-                clonedDoc.querySelectorAll('.result-label, .color-code, .copy-hint, #overallScoreText, .font-name').forEach(el => {
+                card.style.position = "static";
+                card.style.width = "800px"; // Standard width for capture
+                
+                clonedDoc.querySelectorAll('.result-label, .color-code, .copy-hint, #overallScoreText, .font-name, .status-indicator, .chip').forEach(el => {
                     el.style.color = "#000";
                 });
-                clonedDoc.querySelectorAll('.export-group').forEach(el => el.style.display = "none");
+                clonedDoc.querySelectorAll('.chip').forEach(el => {
+                    el.style.background = "#f0f0f0";
+                    el.style.border = "1px solid #ccc";
+                });
+                clonedDoc.querySelectorAll('.score-orb').forEach(el => {
+                    el.style.background = "#eee";
+                    el.style.borderColor = "#000";
+                });
+                clonedDoc.querySelectorAll('.export-group, .primary-btn, .close-btn').forEach(el => el.style.display = "none");
             }
         }
     };

@@ -605,23 +605,82 @@ footer {
 }
 
 @media print {
-    .nav-bar, .hero-section, .workspace-card, .logout-btn, .export-group, .primary-btn, .background-backdrop {
-        display: none !important;
+    /* Hide everything by default */
+    body * {
+        visibility: hidden;
     }
-    body { background: #fff !important; color: #000 !important; }
-    .results-card { 
-        width: 100% !important; 
-        border: none !important; 
-        box-shadow: none !important; 
+    
+    /* Show only the results card and its children */
+    .results-card, .results-card * {
+        visibility: visible;
+    }
+
+    /* Reset layout for print */
+    .results-card {
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 100% !important;
         background: #fff !important;
-        position: static !important;
+        color: #000 !important;
+        border: none !important;
+        box-shadow: none !important;
+        backdrop-filter: none !important;
+        padding: 20px !important;
+    }
+
+    .app-container {
+        display: block !important;
         padding: 0 !important;
     }
-    .card-content { padding: 0 !important; color: #000 !important; }
-    .status-indicator { color: #666 !important; }
-    .result-label, .color-code, .copy-hint { color: #555 !important; }
-    .chip { border: 1px solid #ddd !important; background: #f9f9f9 !important; color: #000 !important; }
-    .score-inner h2, .score-inner div { color: #000 !important; }
-    #overallScoreText { color: #000 !important; }
-    .font-item { background: #f5f5f5 !important; border: 1px solid #ddd !important; color: #000 !important; }
+
+    .card-content {
+        padding: 0 !important;
+        background: #fff !important;
+        color: #000 !important;
+    }
+
+    #analysisResults {
+        display: block !important;
+    }
+
+    /* Force text colors for print readability */
+    h1, h2, h3, p, div, span, b, i {
+        color: #000 !important;
+    }
+
+    .result-item {
+        border-bottom: 1px solid #eee !important;
+        padding: 10px 0 !important;
+        margin-bottom: 10px !important;
+    }
+
+    .chip {
+        background: #f0f0f0 !important;
+        border: 1px solid #ccc !important;
+        color: #333 !important;
+        box-shadow: none !important;
+    }
+
+    .status-indicator {
+        font-size: 1.2rem !important;
+        color: #333 !important;
+        border-bottom: 2px solid #000 !important;
+        display: block !important;
+        margin-bottom: 20px !important;
+    }
+
+    /* Hide buttons and interactive elements in print */
+    .export-group, .primary-btn, .nav-bar, .hero-section, .workspace-card, .background-backdrop, .export-btn, .close-btn {
+        display: none !important;
+    }
+
+    .score-orb {
+        background: #eee !important;
+        border: 2px solid #000 !important;
+    }
+    
+    .score-inner * {
+        color: #000 !important;
+    }
 }
