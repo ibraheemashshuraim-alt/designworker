@@ -613,14 +613,14 @@ window.runAnalysis = async () => {
             جواب صرف اردو میں دیں۔
         `;
 
-        const modelsToTry = ["gemini-2.0-flash", "gemini-2.5-flash", "gemini-2.0-flash-lite", "gemini-1.5-flash"];
+        const modelsToTry = ["gemini-2.0-flash", "gemini-2.5-flash", "gemini-2.0-flash-lite", "gemini-2.0-flash-001"];
         let response = null;
         let dataJson = null;
         let lastErrorMsg = null;
 
         // Step 3: Fetch Loop
         for (const modelName of modelsToTry) {
-            console.log(`v4.0.3: Trying ${modelName}...`);
+            console.log(`v4.0.5: Trying ${modelName}...`);
             
             const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${keyToUse}`;
             
@@ -641,18 +641,13 @@ window.runAnalysis = async () => {
                 
                 dataJson = await response.json();
                 if (response.ok) {
-                    console.log(`v4.0.3: ${modelName} Success!`);
+                    console.log(`v4.0.5: ${modelName} Success!`);
                     break;
                 }
                 
-                // Handle different error messages
+                // Track error
                 lastErrorMsg = dataJson.error?.message || response.statusText;
                 console.warn(`${modelName} failed:`, lastErrorMsg);
-                
-                // If it's a quota error, we might want to try the next model regardless
-                if (response.status === 429) {
-                    console.warn("Rate limit/Quota hit for", modelName);
-                }
             } catch (err) {
                 lastErrorMsg = err.message;
                 console.warn(`${modelName} error:`, err.message);
