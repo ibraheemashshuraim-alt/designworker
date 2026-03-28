@@ -687,9 +687,13 @@ window.runAnalysis = async () => {
         
         displayResults(JSON.parse(text));
 
+        // v4.2.1: Credit system temporarily bypassed for debugging
+        /*
         if (userState.loggedIn && !userState.isAdmin && userState.licenseStatus !== 'approved') {
             deductCredit().catch(e => console.log("Credit deduction handled in background."));
         }
+        */
+        console.log("v4.2.1: Success - Credit deduction bypassed for debug.");
 
     } catch (err) {
         console.error("ANALYSIS ERROR:", err);
