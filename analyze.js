@@ -37,7 +37,7 @@ let userState = {
     isAdmin: false
 };
 
-const ADMIN_EMAIL = "ibraheemashshuraim@gmail.com";
+const ADMIN_EMAILS = ["ibraheemashshuraim@gmail.com", "ibraheemashshuraim.alt@gmail.com"];
 
 // DOM Elements
 const elements = {
@@ -129,7 +129,7 @@ async function setupUserPersistence(user) {
             userState.email = user.email;
             userState.uid = user.uid;
             userState.photoURL = user.photoURL;
-            userState.isAdmin = (user.email === ADMIN_EMAIL);
+            userState.isAdmin = ADMIN_EMAILS.includes(user.email);
             
             updateUI();
         } else {
@@ -173,8 +173,8 @@ window.logout = async () => {
 };
 
 // --- VERSION TAG ---
-window.DESIGN_VERSION = "3.4";
-console.log("DesignCheck v3.4 Aggressive Sync Loaded");
+window.DESIGN_VERSION = "3.5";
+console.log("DesignCheck v3.5 Production Fixes Loaded");
 
 // ================ UI UPDATES ================
 function updateUI() {
@@ -210,9 +210,10 @@ function updateUI() {
         if (elements.profileCredits) elements.profileCredits.innerText = displayStr;
         if (elements.profileCreditsModal) elements.profileCreditsModal.innerText = displayStr;
 
-        // Upgrade Prompt Visibility (v3.4 Aggressive)
-        const isOutOfCredits = (credits <= 0 && !hasLocalKey && userState.licenseStatus !== 'approved');
-        console.log("v3.4 Aggressive Sync - Credits:", credits, "OutOfCredits:", isOutOfCredits);
+        // Upgrade Prompt Visibility (v3.5 Unified)
+        // If credits <= 0, we show BUY button even if they have a local key or are admin (for testing)
+        const isOutOfCredits = (credits <= 0 && userState.licenseStatus !== 'approved');
+        console.log("v3.5 Logic - Credits:", credits, "OutOfCredits:", isOutOfCredits);
         
         const rBtn = document.getElementById('runAnalysisBtn');
         const bBtn = document.getElementById('buyCreditsBtn');
@@ -220,13 +221,12 @@ function updateUI() {
         if (isOutOfCredits) {
             if (elements.buyCreditsSection) elements.buyCreditsSection.classList.remove('hidden');
             if (rBtn) {
-                rBtn.style.display = 'none'; // Use direct style as backup
+                rBtn.style.display = 'none';
                 rBtn.classList.add('hidden');
             }
             if (bBtn) {
                 bBtn.style.display = 'block';
                 bBtn.classList.remove('hidden');
-                console.log("FORCED SHOW BUY BUTTON");
             }
         } else {
             if (elements.buyCreditsSection) elements.buyCreditsSection.classList.add('hidden');
@@ -269,15 +269,15 @@ window.openAdminPanel = async () => {
         querySnapshot.forEach(doc => {
             const data = doc.data();
             // Filter out admin
-            if (data.email !== ADMIN_EMAIL) {
+            if (!ADMIN_EMAILS.includes(data.email)) {
                 users.push({id: doc.id, ...data});
             }
         });
 
-        // Sorting: Pending claims first, then license claims, then recently active
+        // Sorting: Pending claims first, then recently active
         users.sort((a, b) => {
-            if (a.paymentStatus === 'pending' || a.licenseStatus === 'pending') return -1;
-            if (b.paymentStatus === 'pending' || b.licenseStatus === 'pending') return 1;
+            if (a.paymentStatus === 'pending') return -1;
+            if (b.paymentStatus === 'pending') return 1;
             return (b.lastActive?.seconds || 0) - (a.lastActive?.seconds || 0);
         });
 
@@ -288,14 +288,8 @@ window.openAdminPanel = async () => {
 
         users.forEach((data) => {
             const lastActive = data.createdAt ? new Date(data.createdAt.seconds * 1000).toLocaleDateString() : 'New';
-            const isPendingCredit = data.paymentStatus === 'pending';
-            const isPendingLicense = data.licenseStatus === 'pending';
-            const hasLicense = data.licenseStatus === 'approved';
-            
             let statusBadge = `<span class="status-badge badge-trial">Free User</span>`;
-            if (hasLicense) statusBadge = `<span class="status-badge badge-license"><i class="fa-solid fa-crown"></i> Licensed</span>`;
-            else if (isPendingLicense) statusBadge = `<span class="status-badge badge-pending">License Pending</span>`;
-            else if (isPendingCredit) statusBadge = `<span class="status-badge badge-pending">Payment Pending</span>`;
+            if (isPendingCredit) statusBadge = `<span class="status-badge badge-pending">Payment Pending</span>`;
             else if (data.credits > 10) statusBadge = `<span class="status-badge badge-premium">Premium User</span>`;
 
             const card = document.createElement('div');
@@ -337,13 +331,7 @@ window.openAdminPanel = async () => {
                 <div class="user-actions">
                     ${isPendingCredit ? `
                         <button class="action-btn claim-approve" onclick="grantCredits('${data.id}', 50, true)">Approve Payment (+50)</button>
-                    ` : ''}
-                    ${isPendingLicense ? `
-                        <button class="action-btn claim-approve" style="background: #ffd700;" onclick="approveLicense('${data.id}')">Approve Full License</button>
-                    ` : ''}
-                    
-                    ${(isPendingCredit || isPendingLicense) ? `
-                        <button class="action-btn danger-btn" style="grid-column: span 2;" onclick="rejectClaim('${data.id}')">Reject Claim</button>
+                        <button class="action-btn danger-btn" onclick="rejectClaim('${data.id}')">Reject Claim</button>
                     ` : ''}
 
                     <button class="action-btn approve" onclick="grantCredits('${data.id}', 10)">+10 Creds</button>
@@ -564,10 +552,7 @@ window.runAnalysis = async () => {
         }
     }
 
-    // Default API Key Fallback if none provided
-    if (!keyToUse) {
-        keyToUse = "AIzaSyC7f4QH6CSRN6dAhGNm7P4kMHTv12mtdEo"; // Default system key
-    }
+    if (!keyToUse) keyToUse = "AIzaSyC7f4QH6CSRN6dAhGNm7P4kMHTv12mtdEo";
 
     elements.scanningModal.classList.remove('hidden');
     elements.initialAnalysisMsg.classList.add('hidden');
@@ -577,132 +562,64 @@ window.runAnalysis = async () => {
         const prompt = `
             تم ایک سینئر گرافک ڈیزائنر اور نقاد ہو (Senior Graphic Designer & Critic)۔
             دیے گئے ڈیزائن کا گہرائی سے جائزہ لو (Detailed Critique)۔
-            تمہیں ان پہلوؤں پر توجہ دینی ہے:
-            1. Layout & Alignment (ترتیب اور الائنمنٹ)
-            2. Color Theory & Contrast (رنگوں کا انتخاب اور تضاد)
-            3. Typography & Hierarchy (فونٹ اور اہمیت کا تعین)
-            4. Overall Impact (مجموعی تاثر)
-
-            براہ کرم نتیجہ صرف JSON فارمیٹ میں فراہم کریں اس ڈھانچے کے ساتھ:
+            نتیجہ صرف JSON فارمیٹ میں فراہم کریں اس ڈھانچے کے ساتھ:
             {
                 "score": 0 سے 100 کے درمیان ایک نمبر,
-                "accessibility": "ایکسیسبلٹی کے بارے میں ایک جملہ",
-                "contrast": "رنگوں کے تضاد کے بارے میں ایک جملہ",
-                "strengths": ["پہلی خوبی", "دوسری خوبی", "تیسری خوبی"],
-                "improvements": ["پہلی بہتری", "دوسری بہتری", "تیسری بہتری"],
-                "colors": ["Hex Code 1", "Hex Code 2", "Hex Code 3"],
-                "fonts": ["Font Family 1", "Font Family 2"]
+                "accessibility": "ایکسیسبلٹی کے بارے میں ایک جملہ (اردو)",
+                "contrast": "رنگوں کے تضاد کے بارے میں ایک جملہ (اردو)",
+                "strengths": ["خوبی 1", "خوبی 2", "خوبی 3"],
+                "improvements": ["بہتری 1", "بہتری 2", "بہتری 3"],
+                "colors": ["#hex1", "#hex2"],
+                "fonts": ["Font1", "Font2"]
             }
-            جواب صرف اردو (Urdu) میں ہونا چاہیے۔ صرف JSON واپس کریں، کوئی اضافی ٹیکسٹ نہ لکھیں۔
+            جواب صرف اردو میں ہونا چاہیے۔
         `;
 
         const mimeType = currentImageBase64.substring(currentImageBase64.indexOf(':') + 1, currentImageBase64.indexOf(';'));
         const base64Data = currentImageBase64.split(',')[1];
-
-        // Fetch options without the URL, as URL changes per model
-        const fetchOptions = {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                contents: [{
-                    parts: [
-                        { text: prompt },
-                        { inline_data: { mime_type: mimeType || "image/jpeg", data: base64Data } }
-                    ]
-                }],
-                generationConfig: {
-                    temperature: 0.4
-                }
-            })
-        };
-
         const modelsToTry = ["gemini-2.0-flash", "gemini-1.5-flash"];
+
         let response = null;
         let dataJson = null;
         let lastErrorMsg = null;
 
         for (const modelName of modelsToTry) {
-            console.log(`Trying model via fetch: ${modelName}...`);
+            console.log(`Trying ${modelName}...`);
             const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${keyToUse}`;
-            
             try {
-                response = await fetch(url, fetchOptions);
+                response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: prompt }, { inline_data: { mime_type: mimeType || "image/jpeg", data: base64Data } }] }],
+                        generationConfig: { response_mime_type: "application/json" }
+                    }),
+                    signal: AbortSignal.timeout(15000)
+                });
                 dataJson = await response.json();
-                
-                if (response.ok) {
-                    console.log(`Success with model: ${modelName}`);
-                    break; // Stop loop because we got a successful response
-                } else {
-                    let errMsg = `${modelName} Error: ${response.status}`;
-                    if (dataJson.error && dataJson.error.message) {
-                        errMsg += " - " + dataJson.error.message;
-                    }
-                    console.warn(errMsg);
-                    lastErrorMsg = errMsg;
-                    // Force response to null so we don't proceed outside the loop
-                    response = null; 
-                }
+                if (response.ok) break;
+                lastErrorMsg = dataJson.error?.message || response.statusText;
             } catch (err) {
-                console.warn(`Fetch failed for ${modelName}:`, err);
                 lastErrorMsg = err.message;
-                response = null;
             }
         }
 
-        if (!response || !dataJson) {
-             throw new Error("All models failed. Last error: " + (lastErrorMsg || "Unknown"));
-        }
+        if (!response || !dataJson) throw new Error(lastErrorMsg || "All models failed.");
 
-        // Search for text in the response structure
         const text = dataJson.candidates?.[0]?.content?.parts?.[0]?.text;
-        
-        if (!text) {
-             throw new Error("API نے کوئی ٹیکسٹ واپس نہیں کیا۔");
-        }
-        
-        console.log("AI Raw Response:", text);
-        
-        // Robust JSON parsing (handles potential markdown code blocks)
-        const jsonMatch = text.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-            let data;
-            try {
-                data = JSON.parse(jsonMatch[0]);
-            } catch (parseErr) {
-                console.error("JSON Parsing Error:", parseErr);
-                throw new Error("AI نے درست JSON فارمیٹ میں جواب نہیں دیا۔");
-            }
-            
-            displayResults(data);
-            
-            // --- COMPULSORY CREDIT DEDUCTION ---
-            if (userState.loggedIn && !userState.isAdmin && userState.licenseStatus !== 'approved') {
-                deductCredit().catch(err => console.error("Deduction error:", err));
-            }
-        } else {
-            throw new Error("Invalid AI Response Structure (No JSON found)");
+        if (!text) throw new Error("AI نے کوئی جواب نہیں دیا۔");
+
+        const data = JSON.parse(text);
+        displayResults(data);
+
+        // Deduct Credit
+        if (userState.loggedIn && !userState.isAdmin && userState.licenseStatus !== 'approved') {
+            deductCredit().catch(e => console.error("Deduction error:", e));
         }
 
-    } catch (e) {
-        console.error("Analysis Error:", e);
-        let errorMsg = e.message;
-        
-        if (errorMsg.includes("404") || errorMsg.includes("not found")) {
-            try {
-                const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${keyToUse}`);
-                const listData = await listRes.json();
-                let availableModels = "(کوئی ماڈل دستیاب نہیں)";
-                if (listData.models && listData.models.length > 0) {
-                    availableModels = listData.models.map(m => m.name.replace('models/', '')).join(",  ");
-                }
-                
-                errorMsg = `آپ کی شامل کی گئی API Key (جو ${keyToUse.substring(0, 8)}... سے شروع ہو رہی ہے) پر 'gemini-1.5-flash' نہیں ہے۔\n\nآپ کی Key پر صرف یہ ماڈلز دستیاب ہیں:\n[ ${availableModels} ]\n\nبراہ کرم aistudio.google.com پر جا کر وہ Key بنائیں جس پر Gemini 1.5 کام کرے۔`;
-            } catch(fetchErr) {
-                errorMsg = `آپ کی شامل کی گئی API Key (جو ${keyToUse.substring(0, 8)}... سے شروع ہو رہی ہے) پر 'Gemini API' ایکٹیو نہیں ہے۔\n\nکیا آپ نے Firebase کی Key استعمال کی ہے؟\nبراہ کرم نیا ٹیب کھولیں اور aistudio.google.com پر جا کر اپنے گوگل اکاؤنٹ سے لاگ ان کریں اور 'Get API Key' پر کلک کر کے بالکل نئی Key بنائیں اور اسے یہاں Settings میں شامل کریں۔`;
-            }
-        }
-
-        alert(`تجزیہ کے دوران کوئی تکنیکی مسئلہ پیش آیا ہے۔\nایرر کی تفصیل:\n${errorMsg}\n\nبراہ کرم یقینی بنائیں کہ آپ کی API Key درست ہے اور انٹرنیٹ چل رہا ہے۔`);
+    } catch (err) {
+        console.error("ANALYSIS FAILED:", err);
+        alert("تجزیہ کے دوران مسئلہ پیش آیا: " + err.message);
     } finally {
         elements.scanningModal.classList.add('hidden');
     }

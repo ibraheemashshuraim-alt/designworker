@@ -42,9 +42,6 @@
                         <div id="profileCreditsModal" class="credit-box-value">--</div>
                     </div>
 
-                    <button class="btn secondary-btn" style="width: 100%; margin-top: 10px; font-size: 0.8rem; opacity: 0.6;" onclick="forceZeroCredits()">
-                        Force 0 Credits (Test Only)
-                    </button>
                     
                     <div id="buyCreditsSection" class="modal-section hidden">
                         <h4><i class="fa-solid fa-gem" style="color:var(--neon-purple);"></i> پریمیم کریڈٹس حاصل کریں</h4>
@@ -65,11 +62,6 @@
                         <p id="saveStatusMsg" style="color: var(--success-green); font-size: 0.7rem; margin-top: 5px; display: none;">محفوظ کر لی گئی!</p>
                     </div>
 
-                    <div class="modal-section">
-                        <button onclick="toggleModal('licenseModal', true)" class="btn secondary-btn" style="width: 100%; background: linear-gradient(45deg, #ffd700, #ffb300); color: #000; font-weight: 800;">
-                            <i class="fa-solid fa-crown"></i> ٹول کا لائسنس خریدیں (1.5 Lakh)
-                        </button>
-                    </div>
 
                     <div id="adminPanelSection" class="modal-section hidden">
                         <button onclick="openAdminPanel()" class="btn admin-btn">
@@ -214,20 +206,6 @@
     </div>
 
     <!-- Modals -->
-    <div id="licenseModal" class="modal hidden">
-        <div class="modal-content" style="max-width: 500px; border-color: #ffd700;">
-            <span class="close-btn" onclick="toggleModal('licenseModal', false)">&times;</span>
-            <div style="text-align: center;">
-                <i class="fa-solid fa-crown" style="font-size: 3rem; color: #ffd700; margin-bottom: 15px; filter: drop-shadow(0 0 10px #ffd700);"></i>
-                <h2 style="color: #ffd700; margin-bottom: 10px;">ٹول کا مکمل لائسنس</h2>
-                <div class="price-tag" style="font-size: 2rem; font-weight: 800; color: #fff; margin-bottom: 20px;">1,50,000 <small>PKR</small></div>
-                <div class="modal-section" style="background: rgba(255, 215, 0, 0.05); border: 1px solid rgba(255, 215, 0, 0.2); border-radius: 15px; padding: 15px;">
-                    <p>SadaPay: <span class="selectable-text">03703603184</span></p>
-                </div>
-                <button onclick="toggleModal('licenseClaimModal', true)" class="btn primary-btn" style="margin-top: 20px; width: 100%; background: #ffd700; color: #000;">کلیم فارم</button>
-            </div>
-        </div>
-    </div>
 
     <div id="creditClaimModal" class="modal hidden">
         <div class="modal-content" style="max-width: 400px; border-color: var(--neon-purple);">
@@ -239,15 +217,6 @@
         </div>
     </div>
 
-    <div id="licenseClaimModal" class="modal hidden">
-        <div class="modal-content" style="max-width: 400px; border-color: #ffd700;">
-            <span class="close-btn" onclick="toggleModal('licenseClaimModal', false)">&times;</span>
-            <h3 style="color: #ffd700;">لائسنس کلیم فارم</h3>
-            <input type="text" id="licenseNameInput" class="custom-input" placeholder="آپ کا نام">
-            <input type="text" id="licenseTidInput" class="custom-input" placeholder="Transaction ID (TID)">
-            <button onclick="submitLicenseClaim()" class="btn primary-btn" style="width: 100%; margin-top: 15px; background: #ffd700; color: #000;">کلیم کریں</button>
-        </div>
-    </div>
 
     <div id="scanningModal" class="modal hidden">
         <div class="modal-content" style="text-align: center; border-color: var(--neon-cyan);">
@@ -258,7 +227,7 @@
     </div>
 
     <footer style="display: flex; justify-content: space-between; align-items: center; padding: 20px 40px; border-top: 1px solid var(--border-dim); font-size: 0.8rem; color: var(--text-muted);">
-        <div>Powered by <strong>Gemini AI</strong> | <span id="uiVersion" style="color: var(--neon-cyan);">v3.4</span></div>
+        <div>Powered by <strong>Gemini AI</strong> | <span id="uiVersion" style="color: var(--neon-cyan);">v3.5</span></div>
     </footer>
 
     <script type="module" src="analyze.js"></script>
