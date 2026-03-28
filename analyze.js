@@ -570,7 +570,7 @@ window.runAnalysis = async () => {
     const scanModal = elements.scanningModal;
     const scanStatusText = scanModal ? scanModal.querySelector('p') : null;
     if (scanModal) scanModal.classList.remove('hidden');
-    if (scanStatusText) scanStatusText.innerText = "تصویر کا سائز کم کیا جا رہا ہے...";
+    if (scanStatusText) scanStatusText.innerText = "اے آئی آپ کے ڈیزائن کا جائزہ لے رہا ہے انتظار کریں";
     
     if (elements.initialAnalysisMsg) elements.initialAnalysisMsg.classList.add('hidden');
     if (elements.analysisResults) elements.analysisResults.classList.add('hidden');
@@ -590,9 +590,8 @@ window.runAnalysis = async () => {
         if (!keyToUse) keyToUse = "AIzaSyC7f4QH6CSRN6dAhGNm7P4kMHTv12mtdEo";
 
         // Step 1: Compress
-        console.log("v4.0.1: Compressing image...");
+        console.log("v4.0.2: Compressing image...");
         const compressedBase64 = await compressImage(currentImageBase64);
-        if (scanStatusText) scanStatusText.innerText = "AI سے رابطہ کیا جا رہا ہے...";
         
         const mimeType = "image/jpeg";
         const base64Data = compressedBase64.split(',')[1];
@@ -614,15 +613,14 @@ window.runAnalysis = async () => {
             جواب صرف اردو میں دیں۔
         `;
 
-        const modelsToTry = ["gemini-2.0-flash", "gemini-1.5-flash"];
+        const modelsToTry = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.0-flash-lite"];
         let response = null;
         let dataJson = null;
         let lastErrorMsg = null;
 
         // Step 3: Fetch Loop
         for (const modelName of modelsToTry) {
-            console.log(`v4.0.1: Trying ${modelName}...`);
-            if (scanStatusText) scanStatusText.innerText = `AI (${modelName}) جواب تیار کر رہا ہے...`;
+            console.log(`v4.0.2: Trying ${modelName}...`);
             
             const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${keyToUse}`;
             
@@ -643,7 +641,7 @@ window.runAnalysis = async () => {
                 
                 dataJson = await response.json();
                 if (response.ok) {
-                    console.log(`v4.0.1: ${modelName} Success!`);
+                    console.log(`v4.0.2: ${modelName} Success!`);
                     break;
                 }
                 lastErrorMsg = dataJson.error?.message || response.statusText;
