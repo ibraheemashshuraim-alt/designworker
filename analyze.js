@@ -583,14 +583,12 @@ window.runAnalysis = async () => {
         alert("تجزیہ بہت دیر لے رہا ہے۔ براہ کرم انٹرنیٹ چیک کریں اور دوبارہ کوشش کریں۔");
     }, 15000);
 
-    const controller = new AbortController();
-
     try {
         let keyToUse = getApiKey() || (elements.apiKeyInput ? elements.apiKeyInput.value.trim() : "");
         if (!keyToUse) keyToUse = "AIzaSyC7f4QH6CSRN6dAhGNm7P4kMHTv12mtdEo";
 
         // Step 1: Compress
-        console.log("v4.0.2: Compressing image...");
+        console.log("v4.0.7: Compressing image...");
         const compressedBase64 = await compressImage(currentImageBase64);
         
         const mimeType = "image/jpeg";
@@ -613,21 +611,22 @@ window.runAnalysis = async () => {
             جواب صرف اردو میں دیں۔
         `;
 
-        const modelsToTry = ["gemini-2.0-flash", "gemini-2.5-flash", "gemini-2.0-flash-lite", "gemini-2.0-flash-001"];
+        const modelsToTry = ["gemini-2.0-flash-exp", "gemini-2.0-flash", "gemini-2.1-flash", "gemini-2.0-flash-lite"];
         let response = null;
         let dataJson = null;
         let lastErrorMsg = null;
 
         // Step 3: Fetch Loop
         for (const modelName of modelsToTry) {
-            console.log(`v4.0.5: Trying ${modelName}...`);
+            console.log(`v4.0.7 Attempt: ${modelName}`);
+            const controller = new AbortController(); // FIX: Create new controller for EACH attempt
             
             const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${keyToUse}`;
             
             try {
                 // Compatibility for AbortSignal.timeout
-                const fetchSignal = AbortSignal.timeout ? AbortSignal.timeout(7000) : controller.signal;
-                if (!AbortSignal.timeout) setTimeout(() => controller.abort(), 7000);
+                const fetchSignal = AbortSignal.timeout ? AbortSignal.timeout(8000) : controller.signal;
+                if (!AbortSignal.timeout) setTimeout(() => controller.abort(), 8000);
 
                 response = await fetch(url, {
                     method: 'POST',
