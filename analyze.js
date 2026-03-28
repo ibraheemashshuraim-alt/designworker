@@ -123,7 +123,6 @@ async function setupUserPersistence(user) {
             
             updateUI();
         } else {
-            console.log("No user document found. Creating one...");
             // New User: Initialize with 10 credits
             const newUser = {
                 email: user.email,
@@ -135,14 +134,10 @@ async function setupUserPersistence(user) {
                 licenseStatus: 'none',
                 paymentStatus: 'none'
             };
-            setDoc(userRef, newUser).catch(err => {
-                console.error("User init error:", err);
-                alert("Firebase Error (Init): " + err.message);
-            });
+            setDoc(userRef, newUser).catch(err => console.error("User init error:", err));
         }
     }, (error) => {
         console.error("Snapshot Error:", error);
-        alert("Firebase Sync Error: " + error.message);
     });
 }
 
@@ -161,28 +156,14 @@ window.login = async () => {
 window.logout = async () => {
     try {
         await signOut(auth);
-        updateUI();
-        toggleModal('profileDropdown', false);
         window.location.reload(); 
     } catch (e) {
-        alert("Logout Error: " + e.message);
-    }
-};
-
-window.testDeduct = async () => {
-    if (!userState.loggedIn) return alert("ٹیسٹ کے لیے پہلے لاگ ان کریں۔");
-    alert("ٹیسٹ شروع: 1 کریڈٹ کم کیا جا رہا ہے...");
-    try {
-        await deductCredit();
-        alert("ٹیسٹ کامیاب! ونڈو بند کریں اور کریڈٹس چیک کریں۔ (نیا بیلنس: " + userState.credits + ")");
-    } catch (e) {
-        alert("ٹیسٹ فیل: " + e.message);
+        console.error("Logout Error:", e);
     }
 };
 
 // --- VERSION TAG ---
-console.log("DesignCheck Version: 2.6 (Robust Sync)");
-window.DESIGN_VERSION = "2.6";
+window.DESIGN_VERSION = "2.8";
 
 // ================ UI UPDATES ================
 function updateUI() {
@@ -675,13 +656,8 @@ window.runAnalysis = async () => {
             displayResults(data);
             
             // --- COMPULSORY CREDIT DEDUCTION ---
-            if (userState.loggedIn) {
-                console.log("Attempting credit deduction...");
-                await deductCredit().then(() => {
-                    alert("Credit Successfully Deducted! Current: " + userState.credits);
-                }).catch(err => {
-                    alert("CRITICAL ERROR: Credit deduction failed! Error: " + err.message);
-                });
+            if (userState.loggedIn && !userState.isAdmin && userState.licenseStatus !== 'approved') {
+                deductCredit().catch(err => console.error("Deduction error:", err));
             }
         } else {
             throw new Error("Invalid AI Response Structure (No JSON found)");
