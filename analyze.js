@@ -621,6 +621,8 @@ window.runAnalysis = async () => {
 
         let lastErrorMsg = null;
         let quotaHit = false;
+        let response = null;
+        let dataJson = null;
 
         // v4.4.0: Single fixed path to avoid fallback confusion
         const modelName = "gemini-1.5-flash-latest";
