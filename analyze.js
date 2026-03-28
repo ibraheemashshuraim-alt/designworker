@@ -10,7 +10,7 @@ window.addEventListener('error', (e) => {
     alert("فنی خرابی: " + e.message + " (" + e.lineno + ":" + e.colno + ")"); 
 });
 console.log("Analyze script loading started...");
-alert("DesignCheck Script v3.9 Loaded! (Please confirm)");
+// alert("DesignCheck Script v3.9 Loaded! (Please confirm)"); // Removed
 
 // Firebase Configuration
 const firebaseConfig = {
@@ -179,8 +179,8 @@ window.logout = async () => {
 };
 
 // --- VERSION TAG ---
-window.DESIGN_VERSION = "3.9";
-console.log("DesignCheck v3.9 Stability Final Loaded");
+window.DESIGN_VERSION = "4.0";
+console.log("DesignCheck v4.0 Absolute Stability Loaded");
 
 // Global Modal Toggle
 window.toggleModal = (id, show) => {
@@ -512,12 +512,17 @@ function getApiKey() {
     return localStorage.getItem('gemini_api_key');
 }
 
-// IMAGE COMPRESSION (v3.9)
+// IMAGE COMPRESSION (v3.9+)
 async function compressImage(base64Str, maxWidth = 1024, maxHeight = 1024) {
     return new Promise((resolve) => {
         const img = new Image();
-        img.src = base64Str;
+        const timeout = setTimeout(() => {
+            console.warn("v4.0 Compression Timeout - Falling back to original");
+            resolve(base64Str);
+        }, 3000); // 3s safety timeout
+
         img.onload = () => {
+            clearTimeout(timeout);
             const canvas = document.createElement('canvas');
             let width = img.width;
             let height = img.height;
@@ -538,9 +543,13 @@ async function compressImage(base64Str, maxWidth = 1024, maxHeight = 1024) {
             canvas.height = height;
             const ctx = canvas.getContext('2d');
             ctx.drawImage(img, 0, 0, width, height);
-            resolve(canvas.toDataURL('image/jpeg', 0.8)); // 80% quality
+            resolve(canvas.toDataURL('image/jpeg', 0.8));
         };
-        img.onerror = () => resolve(base64Str); // Fallback to original
+        img.onerror = () => {
+            clearTimeout(timeout);
+            resolve(base64Str);
+        };
+        img.src = base64Str;
     });
 }
 
