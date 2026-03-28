@@ -617,10 +617,11 @@ window.runAnalysis = async () => {
         let response = null;
         let dataJson = null;
         let lastErrorMsg = null;
+        let quotaHit = false;
 
         for (const modelName of modelsToTry) {
             for (const endpoint of endpoints) {
-                console.log(`v4.1.0 Attempt: ${modelName} (${endpoint})`);
+                console.log(`v4.1.1 Attempt: ${modelName} (${endpoint})`);
                 const controller = new AbortController();
                 const url = `https://generativelanguage.googleapis.com/${endpoint}/models/${modelName}:generateContent?key=${keyToUse}`;
                 
@@ -628,26 +629,33 @@ window.runAnalysis = async () => {
                     const fetchSignal = AbortSignal.timeout ? AbortSignal.timeout(8000) : controller.signal;
                     if (!AbortSignal.timeout) setTimeout(() => controller.abort(), 8000);
 
+                    // v1 endpoint doesn't support response_mime_type in generationConfig for all models
+                    const payload = {
+                        contents: [{ parts: [{ text: prompt }, { inline_data: { mime_type: mimeType, data: base64Data } }] }]
+                    };
+                    if (endpoint === "v1beta") {
+                        payload.generationConfig = { response_mime_type: "application/json" };
+                    }
+
                     response = await fetch(url, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            contents: [{ parts: [{ text: prompt }, { inline_data: { mime_type: mimeType, data: base64Data } }] }],
-                            generationConfig: { response_mime_type: "application/json" }
-                        }),
+                        body: JSON.stringify(payload),
                         signal: fetchSignal
                     });
                     
                     dataJson = await response.json();
                     if (response.ok) {
-                        console.log(`v4.1.0 SUCCESS: ${modelName} (${endpoint})`);
+                        console.log(`v4.1.1 SUCCESS: ${modelName} (${endpoint})`);
                         break;
                     }
-                    lastErrorMsg = `${modelName} (${endpoint}): ${dataJson.error?.message || response.statusText} (Status: ${response.status})`;
-                    if (response.status === 404) continue;
+                    
+                    if (response.status === 429) quotaHit = true;
+
+                    lastErrorMsg = `${modelName} (${endpoint}): ${dataJson.error?.message || response.statusText} (${response.status})`;
+                    if (response.status === 404 || response.status === 400) continue; 
                 } catch (err) {
                     lastErrorMsg = `${modelName}: ${err.message}`;
-                    if (err.name === 'AbortError') lastErrorMsg = `${modelName}: AI link timeout (8s)`;
                     continue;
                 }
             }
@@ -655,12 +663,11 @@ window.runAnalysis = async () => {
         }
 
         if (!response?.ok) {
-            const finalErr = lastErrorMsg || "رابطہ سست ہے";
-            if (finalErr.toLowerCase().includes("quota") || finalErr.includes("429") || finalErr.includes("limit")) {
-                const source = isDefaultKey ? "سسٹم کی لمیٹ ختم ہے" : "آپ کی Key کی لمیٹ ختم ہے";
-                throw new Error(`فری لمیٹ مکمل ہے (${source})۔ براہ کرم 1 منٹ انتظار کریں یا نئی Key آزمائیں۔\n\n[Debug: ${finalErr}]`);
+            if (quotaHit) {
+                const source = isDefaultKey ? "سسٹم کی لمیٹ ختم ہے" : "آپ کی مخصوص Key کی لمیٹ ختم ہے";
+                throw new Error(`فری لمیٹ مکمل ہے (${source})۔ براہ کرم 1 منٹ انتظار کریں یا نئی Key آزمائیں۔`);
             }
-            throw new Error(`ٹیکنیکل ایرر: ${finalErr}`);
+            throw new Error(`ٹیکنیکل ایرر: ${lastErrorMsg || "رابطہ سست ہے"}`);
         }
 
         if (scanStatusText) scanStatusText.innerText = "نتائج دکھائے جا رہے ہیں...";
