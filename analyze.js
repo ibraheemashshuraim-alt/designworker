@@ -513,8 +513,8 @@ function getApiKey() {
     return localStorage.getItem('gemini_api_key');
 }
 
-// IMAGE COMPRESSION (v4.0.8 Optimized)
-async function compressImage(base64Str, maxWidth = 700, maxHeight = 700) {
+// IMAGE COMPRESSION (v4.1.3 Optimized)
+async function compressImage(base64Str, maxWidth = 600, maxHeight = 600) {
     return new Promise((resolve) => {
         const img = new Image();
         const timeout = setTimeout(() => {
@@ -612,7 +612,7 @@ window.runAnalysis = async () => {
             جواب صرف اردو میں دیں۔
         `;
 
-        const modelsToTry = ["gemini-1.5-flash-latest", "gemini-2.0-flash", "gemini-2.0-flash-exp", "gemini-1.5-flash"];
+        const modelsToTry = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash-latest", "gemini-2.0-flash-lite"];
         const endpoints = ["v1beta", "v1"];
         let response = null;
         let dataJson = null;
