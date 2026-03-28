@@ -178,8 +178,8 @@ window.logout = async () => {
 };
 
 // --- VERSION TAG ---
-window.DESIGN_VERSION = "3.7";
-console.log("DesignCheck v3.7 Stability Final Loaded");
+window.DESIGN_VERSION = "3.8";
+console.log("DesignCheck v3.8 Bulletproof Final Loaded");
 
 // Global Modal Toggle
 window.toggleModal = (id, show) => {
@@ -531,6 +531,13 @@ window.runAnalysis = async () => {
     elements.initialAnalysisMsg.classList.add('hidden');
     elements.analysisResults.classList.add('hidden');
 
+    // 15s Safety Kill Switch for Modal
+    const killSwitch = setTimeout(() => {
+        if (scanModal) scanModal.classList.add('hidden');
+        if (runBtn) runBtn.disabled = false;
+        console.warn("Safety Kill: Analysis took too long, modal forced closed.");
+    }, 15000);
+
     try {
         const prompt = `
             تم ایک سینئر گرافک ڈیزائنر اور نقاد ہو (Senior Graphic Designer & Critic)۔
@@ -554,7 +561,6 @@ window.runAnalysis = async () => {
 
         let response = null;
         let dataJson = null;
-        let lastErrorMsg = null;
 
         for (const modelName of modelsToTry) {
             console.log(`Starting ${modelName}...`);
@@ -567,42 +573,38 @@ window.runAnalysis = async () => {
                         contents: [{ parts: [{ text: prompt }, { inline_data: { mime_type: mimeType || "image/jpeg", data: base64Data } }] }],
                         generationConfig: { response_mime_type: "application/json" }
                     }),
-                    signal: AbortSignal.timeout(7000) // Tight 7s timeout
+                    signal: AbortSignal.timeout(5000) // Super tight 5s timeout
                 });
                 dataJson = await response.json();
                 if (response.ok) {
                     console.log(`${modelName} Success!`);
                     break;
                 }
-                lastErrorMsg = dataJson.error?.message || response.statusText;
             } catch (err) {
-                console.warn(`${modelName} failed/timed out:`, err.message);
-                lastErrorMsg = err.message;
+                console.warn(`${modelName} hang/timeout:`, err.message);
             }
         }
 
-        if (!response?.ok) throw new Error(lastErrorMsg || "AI Server busy. Please try again.");
+        if (!response?.ok) throw new Error("AI Server busy or Network slow. Please check your internet and try again.");
 
         const text = dataJson.candidates?.[0]?.content?.parts?.[0]?.text;
         if (!text) throw new Error("AI نے کوئی جواب نہیں دیا۔");
 
-        console.log("Parsing results...");
         const data = JSON.parse(text);
         displayResults(data);
 
-        // Deduct Credit (Don't await it to keep UI fast)
         if (userState.loggedIn && !userState.isAdmin && userState.licenseStatus !== 'approved') {
-            deductCredit().catch(e => console.error("Credit deduction failed:", e));
+            deductCredit().catch(e => console.error("Credit fail:", e));
         }
 
-        console.timeEnd("AnalysisPhase");
-
     } catch (err) {
-        console.error("CRITICAL ANALYSIS ERROR:", err);
+        console.error("ANALYSIS ERROR:", err);
         alert("تجزیہ کے دوران مسئلہ پیش آیا: " + err.message);
     } finally {
+        clearTimeout(killSwitch);
         if (scanModal) scanModal.classList.add('hidden');
         if (runBtn) runBtn.disabled = false;
+        console.timeEnd("AnalysisPhase");
     }
 };
 
@@ -750,14 +752,6 @@ window.exportAnalysis = async (format) => {
         console.error("Export Error:", err);
         alert("ایکسپورٹ کے دوران مسئلہ پیش آیا۔");
     }
-};
-
-// Global modal/dropdown helpers
-window.toggleModal = (id, show) => {
-    const modal = document.getElementById(id);
-    if (!modal) return;
-    if (show) modal.classList.remove('hidden');
-    else modal.classList.add('hidden');
 };
 
 // Close dropdown if clicked outside
