@@ -604,15 +604,31 @@ footer {
     transform: translateY(-2px);
 }
 
+.print-header {
+    display: none;
+    text-align: center;
+    font-size: 2rem;
+    font-weight: 800;
+    margin-bottom: 30px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #000;
+}
+
 @media print {
     /* Hide everything by default */
     body * {
         visibility: hidden;
+        -webkit-print-color-adjust: exact !important; 
+        print-color-adjust: exact !important;
     }
     
-    /* Show only the results card and its children */
-    .results-card, .results-card * {
+    /* Show only the results card (and our new print header) */
+    .results-card, .results-card *, .print-header {
         visibility: visible;
+    }
+
+    .print-header {
+        display: block !important;
     }
 
     /* Reset layout for print */
@@ -644,10 +660,22 @@ footer {
         display: block !important;
     }
 
-    /* Force text colors for print readability */
+    /* Force text colors for print readability, but allow colors for badges/swatches */
     h1, h2, h3, p, div, span, b, i {
         color: #000 !important;
     }
+
+    /* Allow colors for specific elements */
+    .color-swatch {
+        visibility: visible !important;
+        border: 1px solid #000 !important;
+    }
+    .chip, .badge, .score-orb {
+        visibility: visible !important;
+        color: #fff !important; /* Keep text white on colored backgrounds */
+    }
+    .chip-success { background-color: #28a745 !important; }
+    .chip-warning { background-color: #ffc107 !important; color: #000 !important; }
 
     .result-item {
         border-bottom: 1px solid #eee !important;
@@ -655,19 +683,8 @@ footer {
         margin-bottom: 10px !important;
     }
 
-    .chip {
-        background: #f0f0f0 !important;
-        border: 1px solid #ccc !important;
-        color: #333 !important;
-        box-shadow: none !important;
-    }
-
     .status-indicator {
-        font-size: 1.2rem !important;
-        color: #333 !important;
-        border-bottom: 2px solid #000 !important;
-        display: block !important;
-        margin-bottom: 20px !important;
+        display: none !important; /* Hide "Waiting" in print as per request */
     }
 
     /* Hide buttons and interactive elements in print */
@@ -676,11 +693,11 @@ footer {
     }
 
     .score-orb {
-        background: #eee !important;
+        background: #02060c !important; /* Keep dark orb for professional look */
         border: 2px solid #000 !important;
     }
     
     .score-inner * {
-        color: #000 !important;
+        color: #fff !important;
     }
 }

@@ -131,12 +131,15 @@
 
         <!-- Results Column -->
         <div class="dash-card results-card">
-            <div class="card-header-status">
+            <!-- New: Print Only Header -->
+            <div class="print-header">Professional Design Analyzer</div>
+
+            <div class="card-header-status" id="statusHeader">
                 <span class="status-indicator">...WAITING FOR DESIGN</span>
             </div>
             
-            <!-- New: Export Options (Moved to top) -->
-            <div class="export-group" style="margin: 15px 30px 0;">
+            <!-- New: Export Options (Hidden by default) -->
+            <div class="export-group hidden" id="exportGroup" style="margin: 15px 30px 0;">
                 <button class="btn export-btn" onclick="printAnalysis()"><i class="fa-solid fa-print"></i> Print</button>
                 <button class="btn export-btn" onclick="exportAnalysis('png')"><i class="fa-solid fa-image"></i> PNG</button>
                 <button class="btn export-btn" onclick="exportAnalysis('pdf')"><i class="fa-solid fa-file-pdf"></i> PDF</button>

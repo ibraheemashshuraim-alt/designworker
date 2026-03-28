@@ -65,7 +65,9 @@ const elements = {
     adminUsersList: document.getElementById('adminUsersList'),
     colorPaletteOut: document.getElementById('colorPaletteOut'),
     fontsUsedOut: document.getElementById('fontsUsedOut'),
-    resultsCard: document.querySelector('.results-card')
+    resultsCard: document.querySelector('.results-card'),
+    statusHeader: document.getElementById('statusHeader'),
+    exportGroup: document.getElementById('exportGroup')
 };
 
 // Ensure session persistence
@@ -660,6 +662,8 @@ async function deductCredit() {
 function displayResults(data) {
     elements.initialAnalysisMsg.classList.add('hidden');
     elements.analysisResults.classList.remove('hidden');
+    elements.statusHeader.classList.add('hidden');
+    elements.exportGroup.classList.remove('hidden');
     
     elements.overallScoreText.innerText = data.score;
     elements.accessOut.innerText = data.accessibility;
@@ -731,18 +735,22 @@ window.exportAnalysis = async (format) => {
                 card.style.position = "static";
                 card.style.width = "800px"; // Standard width for capture
                 
-                clonedDoc.querySelectorAll('.result-label, .color-code, .copy-hint, #overallScoreText, .font-name, .status-indicator, .chip').forEach(el => {
+                clonedDoc.querySelectorAll('.result-label, .color-code, .copy-hint, #overallScoreText, .font-name, .status-indicator').forEach(el => {
                     el.style.color = "#000";
                 });
-                clonedDoc.querySelectorAll('.chip').forEach(el => {
-                    el.style.background = "#f0f0f0";
-                    el.style.border = "1px solid #ccc";
+                clonedDoc.querySelectorAll('.chip-success').forEach(el => {
+                    el.style.background = "#28a745";
+                    el.style.color = "#fff";
+                });
+                clonedDoc.querySelectorAll('.chip-warning').forEach(el => {
+                    el.style.background = "#ffc107";
+                    el.style.color = "#000";
                 });
                 clonedDoc.querySelectorAll('.score-orb').forEach(el => {
-                    el.style.background = "#eee";
-                    el.style.borderColor = "#000";
+                    el.style.background = "#02060c";
+                    el.style.color = "#fff";
                 });
-                clonedDoc.querySelectorAll('.export-group, .primary-btn, .close-btn').forEach(el => el.style.display = "none");
+                clonedDoc.querySelectorAll('.export-group, .primary-btn, .close-btn, .status-indicator').forEach(el => el.style.display = "none");
             }
         }
     };
