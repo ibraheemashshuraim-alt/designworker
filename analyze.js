@@ -676,7 +676,8 @@ window.runAnalysis = async () => {
         if (!response?.ok) {
             if (quotaHit) {
                 const source = isDefaultKey ? "سسٹم کی لمیٹ ختم ہے" : `آپ کی Key (${keyToUse.substring(0, 6)}...${keyToUse.substring(keyToUse.length - 4)}) کی لمیٹ ختم ہے`;
-                throw new Error(`فری لمیٹ مکمل ہے (${source})۔ براہ کرم 1 منٹ انتظار کریں یا نئی Key آزمائیں۔`);
+                const debugInfo = lastErrorMsg || "No details";
+                throw new Error(`فری لمیٹ مکمل ہے (${source})۔\n\n[Raw Debug: ${debugInfo}]\n\n(اگر یہ نئی Key ہے تو موبائل ڈیٹا ٹرائی کریں)`);
             }
             throw new Error(`ٹیکنیکل ایرر: ${lastErrorMsg || "رابطہ سست ہے"}`);
         }
