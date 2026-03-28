@@ -65,6 +65,7 @@ const elements = {
     contrastOut: document.getElementById('contrastOut'),
     reportGoodOut: document.getElementById('reportGoodOut'),
     reportBadOut: document.getElementById('reportBadOut'),
+    analysisResults: document.getElementById('analysisResults'),
     apiSettingsModal: document.getElementById('apiSettingsModal'),
     apiKeyInput: document.getElementById('apiKeyInput'),
     profileEmail: document.getElementById('profileEmail'),
@@ -556,34 +557,43 @@ async function compressImage(base64Str, maxWidth = 1024, maxHeight = 1024) {
 // ================ AI ANALYSIS (v3.7) ================
 window.runAnalysis = async () => {
     console.time("AnalysisPhase");
+    console.log("v4.0.1: Analysis started...");
+
     if (!currentImageBase64) {
         alert("پہلے ڈیزائن اپلوڈ کریں۔");
         return;
     }
 
-    const runBtn = document.getElementById('runAnalysisBtn');
+    const runBtn = elements.runAnalysisBtn;
     if (runBtn) runBtn.disabled = true;
 
-    const scanModal = document.getElementById('scanningModal');
+    const scanModal = elements.scanningModal;
+    const scanStatusText = scanModal ? scanModal.querySelector('p') : null;
     if (scanModal) scanModal.classList.remove('hidden');
+    if (scanStatusText) scanStatusText.innerText = "تصویر کا سائز کم کیا جا رہا ہے...";
     
-    elements.initialAnalysisMsg.classList.add('hidden');
-    elements.analysisResults.classList.add('hidden');
+    if (elements.initialAnalysisMsg) elements.initialAnalysisMsg.classList.add('hidden');
+    if (elements.analysisResults) elements.analysisResults.classList.add('hidden');
 
-    // 20s Ultimate Safety Kill Switch
+    // 30s Ultimate Safety Kill Switch
     const killSwitch = setTimeout(() => {
         if (scanModal) scanModal.classList.add('hidden');
         if (runBtn) runBtn.disabled = false;
-        console.warn("Safety Kill: Analysis forced closed.");
-    }, 20000);
+        console.warn("Safety Kill: Analysis forced closed due to timeout.");
+        alert("تجزیہ بہت دیر لے رہا ہے۔ براہ کرم انٹرنیٹ چیک کریں اور دوبارہ کوشش کریں۔");
+    }, 30000);
+
+    const controller = new AbortController();
 
     try {
-        let keyToUse = getApiKey() || elements.apiKeyInput.value.trim();
+        let keyToUse = getApiKey() || (elements.apiKeyInput ? elements.apiKeyInput.value.trim() : "");
         if (!keyToUse) keyToUse = "AIzaSyC7f4QH6CSRN6dAhGNm7P4kMHTv12mtdEo";
 
         // Step 1: Compress
-        console.log("v3.9: Compressing image...");
+        console.log("v4.0.1: Compressing image...");
         const compressedBase64 = await compressImage(currentImageBase64);
+        if (scanStatusText) scanStatusText.innerText = "AI سے رابطہ کیا جا رہا ہے...";
+        
         const mimeType = "image/jpeg";
         const base64Data = compressedBase64.split(',')[1];
 
@@ -611,9 +621,16 @@ window.runAnalysis = async () => {
 
         // Step 3: Fetch Loop
         for (const modelName of modelsToTry) {
-            console.log(`v3.9: Trying ${modelName}...`);
+            console.log(`v4.0.1: Trying ${modelName}...`);
+            if (scanStatusText) scanStatusText.innerText = `AI (${modelName}) جواب تیار کر رہا ہے...`;
+            
             const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${keyToUse}`;
+            
             try {
+                // Compatibility for AbortSignal.timeout
+                const fetchSignal = AbortSignal.timeout ? AbortSignal.timeout(15000) : controller.signal;
+                if (!AbortSignal.timeout) setTimeout(() => controller.abort(), 15000);
+
                 response = await fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -621,20 +638,27 @@ window.runAnalysis = async () => {
                         contents: [{ parts: [{ text: prompt }, { inline_data: { mime_type: mimeType, data: base64Data } }] }],
                         generationConfig: { response_mime_type: "application/json" }
                     }),
-                    signal: AbortSignal.timeout(10000) // 10s timeout
+                    signal: fetchSignal
                 });
+                
                 dataJson = await response.json();
-                if (response.ok) break;
+                if (response.ok) {
+                    console.log(`v4.0.1: ${modelName} Success!`);
+                    break;
+                }
                 lastErrorMsg = dataJson.error?.message || response.statusText;
+                console.warn(`${modelName} failed:`, lastErrorMsg);
             } catch (err) {
                 lastErrorMsg = err.message;
                 console.warn(`${modelName} error:`, err.message);
+                if (err.name === 'AbortError') lastErrorMsg = "AI link timeout. Trying next model...";
             }
         }
 
         if (!response?.ok) throw new Error(lastErrorMsg || "Connection slow or AI busy. Try again.");
 
         // Step 4: Display
+        if (scanStatusText) scanStatusText.innerText = "نتائج دکھائے جا رہے ہیں...";
         const text = dataJson.candidates?.[0]?.content?.parts?.[0]?.text;
         if (!text) throw new Error("AI نے کوئی جواب نہیں دیا۔");
         
@@ -642,7 +666,7 @@ window.runAnalysis = async () => {
 
         // Background: Deduct
         if (userState.loggedIn && !userState.isAdmin && userState.licenseStatus !== 'approved') {
-            deductCredit().catch(e => console.error("Credit fail:", e));
+            deductCredit().catch(e => console.log("Credit deduction handled in background."));
         }
 
     } catch (err) {
