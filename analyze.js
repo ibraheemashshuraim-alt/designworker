@@ -557,7 +557,7 @@ async function compressImage(base64Str, maxWidth = 700, maxHeight = 700) {
 // ================ AI ANALYSIS (v3.7) ================
 window.runAnalysis = async () => {
     console.time("AnalysisPhase");
-    console.log("v4.0.1: Analysis started...");
+    console.log("v4.1.0: Analysis started...");
 
     if (!currentImageBase64) {
         alert("پہلے ڈیزائن اپلوڈ کریں۔");
@@ -575,7 +575,6 @@ window.runAnalysis = async () => {
     if (elements.initialAnalysisMsg) elements.initialAnalysisMsg.classList.add('hidden');
     if (elements.analysisResults) elements.analysisResults.classList.add('hidden');
 
-    // 30s Ultimate Safety Kill Switch
     const killSwitch = setTimeout(() => {
         if (scanModal) scanModal.classList.add('hidden');
         if (runBtn) runBtn.disabled = false;
@@ -584,24 +583,19 @@ window.runAnalysis = async () => {
     }, 15000);
 
     try {
-        // v4.0.8 Fix: Prioritize typed key over saved key
         const typedKey = elements.apiKeyInput ? elements.apiKeyInput.value.trim() : "";
         let keyToUse = typedKey || getApiKey();
         let isDefaultKey = false;
-        
         if (!keyToUse) {
             keyToUse = "AIzaSyC7f4QH6CSRN6dAhGNm7P4kMHTv12mtdEo";
             isDefaultKey = true;
         }
 
-        // Step 1: Compress
-        console.log("v4.0.8: Processing design (Key Type: " + (typedKey ? "Typed" : (isDefaultKey ? "Default" : "Saved")) + ")");
+        console.log("v4.1.0: Processing (Key: " + (typedKey ? "Typed" : (isDefaultKey ? "Default" : "Saved")) + ")");
         const compressedBase64 = await compressImage(currentImageBase64);
-        
         const mimeType = "image/jpeg";
         const base64Data = compressedBase64.split(',')[1];
 
-        // Step 2: Setup Prompt
         const prompt = `
             تم ایک سینئر گرافک ڈیزائنر ہو (Senior Graphic Designer)۔
             دیے گئے ڈیزائن کا گہرائی سے جائزہ لو (Detailed Critique)۔
@@ -618,73 +612,70 @@ window.runAnalysis = async () => {
             جواب صرف اردو میں دیں۔
         `;
 
-        const modelsToTry = ["gemini-2.0-flash-exp", "gemini-2.0-flash", "gemini-2.1-flash", "gemini-2.0-flash-lite"];
+        const modelsToTry = ["gemini-2.0-flash-exp", "gemini-2.0-flash", "gemini-1.5-flash-latest", "gemini-1.5-flash"];
+        const endpoints = ["v1beta", "v1"];
         let response = null;
         let dataJson = null;
         let lastErrorMsg = null;
 
-        // Step 3: Fetch Loop
         for (const modelName of modelsToTry) {
-            console.log(`v4.0.7 Attempt: ${modelName}`);
-            const controller = new AbortController(); // FIX: Create new controller for EACH attempt
-            
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${keyToUse}`;
-            
-            try {
-                // Compatibility for AbortSignal.timeout
-                const fetchSignal = AbortSignal.timeout ? AbortSignal.timeout(8000) : controller.signal;
-                if (!AbortSignal.timeout) setTimeout(() => controller.abort(), 8000);
+            for (const endpoint of endpoints) {
+                console.log(`v4.1.0 Attempt: ${modelName} (${endpoint})`);
+                const controller = new AbortController();
+                const url = `https://generativelanguage.googleapis.com/${endpoint}/models/${modelName}:generateContent?key=${keyToUse}`;
+                
+                try {
+                    const fetchSignal = AbortSignal.timeout ? AbortSignal.timeout(8000) : controller.signal;
+                    if (!AbortSignal.timeout) setTimeout(() => controller.abort(), 8000);
 
-                response = await fetch(url, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: [{ parts: [{ text: prompt }, { inline_data: { mime_type: mimeType, data: base64Data } }] }],
-                        generationConfig: { response_mime_type: "application/json" }
-                    }),
-                    signal: fetchSignal
-                });
-                
-                dataJson = await response.json();
-                if (response.ok) {
-                    console.log(`v4.0.5: ${modelName} Success!`);
-                    break;
+                    response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{ parts: [{ text: prompt }, { inline_data: { mime_type: mimeType, data: base64Data } }] }],
+                            generationConfig: { response_mime_type: "application/json" }
+                        }),
+                        signal: fetchSignal
+                    });
+                    
+                    dataJson = await response.json();
+                    if (response.ok) {
+                        console.log(`v4.1.0 SUCCESS: ${modelName} (${endpoint})`);
+                        break;
+                    }
+                    lastErrorMsg = `${modelName} (${endpoint}): ${dataJson.error?.message || response.statusText} (Status: ${response.status})`;
+                    if (response.status === 404) continue;
+                } catch (err) {
+                    lastErrorMsg = `${modelName}: ${err.message}`;
+                    if (err.name === 'AbortError') lastErrorMsg = `${modelName}: AI link timeout (8s)`;
+                    continue;
                 }
-                
-                // Track error
-                lastErrorMsg = dataJson.error?.message || response.statusText;
-                console.warn(`${modelName} failed:`, lastErrorMsg);
-            } catch (err) {
-                lastErrorMsg = err.message;
-                console.warn(`${modelName} error:`, err.message);
-                if (err.name === 'AbortError') lastErrorMsg = "AI link timeout. Trying next model...";
             }
+            if (response?.ok) break;
         }
 
-        if (!response?.ok) throw new Error(lastErrorMsg || "Connection slow or AI busy. Try again.");
+        if (!response?.ok) {
+            const finalErr = lastErrorMsg || "رابطہ سست ہے";
+            if (finalErr.toLowerCase().includes("quota") || finalErr.includes("429") || finalErr.includes("limit")) {
+                const source = isDefaultKey ? "سسٹم کی لمیٹ ختم ہے" : "آپ کی Key کی لمیٹ ختم ہے";
+                throw new Error(`فری لمیٹ مکمل ہے (${source})۔ براہ کرم 1 منٹ انتظار کریں یا نئی Key آزمائیں۔\n\n[Debug: ${finalErr}]`);
+            }
+            throw new Error(`ٹیکنیکل ایرر: ${finalErr}`);
+        }
 
-        // Step 4: Display
         if (scanStatusText) scanStatusText.innerText = "نتائج دکھائے جا رہے ہیں...";
         const text = dataJson.candidates?.[0]?.content?.parts?.[0]?.text;
         if (!text) throw new Error("AI نے کوئی جواب نہیں دیا۔");
         
         displayResults(JSON.parse(text));
 
-        // Background: Deduct
         if (userState.loggedIn && !userState.isAdmin && userState.licenseStatus !== 'approved') {
             deductCredit().catch(e => console.log("Credit deduction handled in background."));
         }
 
     } catch (err) {
         console.error("ANALYSIS ERROR:", err);
-        let friendlyMsg = "رابطہ سست ہے یا AI مصروف ہے۔ دوبارہ کوشش کریں۔";
-        const rawErr = err.message.toLowerCase();
-        if (rawErr.includes("quota") || rawErr.includes("limit") || rawErr.includes("429")) {
-            friendlyMsg = "اس وقت فری لمیٹ مکمل ہے، براہ کرم 1 منٹ بعد دوبارہ کوشش کریں یا اپنی API Key تبدیل کریں۔";
-        } else if (rawErr.includes("not found") || rawErr.includes("404")) {
-            friendlyMsg = "اس وقت سرور پر بوجھ ہے یا ماڈل بلاک ہے۔ دوبارہ کوشش کریں۔";
-        }
-        alert("مسلہ: " + friendlyMsg);
+        alert("مسلہ: " + err.message);
     } finally {
         clearTimeout(killSwitch);
         if (scanModal) scanModal.classList.add('hidden');
