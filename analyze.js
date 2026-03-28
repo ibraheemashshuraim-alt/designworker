@@ -111,7 +111,15 @@ async function setupUserPersistence(user) {
             console.log("Firestore Data Received:", data);
             
             // Critical merge
-            userState.credits = data.credits !== undefined ? data.credits : 0;
+            let credits = Number(data.credits !== undefined ? data.credits : 0);
+            
+            // HEAL: If credits are negative, reset to 0 in Firestore (auto-fix)
+            if (credits < 0) {
+                credits = 0;
+                updateDoc(userRef, { credits: 0 }).catch(e => console.error("Heal failed:", e));
+            }
+
+            userState.credits = credits;
             userState.usedCredits = data.usedCredits || 0;
             userState.licenseStatus = data.licenseStatus || 'none';
             userState.paymentStatus = data.paymentStatus || 'none';
@@ -537,17 +545,10 @@ window.runAnalysis = async () => {
     }
 
     let keyToUse = getApiKey() || elements.apiKeyInput.value.trim();
-    const isUsingOwnKey = !!keyToUse;
     
-    // Credit Check for users without their own API Key
-    if (!isUsingOwnKey) {
-        if (!userState.loggedIn) {
-            alert("فری 10 کریڈٹس حاصل کرنے کے لیے پہلے لاگ ان کریں۔");
-            toggleModal('profileDropdown', true);
-            return;
-        }
-
-        if (Number(userState.credits) <= 0 && !userState.isAdmin && userState.licenseStatus !== 'approved') {
+    // Compulsory Credit Check for all logged-in users (except Admin/License)
+    if (userState.loggedIn && !userState.isAdmin && userState.licenseStatus !== 'approved') {
+        if (Number(userState.credits || 0) <= 0) {
             alert("آپ کے پاس کریڈٹس ختم ہو گئے ہیں۔ براہ کرم مزید کریڈٹس خریدیں۔");
             toggleModal('profileDropdown', true);
             return;
@@ -702,6 +703,12 @@ async function deductCredit() {
     if (userState.isAdmin) return; 
     if (userState.licenseStatus === 'approved') return; 
     
+    // Safety check to prevent negative credits
+    if (Number(userState.credits || 0) <= 0) {
+        console.warn("Deduction skipped: Credits already at 0.");
+        return;
+    }
+
     if (!userState.uid) return;
 
     const userRef = doc(db, "users", userState.uid);
