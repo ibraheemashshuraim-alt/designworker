@@ -624,17 +624,40 @@ window.runAnalysis = async () => {
         let response = null;
         let dataJson = null;
 
-        // v4.4.0: Single fixed path to avoid fallback confusion
-        const modelName = "gemini-1.5-flash-latest";
+        // v4.5.0: Smart Auto-Model Detection
+        let modelToUse = "gemini-1.5-flash"; // Default fallback
+        try {
+            console.log("v4.5.0: Detecting available models...");
+            const listUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${keyToUse}`;
+            const listRes = await fetch(listUrl);
+            const listData = await listRes.json();
+            
+            if (listData.models && listData.models.length > 0) {
+                // Find best flash model
+                const bestModel = listData.models.find(m => 
+                    m.supportedGenerationMethods.includes("generateContent") && 
+                    m.name.includes("flash") && 
+                    !m.name.includes("exp")
+                ) || listData.models.find(m => m.supportedGenerationMethods.includes("generateContent"));
+                
+                if (bestModel) {
+                    modelToUse = bestModel.name.split('/').pop();
+                    console.log("v4.5.0: Selected Model -> " + modelToUse);
+                }
+            }
+        } catch (e) {
+            console.warn("Model detection failed, using fallback.");
+        }
+
         const endpoint = "v1beta";
+        console.log(`v4.5.0 Final Attempt: ${modelToUse} (${endpoint})`);
         
-        console.log(`v4.4.0 Final Attempt: ${modelName} (${endpoint})`);
         const controller = new AbortController();
-        const url = `https://generativelanguage.googleapis.com/${endpoint}/models/${modelName}:generateContent?key=${keyToUse}`;
+        const url = `https://generativelanguage.googleapis.com/${endpoint}/models/${modelToUse}:generateContent?key=${keyToUse}`;
         
         try {
-            const fetchSignal = AbortSignal.timeout ? AbortSignal.timeout(12000) : controller.signal;
-            if (!AbortSignal.timeout) setTimeout(() => controller.abort(), 12000);
+            const fetchSignal = AbortSignal.timeout ? AbortSignal.timeout(15000) : controller.signal;
+            if (!AbortSignal.timeout) setTimeout(() => controller.abort(), 15000);
 
             const payload = {
                 contents: [{ parts: [{ text: prompt }, { inline_data: { mime_type: mimeType, data: base64Data } }] }],
@@ -651,7 +674,7 @@ window.runAnalysis = async () => {
             
             dataJson = await response.json();
             if (response.ok) {
-                console.log(`v4.4.0 SUCCESS: ${modelName}`);
+                console.log(`v4.5.0 SUCCESS: ${modelToUse}`);
             } else {
                 lastErrorMsg = dataJson.error?.message || response.statusText;
                 if (response.status === 429) quotaHit = true;
@@ -661,11 +684,11 @@ window.runAnalysis = async () => {
         }
 
         if (!response?.ok) {
-            if (quotaHit || (lastErrorMsg && lastErrorMsg.includes("quota"))) {
+            if (quotaHit || (lastErrorMsg && (lastErrorMsg.includes("quota") || lastErrorMsg.includes("429")))) {
                 const source = isDefaultKey ? "سسٹم کی لمیٹ ختم ہے" : `آپ کی Key (${keyToUse.substring(0, 6)}...${keyToUse.substring(keyToUse.length - 4)}) کی لمیٹ ختم ہے`;
                 throw new Error(`فری لمیٹ مکمل ہے (${source})۔\n\n[Google Error: ${lastErrorMsg}]\n\n(حل: موبائل ڈیٹا یا VPN ٹرائی کریں)`);
             }
-            throw new Error(`ٹیکنیکل ایرر: ${lastErrorMsg || "رابطہ سست ہے"}`);
+            throw new Error(`ٹیکنیکل ایرر (${modelToUse}): ${lastErrorMsg || "رابطہ سست ہے"}`);
         }
 
         if (scanStatusText) scanStatusText.innerText = "نتائج دکھائے جا رہے ہیں...";
