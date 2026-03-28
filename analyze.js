@@ -98,14 +98,20 @@ async function setupUserPersistence(user) {
     const userRef = doc(db, "users", user.uid);
     onSnapshot(userRef, (docSnap) => {
         if (docSnap.exists()) {
-            userState.credits = docSnap.data().credits || 0;
+            const data = docSnap.data();
+            // Merge Firestore data into userState
+            Object.assign(userState, data);
             updateUI();
         } else {
-            setDoc(userRef, {
+            // New user initialization
+            const newUser = {
                 email: user.email,
-                credits: 10, // New user bonus
-                createdAt: serverTimestamp()
-            });
+                credits: 10,
+                usedCredits: 0,
+                createdAt: serverTimestamp(),
+                status: 'active'
+            };
+            setDoc(userRef, newUser);
         }
     });
 }
@@ -166,8 +172,12 @@ function updateUI() {
         let creditsText = `${userState.credits} Credits`;
         if (userState.isAdmin) {
             creditsText = "Admin";
+        } else if (userState.licenseStatus === 'approved') {
+            creditsText = "Unlimited";
         }
-        elements.profileCreditsModal.innerText = creditsText;
+        
+        if (elements.profileCredits) elements.profileCredits.innerText = creditsText;
+        if (elements.profileCreditsModal) elements.profileCreditsModal.innerText = creditsText;
 
         // Hide Buy License for Admin
         const licenseSection = document.querySelector('button[onclick*="licenseModal"]')?.parentElement;
