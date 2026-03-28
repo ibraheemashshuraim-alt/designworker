@@ -169,6 +169,17 @@ window.logout = async () => {
     }
 };
 
+window.testDeduct = async () => {
+    if (!userState.loggedIn) return alert("ٹیسٹ کے لیے پہلے لاگ ان کریں۔");
+    alert("ٹیسٹ شروع: 1 کریڈٹ کم کیا جا رہا ہے...");
+    try {
+        await deductCredit();
+        alert("ٹیسٹ کامیاب! ونڈو بند کریں اور کریڈٹس چیک کریں۔ (نیا بیلنس: " + userState.credits + ")");
+    } catch (e) {
+        alert("ٹیسٹ فیل: " + e.message);
+    }
+};
+
 // --- VERSION TAG ---
 console.log("DesignCheck Version: 2.6 (Robust Sync)");
 window.DESIGN_VERSION = "2.6";
