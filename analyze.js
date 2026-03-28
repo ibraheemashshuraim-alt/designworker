@@ -161,15 +161,17 @@ window.login = async () => {
 window.logout = async () => {
     try {
         await signOut(auth);
-        // Reset local state manually as a backup
-        userState = { loggedIn: false, uid: null, email: null, credits: 0, isAdmin: false };
         updateUI();
         toggleModal('profileDropdown', false);
-        window.location.reload(); // Hard refresh to ensure clean state
+        window.location.reload(); 
     } catch (e) {
-        console.error("Logout Error:", e);
+        alert("Logout Error: " + e.message);
     }
 };
+
+// --- VERSION TAG ---
+console.log("DesignCheck Version: 2.6 (Robust Sync)");
+window.DESIGN_VERSION = "2.6";
 
 // ================ UI UPDATES ================
 function updateUI() {
@@ -663,8 +665,11 @@ window.runAnalysis = async () => {
             
             // --- COMPULSORY CREDIT DEDUCTION ---
             if (userState.loggedIn) {
-                deductCredit().catch(err => {
-                    alert("Credit deduction failed! Your analysis might not have been recorded. Error: " + err.message);
+                console.log("Attempting credit deduction...");
+                await deductCredit().then(() => {
+                    alert("Credit Successfully Deducted! Current: " + userState.credits);
+                }).catch(err => {
+                    alert("CRITICAL ERROR: Credit deduction failed! Error: " + err.message);
                 });
             }
         } else {
