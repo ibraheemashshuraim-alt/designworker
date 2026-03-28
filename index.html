@@ -42,6 +42,10 @@
                         <div id="profileCreditsModal" class="credit-box-value">--</div>
                     </div>
 
+                    <button class="btn secondary-btn" style="width: 100%; margin-top: 10px; font-size: 0.8rem; opacity: 0.6;" onclick="forceZeroCredits()">
+                        Force 0 Credits (Test Only)
+                    </button>
+                    
                     <div id="buyCreditsSection" class="modal-section hidden">
                         <h4><i class="fa-solid fa-gem" style="color:var(--neon-purple);"></i> پریمیم کریڈٹس حاصل کریں</h4>
                         <p>500 روپے SadaPay پر بھیجیں:</p>
@@ -125,7 +129,7 @@
                         <button id="runAnalysisBtn" class="btn primary-btn" style="width: 100%; font-size: 1.1rem; padding: 15px;" onclick="runAnalysis()">
                             <i class="fa-solid fa-wand-magic-sparkles"></i> AI کے ساتھ تجزیہ کریں
                         </button>
-                        <!-- Premium Buy Credits Button (Hidden by default) -->
+                        <!-- Premium Buy Credits Button -->
                         <button id="buyCreditsBtn" class="btn hidden" style="width: 100%; font-size: 1.1rem; padding: 15px; background: linear-gradient(45deg, #ffd700, #ffb300); color: #000; font-weight: 800; box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);" onclick="toggleModal('profileDropdown', true)">
                             <i class="fa-solid fa-gem"></i> کریڈٹس خریدیں (Upgrade Now)
                         </button>
@@ -136,14 +140,12 @@
 
         <!-- Results Column -->
         <div class="dash-card results-card">
-            <!-- New: Print Only Header -->
             <div class="print-header">Professional Design Analyzer</div>
 
             <div class="card-header-status" id="statusHeader">
                 <span class="status-indicator">...WAITING FOR DESIGN</span>
             </div>
             
-            <!-- New: Export Options (Hidden by default) -->
             <div class="export-group hidden" id="exportGroup" style="margin: 15px 30px 0;">
                 <button class="btn export-btn" onclick="printAnalysis()"><i class="fa-solid fa-print"></i> Print</button>
                 <button class="btn export-btn" onclick="exportAnalysis('png')"><i class="fa-solid fa-image"></i> PNG</button>
@@ -157,7 +159,6 @@
                 </div>
 
                 <div id="analysisResults" class="hidden">
-                    <!-- ... existing analysis content ... -->
                     <div class="score-orb">
                         <div class="score-inner">
                             <div style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase;">Score</div>
@@ -185,13 +186,11 @@
                         <div id="reportBadOut"></div>
                     </div>
 
-                    <!-- New: Color Palette -->
                     <div style="margin-top: 25px;">
                         <div style="font-weight: 700; font-size: 0.85rem; margin-bottom: 10px; color: var(--neon-cyan);"><i class="fa-solid fa-palette"></i> کلر پیلیٹ:</div>
                         <div id="colorPaletteOut" class="color-grid"></div>
                     </div>
 
-                    <!-- New: Fonts Used -->
                     <div style="margin-top: 25px;">
                         <div style="font-weight: 700; font-size: 0.85rem; margin-bottom: 10px; color: var(--neon-purple);"><i class="fa-solid fa-font"></i> استعمال شدہ فونٹس:</div>
                         <div id="fontsUsedOut" class="font-list"></div>
@@ -205,88 +204,61 @@
         </div>
     </main>
 
-    <!-- Admin Dashboard View (Full Page Overlay) -->
+    <!-- Admin Dashboard View -->
     <div id="adminDashboardView" class="modal hidden">
         <div class="modal-content admin-modal-content">
             <span class="close-btn" onclick="closeAdminPanel()">&times;</span>
             <h2 style="color: var(--neon-cyan); margin-bottom: 20px;"><i class="fa-solid fa-users-gear"></i> ایڈمن ڈیش بورڈ</h2>
-            
-            <div id="adminUsersList" class="admin-user-grid">
-                <!-- User cards will be loaded here -->
-            </div>
+            <div id="adminUsersList" class="admin-user-grid"></div>
         </div>
     </div>
 
-    <!-- Tool License Modal -->
+    <!-- Modals -->
     <div id="licenseModal" class="modal hidden">
         <div class="modal-content" style="max-width: 500px; border-color: #ffd700;">
             <span class="close-btn" onclick="toggleModal('licenseModal', false)">&times;</span>
             <div style="text-align: center;">
                 <i class="fa-solid fa-crown" style="font-size: 3rem; color: #ffd700; margin-bottom: 15px; filter: drop-shadow(0 0 10px #ffd700);"></i>
                 <h2 style="color: #ffd700; margin-bottom: 10px;">ٹول کا مکمل لائسنس</h2>
-                <p style="font-size: 0.9rem; color: #fff; margin-bottom: 20px;">اس ٹول کا مکمل کوڈ اور ملکیت (Full Ownership) حاصل کریں۔</p>
-                
-                <div class="price-tag" style="font-size: 2rem; font-weight: 800; color: #fff; margin-bottom: 20px;">
-                    1,50,000 <small style="font-size: 1rem;">PKR</small>
-                </div>
-
+                <div class="price-tag" style="font-size: 2rem; font-weight: 800; color: #fff; margin-bottom: 20px;">1,50,000 <small>PKR</small></div>
                 <div class="modal-section" style="background: rgba(255, 215, 0, 0.05); border: 1px solid rgba(255, 215, 0, 0.2); border-radius: 15px; padding: 15px;">
-                    <p>پیمنٹ کے لیے SadaPay استعمال کریں:</p>
-                    <div style="font-size: 1.5rem; font-weight: 700; color: #ffd700; direction: ltr;" class="selectable-text">03703603184</div>
-                    <p style="font-size: 0.8rem; margin-top: 10px; color: var(--text-muted);">پیمنٹ کے بعد یہاں سے کلیم کریں یا ایڈمن سے رابطہ کریں۔</p>
+                    <p>SadaPay: <span class="selectable-text">03703603184</span></p>
                 </div>
-
-                <button onclick="toggleModal('licenseClaimModal', true)" class="btn primary-btn" style="margin-top: 20px; width: 100%; background: #ffd700; color: #000;">
-                    <i class="fa-solid fa-file-invoice-dollar"></i> پیمنٹ کلیم فارم
-                </button>
+                <button onclick="toggleModal('licenseClaimModal', true)" class="btn primary-btn" style="margin-top: 20px; width: 100%; background: #ffd700; color: #000;">کلیم فارم</button>
             </div>
         </div>
     </div>
 
-    <!-- Credit Claim Form Modal -->
     <div id="creditClaimModal" class="modal hidden">
         <div class="modal-content" style="max-width: 400px; border-color: var(--neon-purple);">
             <span class="close-btn" onclick="toggleModal('creditClaimModal', false)">&times;</span>
-            <h3 style="color: var(--neon-purple); margin-bottom: 15px;"><i class="fa-solid fa-receipt"></i> پیمنٹ کلیم (Credits)</h3>
-            <p style="font-size:0.8rem; margin-bottom:15px;">براہ کرم پیمنٹ کی تفصیلات درج کریں:</p>
-            
-            <input type="text" id="creditNameInput" class="custom-input" placeholder="آپ کا نام" style="direction: rtl; text-align: right;">
-            <input type="text" id="creditTidInput" class="custom-input" placeholder="Transaction ID (TID)" style="direction: ltr; text-align: left;">
-            <p style="font-size: 0.65rem; color: var(--text-muted);">نوٹ: فارم جمع کرنے پر آپ کو 5 عارضی کریڈٹس فوری مل جائیں گے۔</p>
-            
-            <button onclick="submitCreditClaim()" class="btn primary-btn" style="width: 100%; margin-top: 15px;">
-                درخواست جمع کریں
-            </button>
+            <h3 style="color: var(--neon-purple);">پیمنٹ کلیم (Credits)</h3>
+            <input type="text" id="creditNameInput" class="custom-input" placeholder="آپ کا نام">
+            <input type="text" id="creditTidInput" class="custom-input" placeholder="Transaction ID (TID)">
+            <button onclick="submitCreditClaim()" class="btn primary-btn" style="width: 100%; margin-top: 15px;">جمع کریں</button>
         </div>
     </div>
 
-    <!-- License Claim Form Modal -->
     <div id="licenseClaimModal" class="modal hidden">
         <div class="modal-content" style="max-width: 400px; border-color: #ffd700;">
             <span class="close-btn" onclick="toggleModal('licenseClaimModal', false)">&times;</span>
-            <h3 style="color: #ffd700; margin-bottom: 15px;"><i class="fa-solid fa-crown"></i> لائسنس کلیم فارم</h3>
-            <p style="font-size:0.8rem; margin-bottom:15px;">لائسنس کے لیے تفصیلات درج کریں:</p>
-            
-            <input type="text" id="licenseNameInput" class="custom-input" placeholder="آپ کا نام" style="direction: rtl; text-align: right;">
-            <input type="text" id="licenseTidInput" class="custom-input" placeholder="Transaction ID (TID)" style="direction: ltr; text-align: left;">
-            
-            <button onclick="submitLicenseClaim()" class="btn primary-btn" style="width: 100%; margin-top: 15px; background: #ffd700; color: #000;">
-                لائسنس کلیم کریں
-            </button>
+            <h3 style="color: #ffd700;">لائسنس کلیم فارم</h3>
+            <input type="text" id="licenseNameInput" class="custom-input" placeholder="آپ کا نام">
+            <input type="text" id="licenseTidInput" class="custom-input" placeholder="Transaction ID (TID)">
+            <button onclick="submitLicenseClaim()" class="btn primary-btn" style="width: 100%; margin-top: 15px; background: #ffd700; color: #000;">کلیم کریں</button>
         </div>
     </div>
 
-    <!-- AI Scanning Modal -->
     <div id="scanningModal" class="modal hidden">
         <div class="modal-content" style="text-align: center; border-color: var(--neon-cyan);">
             <div class="spinner" style="margin: 0 auto 20px;"></div>
             <h2 style="color: var(--neon-cyan);">AI اسکیننگ</h2>
-            <p>ڈیزائن کا جائزہ لیا جا رہا ہے، تھوڑا انتظار کریں...</p>
+            <p>تھوڑا انتظار کریں...</p>
         </div>
     </div>
 
     <footer style="display: flex; justify-content: space-between; align-items: center; padding: 20px 40px; border-top: 1px solid var(--border-dim); font-size: 0.8rem; color: var(--text-muted);">
-        <div>Powered by <strong>Gemini AI</strong> | <span id="uiVersion" style="color: var(--neon-cyan);">v3.2</span></div>
+        <div>Powered by <strong>Gemini AI</strong> | <span id="uiVersion" style="color: var(--neon-cyan);">v3.4</span></div>
     </footer>
 
     <script type="module" src="analyze.js"></script>

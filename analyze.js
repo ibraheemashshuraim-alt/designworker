@@ -173,8 +173,8 @@ window.logout = async () => {
 };
 
 // --- VERSION TAG ---
-window.DESIGN_VERSION = "3.2";
-console.log("DesignCheck v3.2 Loaded");
+window.DESIGN_VERSION = "3.4";
+console.log("DesignCheck v3.4 Aggressive Sync Loaded");
 
 // ================ UI UPDATES ================
 function updateUI() {
@@ -210,24 +210,34 @@ function updateUI() {
         if (elements.profileCredits) elements.profileCredits.innerText = displayStr;
         if (elements.profileCreditsModal) elements.profileCreditsModal.innerText = displayStr;
 
-        // Upgrade Prompt Visibility (Show even for Admin to allow testing)
+        // Upgrade Prompt Visibility (v3.4 Aggressive)
         const isOutOfCredits = (credits <= 0 && !hasLocalKey && userState.licenseStatus !== 'approved');
-        console.log("UpdateUI - Credits:", credits, "OutOfCredits:", isOutOfCredits);
+        console.log("v3.4 Aggressive Sync - Credits:", credits, "OutOfCredits:", isOutOfCredits);
         
+        const rBtn = document.getElementById('runAnalysisBtn');
+        const bBtn = document.getElementById('buyCreditsBtn');
+
         if (isOutOfCredits) {
             if (elements.buyCreditsSection) elements.buyCreditsSection.classList.remove('hidden');
-            if (elements.runAnalysisBtn) {
-                elements.runAnalysisBtn.classList.add('hidden');
-                console.log("Hiding Analyze Button");
+            if (rBtn) {
+                rBtn.style.display = 'none'; // Use direct style as backup
+                rBtn.classList.add('hidden');
             }
-            if (elements.buyCreditsBtn) {
-                elements.buyCreditsBtn.classList.remove('hidden');
-                console.log("Showing Buy Button");
+            if (bBtn) {
+                bBtn.style.display = 'block';
+                bBtn.classList.remove('hidden');
+                console.log("FORCED SHOW BUY BUTTON");
             }
         } else {
             if (elements.buyCreditsSection) elements.buyCreditsSection.classList.add('hidden');
-            if (elements.runAnalysisBtn) elements.runAnalysisBtn.classList.remove('hidden');
-            if (elements.buyCreditsBtn) elements.buyCreditsBtn.classList.add('hidden');
+            if (rBtn) {
+                rBtn.style.display = 'block';
+                rBtn.classList.remove('hidden');
+            }
+            if (bBtn) {
+                bBtn.style.display = 'none';
+                bBtn.classList.add('hidden');
+            }
         }
 
         // Management Visibility
