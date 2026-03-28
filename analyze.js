@@ -671,7 +671,14 @@ window.runAnalysis = async () => {
 
     } catch (err) {
         console.error("ANALYSIS ERROR:", err);
-        alert("مسلہ: " + err.message);
+        let friendlyMsg = "رابطہ سست ہے یا AI مصروف ہے۔ دوبارہ کوشش کریں۔";
+        const rawErr = err.message.toLowerCase();
+        if (rawErr.includes("quota") || rawErr.includes("limit") || rawErr.includes("429")) {
+            friendlyMsg = "اس وقت فری لمیٹ مکمل ہے، براہ کرم 1 منٹ بعد دوبارہ کوشش کریں یا اپنی API Key تبدیل کریں۔";
+        } else if (rawErr.includes("not found") || rawErr.includes("404")) {
+            friendlyMsg = "اس وقت سرور پر بوجھ ہے یا ماڈل بلاک ہے۔ دوبارہ کوشش کریں۔";
+        }
+        alert("مسلہ: " + friendlyMsg);
     } finally {
         clearTimeout(killSwitch);
         if (scanModal) scanModal.classList.add('hidden');
