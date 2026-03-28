@@ -53,12 +53,12 @@ const elements = {
     runAnalysisBtn: document.getElementById('runAnalysisBtn'),
     buyCreditsBtn: document.getElementById('buyCreditsBtn'),
     scanningModal: document.getElementById('scanningModal'),
+    buyCreditsSection: document.getElementById('buyCreditsSection'),
     overallScoreText: document.getElementById('overallScoreText'),
     accessOut: document.getElementById('accessOut'),
     contrastOut: document.getElementById('contrastOut'),
     reportGoodOut: document.getElementById('reportGoodOut'),
     reportBadOut: document.getElementById('reportBadOut'),
-    scanningModal: document.getElementById('scanningModal'),
     apiSettingsModal: document.getElementById('apiSettingsModal'),
     apiKeyInput: document.getElementById('apiKeyInput'),
     profileEmail: document.getElementById('profileEmail'),
@@ -173,7 +173,8 @@ window.logout = async () => {
 };
 
 // --- VERSION TAG ---
-window.DESIGN_VERSION = "3.0";
+window.DESIGN_VERSION = "3.2";
+console.log("DesignCheck v3.2 Loaded");
 
 // ================ UI UPDATES ================
 function updateUI() {
@@ -211,13 +212,20 @@ function updateUI() {
 
         // Upgrade Prompt Visibility
         const isOutOfCredits = (credits <= 0 && !hasLocalKey && !userState.isAdmin && userState.licenseStatus !== 'approved');
+        console.log("UpdateUI - Credits:", credits, "OutOfCredits:", isOutOfCredits);
         
         if (isOutOfCredits) {
-            elements.buyCreditsSection.classList.remove('hidden');
-            if (elements.runAnalysisBtn) elements.runAnalysisBtn.classList.add('hidden');
-            if (elements.buyCreditsBtn) elements.buyCreditsBtn.classList.remove('hidden');
+            if (elements.buyCreditsSection) elements.buyCreditsSection.classList.remove('hidden');
+            if (elements.runAnalysisBtn) {
+                elements.runAnalysisBtn.classList.add('hidden');
+                console.log("Hiding Analyze Button");
+            }
+            if (elements.buyCreditsBtn) {
+                elements.buyCreditsBtn.classList.remove('hidden');
+                console.log("Showing Buy Button");
+            }
         } else {
-            elements.buyCreditsSection.classList.add('hidden');
+            if (elements.buyCreditsSection) elements.buyCreditsSection.classList.add('hidden');
             if (elements.runAnalysisBtn) elements.runAnalysisBtn.classList.remove('hidden');
             if (elements.buyCreditsBtn) elements.buyCreditsBtn.classList.add('hidden');
         }
