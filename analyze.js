@@ -210,8 +210,8 @@ function updateUI() {
         if (elements.profileCredits) elements.profileCredits.innerText = displayStr;
         if (elements.profileCreditsModal) elements.profileCreditsModal.innerText = displayStr;
 
-        // Upgrade Prompt Visibility
-        const isOutOfCredits = (credits <= 0 && !hasLocalKey && !userState.isAdmin && userState.licenseStatus !== 'approved');
+        // Upgrade Prompt Visibility (Show even for Admin to allow testing)
+        const isOutOfCredits = (credits <= 0 && !hasLocalKey && userState.licenseStatus !== 'approved');
         console.log("UpdateUI - Credits:", credits, "OutOfCredits:", isOutOfCredits);
         
         if (isOutOfCredits) {
