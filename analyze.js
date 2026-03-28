@@ -163,7 +163,7 @@ window.logout = async () => {
 };
 
 // --- VERSION TAG ---
-window.DESIGN_VERSION = "2.8";
+window.DESIGN_VERSION = "3.0";
 
 // ================ UI UPDATES ================
 function updateUI() {
@@ -187,8 +187,8 @@ function updateUI() {
         }
 
         // --- CREDIT DISPLAY LOGIC ---
-        let creditsToDisplay = userState.credits || 0;
-        let displayStr = `Credits ${creditsToDisplay}`;
+        const credits = Number(userState.credits || 0);
+        let displayStr = `Credits ${credits}`;
         
         if (userState.isAdmin) {
             displayStr = "Admin";
@@ -196,14 +196,31 @@ function updateUI() {
             displayStr = "Unlimited";
         }
 
-        // Update Header Badge
-        if (elements.profileCredits) {
-            elements.profileCredits.innerText = displayStr;
-        }
+        if (elements.profileCredits) elements.profileCredits.innerText = displayStr;
+        if (elements.profileCreditsModal) elements.profileCreditsModal.innerText = displayStr;
 
-        // Update Modal Card
-        if (elements.profileCreditsModal) {
-            elements.profileCreditsModal.innerText = displayStr;
+        // Upgrade Prompt Visibility
+        const isOutOfCredits = (credits <= 0 && !hasLocalKey && !userState.isAdmin && userState.licenseStatus !== 'approved');
+        
+        if (isOutOfCredits) {
+            elements.buyCreditsSection.classList.remove('hidden');
+            // Swap Analyze button for Buy button on main screen if 0 credits
+            const mainAnalyzeBtn = document.querySelector('button[onclick="runAnalysis()"]');
+            if (mainAnalyzeBtn) {
+                mainAnalyzeBtn.innerHTML = "<i class='fa-solid fa-gem'></i> اپگریڈ کریں (Buy Credits)";
+                mainAnalyzeBtn.style.background = "linear-gradient(45deg, #ffd700, #ffb300)";
+                mainAnalyzeBtn.style.color = "#000";
+                mainAnalyzeBtn.setAttribute("onclick", "toggleModal('profileDropdown', true)");
+            }
+        } else {
+            elements.buyCreditsSection.classList.add('hidden');
+            const mainAnalyzeBtn = document.querySelector('button[onclick*="profileDropdown"]');
+            if (mainAnalyzeBtn && mainAnalyzeBtn.innerText.includes("اپگریڈ")) {
+                mainAnalyzeBtn.innerHTML = "<i class='fa-solid fa-wand-magic-sparkles'></i> اینالائز کریں (Analyze)";
+                mainAnalyzeBtn.style.background = "";
+                mainAnalyzeBtn.style.color = "";
+                mainAnalyzeBtn.setAttribute("onclick", "runAnalysis()");
+            }
         }
 
         // Management Visibility
@@ -211,13 +228,6 @@ function updateUI() {
             elements.adminPanelSection.classList.remove('hidden');
         } else {
             elements.adminPanelSection.classList.add('hidden');
-        }
-
-        // Upgrade Prompt (Buy Credits)
-        if (creditsToDisplay <= 0 && !hasLocalKey && !userState.isAdmin && userState.licenseStatus !== 'approved') {
-            elements.buyCreditsSection.classList.remove('hidden');
-        } else {
-            elements.buyCreditsSection.classList.add('hidden');
         }
 
     } else {
@@ -532,13 +542,13 @@ window.runAnalysis = async () => {
     // Credit Check for users without their own API Key
     if (!isUsingOwnKey) {
         if (!userState.loggedIn) {
-            alert("فری 10 کریڈٹس حاصل کرنے اور ٹیسٹ کرنے کے لیے پہلے لاگ ان کریں۔");
+            alert("فری 10 کریڈٹس حاصل کرنے کے لیے پہلے لاگ ان کریں۔");
             toggleModal('profileDropdown', true);
             return;
         }
 
-        if (userState.credits <= 0 && !userState.isAdmin && userState.licenseStatus !== 'approved') {
-            alert("آپ کے پاس تجزیہ کے لیے کریڈٹس ختم ہو گئے ہیں۔ براہ کرم اپگریڈ کریں یا اپنی API Key استعمال کریں۔");
+        if (Number(userState.credits) <= 0 && !userState.isAdmin && userState.licenseStatus !== 'approved') {
+            alert("آپ کے پاس کریڈٹس ختم ہو گئے ہیں۔ براہ کرم مزید کریڈٹس خریدیں۔");
             toggleModal('profileDropdown', true);
             return;
         }
