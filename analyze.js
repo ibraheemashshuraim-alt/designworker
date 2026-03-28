@@ -619,6 +619,9 @@ window.runAnalysis = async () => {
             { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
         ];
 
+        let lastErrorMsg = null;
+        let quotaHit = false;
+
         // v4.4.0: Single fixed path to avoid fallback confusion
         const modelName = "gemini-1.5-flash-latest";
         const endpoint = "v1beta";
