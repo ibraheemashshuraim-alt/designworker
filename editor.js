@@ -180,14 +180,14 @@ function resizeCanvas() {
     canvas.calcOffset();
 }
 
-function checkPremiumAccess() {
+window.checkPremiumAccess = () => {
     const gate = document.getElementById('editorPremiumGate');
     if (!gate) return;
     const state = window.userState || {};
     const hasAccess = state.isAdmin || state.licenseStatus === 'approved' || (Number(state.credits || 0) > 0);
     if (hasAccess) gate.classList.add('hidden');
     else gate.classList.remove('hidden');
-}
+};
 
 window.deleteActiveObject = () => {
     if (!canvas) return;

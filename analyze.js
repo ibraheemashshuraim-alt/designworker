@@ -146,8 +146,11 @@ async function setupUserPersistence(user) {
             userState.photoURL = user.photoURL;
             userState.isAdmin = ADMIN_EMAILS.includes(user.email);
             
-            // Expose for editor.js
-            window.userState = userState;
+            // v4.10.0: Reactive Sync to Global window (CRITICAL)
+            window.userState = userState; 
+            if (typeof window.checkPremiumAccess === 'function') {
+                window.checkPremiumAccess();
+            }
             updateUI();
         } else {
             // New User: Initialize with 10 credits
@@ -283,8 +286,8 @@ window.deleteHistoryItem = async (docId) => {
 };
 
 // --- VERSION TAG ---
-window.DESIGN_VERSION = "4.9.8";
-console.log("DesignCheck v4.9.8 Final Stability & Premium AI Editor Loaded");
+window.DESIGN_VERSION = "4.10.0";
+console.log("DesignCheck v4.10.0 Final Pro Stability Loaded");
 
 // v4.9.6: Export Local Module State to Global Window (CRITICAL FIX)
 window.userState = userState;
