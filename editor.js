@@ -9,6 +9,12 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function initEditor() {
+    if (typeof fabric === 'undefined') {
+        console.error("Fabric library not loaded yet.");
+        setTimeout(initEditor, 100);
+        return;
+    }
+    
     canvas = new fabric.Canvas('designCanvas', {
         width: canvasWidth,
         height: canvasHeight,
