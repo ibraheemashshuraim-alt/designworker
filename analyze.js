@@ -308,56 +308,53 @@ window.generateAIDesign = async () => {
     try {
         const keyToUse = getApiKey() || "AIzaSyC7f4QH6CSRN6dAhGNm7P4kMHTv12mtdEo";
         
-        // v4.8.4: Smart Model Detection (Flash 2.0 -> Flash 1.5 -> Pro)
-        let modelToUse = "gemini-1.5-flash"; 
-        try {
-            const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${keyToUse}`);
-            const listData = await listRes.json();
-            if (listData.models && listData.models.length > 0) {
-                const bestModel = listData.models.find(m => m.name.includes("gemini-2.0-flash") && m.supportedGenerationMethods.includes("generateContent")) || 
-                                  listData.models.find(m => m.name.includes("gemini-1.5-flash") && m.supportedGenerationMethods.includes("generateContent")) || 
-                                  listData.models.find(m => m.supportedGenerationMethods.includes("generateContent") && m.name.includes("flash"));
+        // v4.8.5: Robust Model Fallback Loop (Tries 1.5 first as 2.0 has high quota issues)
+        const candidateModels = ["gemini-1.5-flash-latest", "gemini-1.5-flash", "gemini-2.0-flash"]; 
+        let lastError = null;
+        let success = false;
+
+        for (const modelCandidate of candidateModels) {
+            try {
+                console.log(`AI Designer: Trying model ${modelCandidate}...`);
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelCandidate}:generateContent?key=${keyToUse}`;
+                const aiPrompt = `
+                    You are a Senior Graphic Designer. 
+                    Generate a JSON design for Fabric.js based on: "${prompt}"
+                    Canvas size: 600x400. 
+                    Include at least 5 objects (background, text with 'Outfit' font, shapes).
+                    Return ONLY raw JSON that can be used with canvas.loadFromJSON().
+                    Always include a background rectangle covering the full canvas.
+                `;
+
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: aiPrompt }] }] })
+                });
+
+                const data = await response.json();
                 
-                if (bestModel) modelToUse = bestModel.name.split('/').pop();
+                if (data.error) {
+                    console.warn(`Model ${modelCandidate} failed: ${data.error.message}`);
+                    lastError = data.error.message;
+                    continue; 
+                }
+
+                const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (text) {
+                    const cleanText = text.replace(/```json|```/g, '').trim();
+                    codeInput.value = cleanText;
+                    success = true;
+                    alert("ڈیزائن کوڈ تیار ہے! اب 'درست کریں' پر کلک کریں تاکہ کینوس پر دیکھا جا سکے۔");
+                    break;
+                }
+            } catch (innerE) {
+                lastError = innerE.message;
             }
-        } catch (e) { console.warn("Model detection failed", e); }
-
-        console.log(`Using model for Designer: ${modelToUse}`);
-
-        const aiPrompt = `
-            You are a Senior Graphic Designer. 
-            Generate a JSON design for Fabric.js based on: "${prompt}"
-            Canvas size: 600x400. 
-            Include at least 5 objects (background, text with 'Outfit' font, shapes).
-            Return ONLY raw JSON that can be used with canvas.loadFromJSON().
-            Always include a background rectangle covering the full canvas.
-        `;
-
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelToUse}:generateContent?key=${keyToUse}`;
-        const payload = {
-            contents: [{ parts: [{ text: aiPrompt }] }]
-        };
-
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-
-        const data = await response.json();
-        
-        if (data.error) {
-            throw new Error(`API Error: ${data.error.message}`);
         }
 
-        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        
-        if (text) {
-            const cleanText = text.replace(/```json|```/g, '').trim();
-            codeInput.value = cleanText;
-            alert("ڈیزائن کوڈ تیار ہے! اب 'درست کریں' پر کلک کریں تاکہ کینوس پر دیکھا جا سکے۔");
-        } else {
-            throw new Error("No output from AI. Key might be model-restricted.");
+        if (!success) {
+            throw new Error(lastError || "تمام دستیاب ماڈلز کوٹہ ختم کر چکے ہیں۔");
         }
     } catch (e) {
         console.error("AI Designer Error:", e);
