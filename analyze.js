@@ -308,35 +308,55 @@ window.generateAIDesign = async () => {
     try {
         const keyToUse = getApiKey() || "AIzaSyC7f4QH6CSRN6dAhGNm7P4kMHTv12mtdEo";
         
-        // v4.8.5: Robust Model Fallback Loop (Tries 1.5 first as 2.0 has high quota issues)
-        const candidateModels = ["gemini-1.5-flash-latest", "gemini-1.5-flash", "gemini-2.0-flash"]; 
+        // v4.8.6: Robust Model Detection (Preferring Flash 1.5 since Flash 2.0 has Quota issues for Free Tier)
+        let modelCandidates = ["gemini-1.5-flash", "gemini-1.5-flash-latest"];
+        try {
+            const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${keyToUse}`);
+            const listData = await listRes.json();
+            if (listData.models && listData.models.length > 0) {
+                const fetchedModels = listData.models
+                    .filter(m => m.supportedGenerationMethods.includes("generateContent") && m.name.includes("flash"))
+                    .map(m => m.name.split('/').pop());
+                
+                if (fetchedModels.length > 0) {
+                    // Filter out 2.0-flash if it's producing quota errors, or move it to end
+                    modelCandidates = [
+                        ...fetchedModels.filter(m => m.includes("1.5-flash")),
+                        ...fetchedModels.filter(m => m.includes("2.0-flash")),
+                        ...fetchedModels.filter(m => !m.includes("1.5-flash") && !m.includes("2.0-flash"))
+                    ];
+                }
+            }
+        } catch (e) { console.warn("ListModels failed", e); }
+
         let lastError = null;
         let success = false;
 
-        for (const modelCandidate of candidateModels) {
+        for (const modelCandidate of modelCandidates) {
             try {
-                console.log(`AI Designer: Trying model ${modelCandidate}...`);
+                console.log(`AI Designer: Trying ${modelCandidate}...`);
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelCandidate}:generateContent?key=${keyToUse}`;
                 const aiPrompt = `
                     You are a Senior Graphic Designer. 
-                    Generate a JSON design for Fabric.js based on: "${prompt}"
-                    Canvas size: 600x400. 
-                    Include at least 5 objects (background, text with 'Outfit' font, shapes).
-                    Return ONLY raw JSON that can be used with canvas.loadFromJSON().
-                    Always include a background rectangle covering the full canvas.
+                    Generate a JSON design for Fabric.js for: "${prompt}"
+                    Canvas: 600x400. 
+                    Return ONLY raw JSON. Include background, text, shapes. 
+                    Must be valid Fabric JSON.
                 `;
 
                 const response = await fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ contents: [{ parts: [{ text: aiPrompt }] }] })
+                    body: JSON.stringify({ 
+                        contents: [{ parts: [{ text: aiPrompt }] }],
+                        generationConfig: { response_mime_type: "application/json" }
+                    })
                 });
 
                 const data = await response.json();
                 
                 if (data.error) {
-                    console.warn(`Model ${modelCandidate} failed: ${data.error.message}`);
-                    lastError = data.error.message;
+                    lastError = `${data.error.message} (${modelCandidate})`;
                     continue; 
                 }
 
@@ -364,6 +384,7 @@ window.generateAIDesign = async () => {
         genBtn.disabled = false;
         genBtn.innerHTML = "<i class='fa-solid fa-wand-magic-sparkles'></i> ڈیزائن جنریٹ کریں";
         if (scanModal) scanModal.classList.add('hidden');
+    }
     }
 };
 
