@@ -1,18 +1,19 @@
-// ================ EDITOR LOGIC (v5.0.0 - PRO EXPANSION) ================
+// ================ EDITOR LOGIC (v5.0.1 - UNLOCK & STABILIZE) ================
 
 let canvas;
-const baseWidth = 1000; // v5.0.0 Pro Resolution
-const baseHeight = 750; // v5.0.0 Pro Resolution
+const baseWidth = 1000; 
+const baseHeight = 750; 
 
 // CDN Import for BG Removal
 let removeBackground;
 import('https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.7.0/+esm')
     .then(module => {
         removeBackground = module.removeBackground;
-        console.log("AI BG Remover Loaded (v5.0.0)");
+        console.log("AI BG Remover Loaded (v5.0.1)");
     })
     .catch(err => console.error("BG Remover Load Fail:", err));
 
+// Initialization
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => initEditor());
 } else {
@@ -29,7 +30,6 @@ function initEditor() {
     if (!canvasElement) return;
 
     if (!canvas) {
-        // v5.0.0: High-Res Pro Workspace
         canvas = new fabric.Canvas('designCanvas', {
             width: baseWidth,
             height: baseHeight,
@@ -39,7 +39,6 @@ function initEditor() {
         });
         window.dc_canvas = canvas; 
         
-        // Selection Listeners
         canvas.on('selection:created', showSelectionToolbar);
         canvas.on('selection:updated', showSelectionToolbar);
         canvas.on('selection:cleared', hideSelectionToolbar);
@@ -68,6 +67,9 @@ function initEditor() {
 
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
+    
+    // v5.0.1: Periodic check to unlock if Firestore is slow
+    setInterval(checkPremiumAccess, 2000);
 }
 
 function resizeCanvas() {
@@ -93,7 +95,31 @@ function hideSelectionToolbar() {
     if (bar) bar.style.display = 'none';
 }
 
-// --- Pro Tool Implementations ---
+// v5.0.1: CRITICAL - MISSING FUNCTION RE-DEFINED
+window.checkPremiumAccess = () => {
+    const gate = document.getElementById('editorPremiumGate');
+    if (!gate) return;
+    
+    // v5.0.1: Emergency Power-User & Admin Bypass
+    const isPowerUser = window.userState && (
+        window.userState.email === 'abdullqudus.77@gmail.com' ||
+        window.userState.isAdmin || 
+        window.userState.licenseStatus === 'approved' || 
+        (Number(window.userState.credits || 0) > 0)
+    );
+
+    if (isPowerUser) {
+        gate.classList.add('hidden');
+        console.log("v5.0.1: Premium Editor Unlocked (Power/Credit User)");
+    } else {
+        // Only show gate if we definitely have user state and they aren't premium
+        if (window.userState && window.userState.loggedIn) {
+             gate.classList.remove('hidden');
+        }
+    }
+};
+
+// --- Pro Tool Implementations (Explicitly attached for onclick) ---
 
 window.changeFont = (fontName) => {
     const active = canvas.getActiveObject();
@@ -153,23 +179,15 @@ window.removeSelectedBackground = async () => {
     try {
         btn.disabled = true;
         btn.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> AI ریمو کر رہا ہے...";
-        
-        // Convert Fabric image back to blob
         const dataUrl = active.toDataURL();
         const res = await fetch(dataUrl);
         const blob = await res.blob();
-        
-        // Actual AI Removal
         const resultBlob = await removeBackground(blob);
         const resultUrl = URL.createObjectURL(resultBlob);
-        
         fabric.Image.fromURL(resultUrl, (newImg) => {
             newImg.set({
-                left: active.left,
-                top: active.top,
-                scaleX: active.scaleX,
-                scaleY: active.scaleY,
-                angle: active.angle
+                left: active.left, top: active.top,
+                scaleX: active.scaleX, scaleY: active.scaleY, angle: active.angle
             });
             canvas.remove(active);
             canvas.add(newImg);
@@ -192,7 +210,7 @@ const proShadow = new fabric.Shadow({ color: 'rgba(0,0,0,0.3)', blur: 20, offset
 window.addTextToCanvas = () => {
     if (!canvas) return;
     const text = new fabric.IText('اپنی تحریر لکھیں', {
-        left: baseWidth/2, top: baseHeight/2, originX: 'center', originY: 'center',
+        left: 500, top: 375, originX: 'center', originY: 'center',
         fontFamily: 'Gulzar', fill: '#1a1a1a', fontSize: 70, shadow: proShadow
     });
     canvas.add(text);
@@ -204,7 +222,7 @@ window.addTextToCanvas = () => {
 window.addRectToCanvas = () => {
     if (!canvas) return;
     const rect = new fabric.Rect({
-        left: baseWidth/2, top: baseHeight/2, originX: 'center', originY: 'center',
+        left: 500, top: 375, originX: 'center', originY: 'center',
         fill: '#00e5ff', width: 300, height: 250, rx: 25, ry: 25, shadow: proShadow
     });
     canvas.add(rect);
@@ -216,7 +234,7 @@ window.addRectToCanvas = () => {
 window.addCircleToCanvas = () => {
     if (!canvas) return;
     const circle = new fabric.Circle({
-        left: baseWidth/2, top: baseHeight/2, originX: 'center', originY: 'center',
+        left: 500, top: 375, originX: 'center', originY: 'center',
         fill: '#ff0070', radius: 150, shadow: proShadow
     });
     canvas.add(circle);

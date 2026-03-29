@@ -284,8 +284,8 @@ window.deleteHistoryItem = async (docId) => {
 };
 
 // --- VERSION TAG ---
-window.DESIGN_VERSION = "5.0.0";
-console.log("DesignCheck v5.0.0 Pro AI Graphic Editor & Analyzer Loaded");
+window.DESIGN_VERSION = "5.0.1";
+console.log("DesignCheck v5.0.1 Pro AI Graphic Editor & Analyzer Loaded");
 
 // ================ PREMIUM AI DESIGNER ================
 window.generateAIDesign = async () => {
