@@ -76,40 +76,38 @@ function checkPremiumAccess() {
     }
 }
 
-// Manual Tools
+// Manual Tools (v4.8.8 Robustness)
 window.addTextToCanvas = () => {
-    const text = new fabric.IText('Type here...', {
-        left: 100,
-        top: 100,
-        fontFamily: 'Outfit',
-        fill: '#333',
-        fontSize: 30
+    const c = window.dc_canvas || canvas;
+    if (!c) return;
+    const text = new fabric.IText('خوش آمدید', {
+        left: 100, top: 100, fontFamily: 'Outfit', fill: '#333', fontSize: 30
     });
-    canvas.add(text);
-    canvas.setActiveObject(text);
+    c.add(text);
+    c.setActiveObject(text);
+    c.renderAll();
 };
 
 window.addRectToCanvas = () => {
+    const c = window.dc_canvas || canvas;
+    if (!c) return;
     const rect = new fabric.Rect({
-        left: 150,
-        top: 150,
-        fill: '#00e5ff',
-        width: 100,
-        height: 100,
-        rx: 10,
-        ry: 10
+        left: 150, top: 150, fill: '#00e5ff', width: 100, height: 100, rx: 10, ry: 10
     });
-    canvas.add(rect);
+    c.add(rect);
+    c.setActiveObject(rect);
+    c.renderAll();
 };
 
 window.addCircleToCanvas = () => {
+    const c = window.dc_canvas || canvas;
+    if (!c) return;
     const circle = new fabric.Circle({
-        left: 200,
-        top: 200,
-        fill: '#9d00ff',
-        radius: 50
+        left: 200, top: 200, fill: '#9d00ff', radius: 50
     });
-    canvas.add(circle);
+    c.add(circle);
+    c.setActiveObject(circle);
+    c.renderAll();
 };
 
 window.clearCanvas = () => {

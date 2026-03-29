@@ -370,7 +370,14 @@ window.generateAIDesign = async () => {
                     const cleanText = text.replace(/```json|```/g, '').trim();
                     codeInput.value = cleanText;
                     success = true;
-                    alert("ڈیزائن کوڈ تیار ہے! اب 'درست کریں' پر کلک کریں تاکہ کینوس پر دیکھا جا سکے۔");
+                    
+                    // v4.8.8: Success Handling
+                    if (scanModal) scanModal.classList.add('hidden');
+                    if (window.loadDesignFromCode) {
+                        window.loadDesignFromCode(cleanText);
+                    }
+                    
+                    alert("ڈیزائن کامیابی سے تیار ہو گیا ہے!");
                     break;
                 }
             } catch (innerE) {
