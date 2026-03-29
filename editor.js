@@ -1,24 +1,17 @@
-// ================ EDITOR LOGIC (v5.0.2 - FINAL STABILITY) ================
+// ================ EDITOR LOGIC (v4.9.5 - PRO STABILITY) ================
 
 let canvas;
-const baseWidth = 1000; 
-const baseHeight = 750; 
+const baseWidth = 800; 
+const baseHeight = 600; 
 
-// CDN Import for BG Removal
-let removeBackground;
-import('https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.7.0/+esm')
-    .then(module => {
-        removeBackground = module.removeBackground;
-        console.log("AI BG Remover Loaded (v5.0.2)");
-    })
-    .catch(err => console.error("BG Remover Load Fail:", err));
-
-// --- Initialization Logic ---
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => initEditor());
+} else {
+    initEditor();
+}
 
 function initEditor() {
-    // 1. Check if Fabric Library is available globally
     if (typeof fabric === 'undefined') {
-        console.warn("Fabric.js not ready, retrying in 250ms...");
         setTimeout(initEditor, 250);
         return;
     }
@@ -36,9 +29,10 @@ function initEditor() {
         });
         window.dc_canvas = canvas; 
         
-        canvas.on('selection:created', showSelectionToolbar);
-        canvas.on('selection:updated', showSelectionToolbar);
-        canvas.on('selection:cleared', hideSelectionToolbar);
+        // v4.9.5: Selection Listeners for Toolbar Sync
+        canvas.on('selection:created', (e) => syncToolbar(e.selected[0]));
+        canvas.on('selection:updated', (e) => syncToolbar(e.selected[0]));
+        canvas.on('selection:cleared', () => hideToolbar());
     }
     
     // File Upload Listener
@@ -50,23 +44,81 @@ function initEditor() {
             const reader = new FileReader();
             reader.onload = (f) => {
                 fabric.Image.fromURL(f.target.result, (img) => {
-                    img.scaleToWidth(400);
+                    img.scaleToWidth(300);
                     canvas.add(img);
                     canvas.centerObject(img);
                     img.setCoords();
                     canvas.setActiveObject(img);
-                    canvas.requestRenderAll();
+                    canvas.renderAll();
                 });
             };
             reader.readAsDataURL(file);
         };
     }
 
+    // v4.9.5: Global Keyboard Deletion Handler
+    document.addEventListener('keydown', (e) => {
+        if ((e.key === 'Delete' || e.key === 'Backspace') && canvas.getActiveObject()) {
+            // Don't delete if user is typing in an input/textarea
+            if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
+            deleteActiveObject();
+        }
+    });
+
+    // Formatting Tool Listeners
+    document.getElementById('itemColorPicker')?.addEventListener('input', (e) => {
+        const obj = canvas.getActiveObject();
+        if (obj) {
+            obj.set('fill', e.target.value);
+            canvas.renderAll();
+        }
+    });
+
+    document.getElementById('itemFontSelector')?.addEventListener('change', (e) => {
+        const obj = canvas.getActiveObject();
+        if (obj && obj.type === 'i-text') {
+            obj.set('fontFamily', e.target.value);
+            canvas.renderAll();
+        }
+    });
+
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
 }
 
-// --- CORE FUNCTIONS (Hoisted) ---
+function syncToolbar(obj) {
+    const toolbar = document.getElementById('editorFormattingToolbar');
+    if (!toolbar) return;
+    
+    toolbar.style.opacity = "1";
+    toolbar.style.pointerEvents = "all";
+
+    // Sync Color
+    const colorPicker = document.getElementById('itemColorPicker');
+    if (colorPicker && obj.fill) {
+        // Convert to hex if needed, but fabric often uses hex/rgb
+        colorPicker.value = obj.fill;
+    }
+
+    // Sync Font Area
+    const fontArea = document.getElementById('fontSelectorArea');
+    if (fontArea) {
+        if (obj.type === 'i-text') {
+            fontArea.style.display = "flex";
+            document.getElementById('itemFontSelector').value = obj.fontFamily || 'Outfit';
+        } else {
+            fontArea.style.display = "none";
+        }
+    }
+}
+
+function hideToolbar() {
+    const toolbar = document.getElementById('editorFormattingToolbar');
+    if (toolbar) {
+        toolbar.style.opacity = "0.5";
+        toolbar.style.pointerEvents = "none";
+    }
+}
 
 function resizeCanvas() {
     const card = document.querySelector('.canvas-card');
@@ -77,193 +129,97 @@ function resizeCanvas() {
     const scale = Math.min(containerWidth / baseWidth, 1.0);
     
     wrapper.style.transform = `scale(${scale})`;
-    card.style.height = (baseHeight * scale + 120) + "px";
+    card.style.height = (baseHeight * scale + 150) + "px"; // Extra space for tools
+    
     canvas.calcOffset();
 }
 
-function showSelectionToolbar() {
-    const bar = document.getElementById('selectionTools');
-    if (bar) bar.style.display = 'flex';
-}
-
-function hideSelectionToolbar() {
-    const bar = document.getElementById('selectionTools');
-    if (bar) bar.style.display = 'none';
-}
-
-function checkPremiumAccess() {
-    const gate = document.getElementById('editorPremiumGate');
-    if (!gate) return;
-    
-    // Power-User bypass
-    const isPowerUser = window.userState && (
-        window.userState.email === 'abdullqudus.77@gmail.com' ||
-        window.userState.isAdmin || 
-        window.userState.licenseStatus === 'approved' || 
-        (Number(window.userState.credits || 0) > 0)
-    );
-
-    if (isPowerUser) {
-        gate.classList.add('hidden');
-    } else if (window.userState && window.userState.loggedIn) {
-        gate.classList.remove('hidden');
-    }
-}
-
-// --- GLOBAL EXPORTS (Explicitly attached to window) ---
-
-window.switchTab = function(tab) {
-    const analyzer = document.getElementById('analyzerView');
-    const editor = document.getElementById('editorView');
-    const tabs = document.querySelectorAll('.tab-btn');
-    if (tab === 'analyzer') {
-        analyzer?.classList.remove('hidden');
-        editor?.classList.add('hidden');
-        tabs[0]?.classList.add('active');
-        tabs[1]?.classList.remove('active');
-    } else {
-        analyzer?.classList.add('hidden');
-        editor?.classList.remove('hidden');
-        tabs[1]?.classList.add('active');
-        tabs[0]?.classList.remove('active');
-        setTimeout(() => { 
-            resizeCanvas(); 
-            checkPremiumAccess(); 
-        }, 150);
+window.deleteActiveObject = () => {
+    const obj = canvas.getActiveObject();
+    if (obj) {
+        canvas.remove(obj);
+        canvas.discardActiveObject();
+        canvas.renderAll();
     }
 };
 
-window.changeFont = function(fontName) {
-    const active = canvas.getActiveObject();
-    if (active && (active.type === 'i-text' || active.type === 'text')) {
-        active.set('fontFamily', fontName);
-        canvas.requestRenderAll();
-    }
-};
-
-window.changeColor = function(color) {
-    const active = canvas.getActiveObject();
-    if (!active) return;
-    if (active.type === 'activeSelection') {
-        active.getObjects().forEach(obj => obj.set('fill', color));
-    } else {
-        active.set('fill', color);
-    }
-    canvas.requestRenderAll();
-};
-
-window.bringToFront = function() {
-    const active = canvas.getActiveObject();
-    if (active) { active.bringToFront(); canvas.requestRenderAll(); }
-};
-
-window.sendToBack = function() {
-    const active = canvas.getActiveObject();
-    if (active) { active.sendToBack(); canvas.requestRenderAll(); }
-};
-
-window.deleteSelected = function() {
-    const active = canvas.getActiveObject();
-    if (!active) return;
-    if (active.type === 'activeSelection') {
-        active.getObjects().forEach(obj => canvas.remove(obj));
-        canvas.discardActiveSelection();
-    } else {
-        canvas.remove(active);
-    }
-    canvas.requestRenderAll();
-};
-
-window.removeSelectedBackground = async function() {
-    const active = canvas.getActiveObject();
-    if (!active || active.type !== 'image' || !removeBackground) {
-        return alert("براہ کرم ریمو کرنے کے لیے ایک تصویر کلک کریں (یا AI لوڈ ہو رہا ہے)۔");
-    }
-    const btn = document.getElementById('removeBGBtn');
-    const oldHtml = btn.innerHTML;
-    try {
-        btn.disabled = true;
-        btn.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> AI ریمو کر رہا ہے...";
-        const dataUrl = active.toDataURL();
-        const res = await fetch(dataUrl);
-        const blob = await res.blob();
-        const resultBlob = await removeBackground(blob);
-        const resultUrl = URL.createObjectURL(resultBlob);
-        fabric.Image.fromURL(resultUrl, (newImg) => {
-            newImg.set({
-                left: active.left, top: active.top,
-                scaleX: active.scaleX, scaleY: active.scaleY, angle: active.angle
-            });
-            canvas.remove(active); canvas.add(newImg);
-            canvas.setActiveObject(newImg); canvas.requestRenderAll();
-        });
-    } catch (e) {
-        alert("بیک گراؤنڈ ریمو کرنے میں مسئلہ ہوا۔");
-    } finally {
-        btn.disabled = false; btn.innerHTML = oldHtml;
-    }
-};
-
-window.addTextToCanvas = function() {
-    if (!canvas || typeof fabric === 'undefined') return;
-    const text = new fabric.IText('اپنی تحریر لکھیں', {
-        left: 500, top: 375, originX: 'center', originY: 'center',
-        fontFamily: 'Gulzar', fill: '#1a1a1a', fontSize: 70
-    });
-    canvas.add(text); text.setCoords(); canvas.setActiveObject(text); canvas.requestRenderAll();
-};
-
-window.addRectToCanvas = function() {
-    if (!canvas || typeof fabric === 'undefined') return;
-    const rect = new fabric.Rect({
-        left: 500, top: 375, originX: 'center', originY: 'center',
-        fill: '#00e5ff', width: 300, height: 250, rx: 25, ry: 25
-    });
-    canvas.add(rect); rect.setCoords(); canvas.setActiveObject(rect); canvas.requestRenderAll();
-};
-
-window.addCircleToCanvas = function() {
-    if (!canvas || typeof fabric === 'undefined') return;
-    const circle = new fabric.Circle({
-        left: 500, top: 375, originX: 'center', originY: 'center',
-        fill: '#ff0070', radius: 150
-    });
-    canvas.add(circle); circle.setCoords(); canvas.setActiveObject(circle); canvas.requestRenderAll();
-};
-
-window.clearCanvas = function() {
-    if (confirm("کیا آپ پورا ڈیزائن ختم کرنا چاہتے ہیں؟")) {
-        canvas.clear(); canvas.backgroundColor = '#ffffff'; canvas.requestRenderAll(); resizeCanvas();
-    }
-};
-
-window.exportCanvas = function() {
+window.addTextToCanvas = () => {
     if (!canvas) return;
-    canvas.setZoom(1);
-    canvas.setDimensions({ width: baseWidth, height: baseHeight });
-    const link = document.createElement('a');
-    link.download = `DesignCheck_Pro_${Date.now()}.png`;
-    link.href = canvas.toDataURL({ format: 'png', quality: 1 });
-    link.click();
-    resizeCanvas();
+    const text = new fabric.IText('اپنی تحریر لکھیں', {
+        left: 400,
+        top: 300,
+        originX: 'center',
+        originY: 'center',
+        fontFamily: 'Outfit',
+        fill: '#1a1a1a',
+        fontSize: 60,
+        fontWeight: 'bold',
+        shadow: new fabric.Shadow({ color: 'rgba(0,0,0,0.3)', blur: 20, offsetX: 10, offsetY: 10 })
+    });
+    canvas.add(text);
+    text.setCoords();
+    canvas.setActiveObject(text);
+    canvas.renderAll();
 };
 
-window.loadDesignFromCode = function(rawCode) {
+window.addRectToCanvas = () => {
+    if (!canvas) return;
+    const rect = new fabric.Rect({
+        left: 400, top: 300, originX: 'center', originY: 'center',
+        fill: '#00e5ff', width: 250, height: 200, rx: 20, ry: 20,
+        stroke: '#00b8d4', strokeWidth: 4,
+        shadow: new fabric.Shadow({ color: 'rgba(0,0,0,0.3)', blur: 20, offsetX: 10, offsetY: 10 })
+    });
+    canvas.add(rect);
+    rect.setCoords();
+    canvas.setActiveObject(rect);
+    canvas.renderAll();
+};
+
+window.addCircleToCanvas = () => {
+    if (!canvas) return;
+    const circle = new fabric.Circle({
+        left: 400, top: 300, originX: 'center', originY: 'center',
+        fill: '#ff0070', radius: 120, stroke: '#c50058', strokeWidth: 4,
+        shadow: new fabric.Shadow({ color: 'rgba(0,0,0,0.3)', blur: 20, offsetX: 10, offsetY: 10 })
+    });
+    canvas.add(circle);
+    circle.setCoords();
+    canvas.setActiveObject(circle);
+    canvas.renderAll();
+};
+
+window.clearCanvas = () => {
+    if (confirm("کیا آپ پورا ڈیزائن ختم کرنا چاہتے ہیں؟")) {
+        canvas.clear();
+        canvas.backgroundColor = '#ffffff';
+        canvas.renderAll();
+    }
+};
+
+window.exportCanvas = () => {
+    if (!canvas) return;
+    const link = document.createElement('a');
+    link.download = `DesignCheck_${Date.now()}.png`;
+    link.href = canvas.toDataURL({ format: 'png', quality: 1, multiplier: 1 });
+    link.click();
+};
+
+window.loadDesignFromCode = (rawCode) => {
     if (!canvas) return;
     const code = rawCode || document.getElementById('aiDesignCodeInput')?.value?.trim();
     if (!code) return;
+
     try {
         const jsonText = code.replace(/```json|```/g, '').trim();
-        canvas.loadFromJSON(JSON.parse(jsonText), () => {
-            canvas.requestRenderAll(); resizeCanvas();
-            setTimeout(() => { canvas.calcOffset(); canvas.requestRenderAll(); }, 500);
+        const designData = JSON.parse(jsonText);
+        
+        canvas.loadFromJSON(designData, () => {
+            canvas.renderAll();
+            canvas.calcOffset();
+            console.log("AI Design Loaded v4.9.5");
         });
     } catch (e) {
         console.error("AI Load Error:", e);
     }
 };
-
-// --- Start Services ---
-initEditor();
-setInterval(checkPremiumAccess, 2500);
-window.checkPremiumAccess = checkPremiumAccess; // Export manually

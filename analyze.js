@@ -284,8 +284,8 @@ window.deleteHistoryItem = async (docId) => {
 };
 
 // --- VERSION TAG ---
-window.DESIGN_VERSION = "5.0.2";
-console.log("DesignCheck v5.0.2 Pro AI Graphic Editor & Analyzer Loaded");
+window.DESIGN_VERSION = "4.9.5";
+console.log("DesignCheck v4.9.5 Professional Analysis & Premium AI Editor Loaded");
 
 // ================ PREMIUM AI DESIGNER ================
 window.generateAIDesign = async () => {
@@ -304,9 +304,11 @@ window.generateAIDesign = async () => {
     const genBtn = document.getElementById('generateAIDesignBtn');
     const codeInput = document.getElementById('aiDesignCodeInput');
     
-    genBtn.disabled = true;
-    genBtn.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> جنریٹ ہو رہا ہے...";
-    codeInput.value = "AI ڈیزائن کر رہا ہے انتظار کریں...";
+    if (genBtn) {
+        genBtn.disabled = true;
+        genBtn.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> جنریٹ ہو رہا ہے...";
+    }
+    if (codeInput) codeInput.value = "AI ڈیزائن کر رہا ہے انتظار کریں...";
 
     const scanModal = document.getElementById('scanningModal');
     if (scanModal) {
@@ -317,7 +319,6 @@ window.generateAIDesign = async () => {
     try {
         const keyToUse = getApiKey() || "AIzaSyC7f4QH6CSRN6dAhGNm7P4kMHTv12mtdEo";
         
-        // v4.8.6: Robust Model Detection (Preferring Flash 1.5 since Flash 2.0 has Quota issues for Free Tier)
         let modelCandidates = ["gemini-1.5-flash", "gemini-1.5-flash-latest"];
         try {
             const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${keyToUse}`);
@@ -328,7 +329,6 @@ window.generateAIDesign = async () => {
                     .map(m => m.name.split('/').pop());
                 
                 if (fetchedModels.length > 0) {
-                    // Filter out 2.0-flash if it's producing quota errors, or move it to end
                     modelCandidates = [
                         ...fetchedModels.filter(m => m.includes("1.5-flash")),
                         ...fetchedModels.filter(m => m.includes("2.0-flash")),
@@ -345,20 +345,20 @@ window.generateAIDesign = async () => {
             try {
                 console.log(`AI Designer: Trying ${modelCandidate}...`);
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelCandidate}:generateContent?key=${keyToUse}`;
-                const aiPrompt = `PRO MODE: You are a Senior Visual Designer (Expert in Urdu/Arabic/English typography).
-                    Generate a Fabric.js JSON for: "${prompt}"
-                    WORKSPACE: 1000x750 (High-Res). CENTER: {left: 500, top: 375}.
-                    
-                    DESIGN GUIDELINES:
-                    1. Use Large, Bold Headers (FontSize 70+).
-                    2. Use 'Gulzar' for Urdu text. Use 'Bebas Neue' or 'Montserrat' for English.
-                    3. BACKGROUND: Create a layered background (Main Rect + Accents).
-                    4. STYLE: Add 'shadow: {color: "rgba(0,0,0,0.4)", blur: 15, offsetX: 10, offsetY: 10}' to all objects.
-                    5. SHAPES: Use 'rx: 20, ry: 20' for Rects (Round corners).
-                    6. COLORS: Use High-End Palettes (e.g. Dark/Neon, Luxury Gold/White).
-                    7. CENTERING: Every object must have 'originX: center', 'originY: center' and use 500, 375 as base center.
-                    
-                    Return ONLY raw valid JSON. Do not include markdown code blocks.`;
+                
+                // v4.9.5: PROFESSIONAL CREATIVE PROMPT
+                const aiPrompt = `
+                    You are a Senior Creative Graphic Designer. 
+                    Generate a high-quality Fabric.js JSON for: "${prompt}"
+                    WORKSPACE: 800x600.
+                    CRITICAL RULES:
+                    1. NO PLAIN TEXT: Use SHAPES (Rect, Circle, Triangle) as backdrops, containers and ornaments. 
+                    2. LAYOUT: Center the main text. Add secondary ornaments around it.
+                    3. COLORS: Use professional palette (e.g., #001a33 background, #00e5ff accent).
+                    4. SCALE: Objects must fill the 800x600 space.
+                    RETURN ONLY RAW VALID JSON. 
+                    JSON Keys: "objects" (array).
+                `;
 
                 const response = await fetch(url, {
                     method: 'POST',
@@ -370,7 +370,6 @@ window.generateAIDesign = async () => {
                 });
 
                 const data = await response.json();
-                
                 if (data.error) {
                     lastError = `${data.error.message} (${modelCandidate})`;
                     continue; 
@@ -379,17 +378,16 @@ window.generateAIDesign = async () => {
                 const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
                 if (text) {
                     const cleanText = text.replace(/```json|```/g, '').trim();
-                    codeInput.value = cleanText;
+                    if (codeInput) codeInput.value = cleanText;
                     success = true;
                     
-                    // v4.8.9: Success Handling (Modal closes BEFORE alert)
                     if (scanModal) scanModal.classList.add('hidden');
                     
                     if (window.loadDesignFromCode) {
                         window.loadDesignFromCode(cleanText);
                     }
                     
-                    alert("ڈیزائن کامیابی سے تیار ہو گیا ہے! اب 'AI Editor' ٹیب میں جا کر دیکھیں/ایڈٹ کریں۔");
+                    alert("AI ڈیزائن تیار ہے! آپ اسے 'AI Editor' ٹیب میں اپنی مرضی سے تبدیل کر سکتے ہیں۔");
                     
                     // v4.9.0: Credit Deduction for non-premium users
                     if (!window.userState.isAdmin && window.userState.licenseStatus !== 'approved') {
