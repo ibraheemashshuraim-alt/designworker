@@ -406,11 +406,21 @@ window.generateAIDesign = async () => {
         }
     } catch (e) {
         console.error("AI Designer Error:", e);
-        alert("ڈیزائن بنانے میں مسئلہ ہوا۔: " + e.message);
+        
+        let msg = "ڈیزائن بنانے میں مسئلہ ہوا۔: " + e.message;
+        if (e.message.includes("403")) {
+            msg = "آپ کی API Key درست نہیں ہے یا Gemini API ڈس ایبل ہے۔ براہ کرم سیٹنگز میں اپنی ذاتی API Key استعمال کریں۔";
+        } else if (e.message.includes("429")) {
+            msg = "فری ٹائر کا کوٹہ ختم ہو گیا ہے۔ تھوڑی دیر بعد دوبارہ کوشش کریں یا اپنی API Key تبدیل کریں۔";
+        }
+        
+        alert(msg);
         codeInput.value = "";
     } finally {
-        genBtn.disabled = false;
-        genBtn.innerHTML = "<i class='fa-solid fa-wand-magic-sparkles'></i> ڈیزائن جنریٹ کریں";
+        if (genBtn) {
+            genBtn.disabled = false;
+            genBtn.innerHTML = "<i class='fa-solid fa-wand-magic-sparkles'></i> ڈیزائن جنریٹ کریں";
+        }
         if (scanModal) scanModal.classList.add('hidden');
     }
 };
