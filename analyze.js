@@ -284,8 +284,11 @@ window.deleteHistoryItem = async (docId) => {
 };
 
 // --- VERSION TAG ---
-window.DESIGN_VERSION = "4.9.5";
-console.log("DesignCheck v4.9.5 Professional Analysis & Premium AI Editor Loaded");
+window.DESIGN_VERSION = "4.9.6";
+console.log("DesignCheck v4.9.6 Stability & Premium AI Editor Loaded");
+
+// v4.9.6: Export Local Module State to Global Window (CRITICAL FIX)
+window.userState = userState;
 
 // ================ PREMIUM AI DESIGNER ================
 window.generateAIDesign = async () => {

@@ -1,4 +1,4 @@
-// ================ EDITOR LOGIC (v4.9.5 - PRO STABILITY) ================
+// ================ EDITOR LOGIC (v4.9.6 - FINAL STABILITY) ================
 
 let canvas;
 const baseWidth = 800; 
@@ -29,9 +29,9 @@ function initEditor() {
         });
         window.dc_canvas = canvas; 
         
-        // v4.9.5: Selection Listeners for Toolbar Sync
-        canvas.on('selection:created', (e) => syncToolbar(e.selected[0]));
-        canvas.on('selection:updated', (e) => syncToolbar(e.selected[0]));
+        // v4.9.6: Robust Selection Sync
+        canvas.on('selection:created', (e) => { if(e.selected && e.selected[0]) syncToolbar(e.selected[0]); });
+        canvas.on('selection:updated', (e) => { if(e.selected && e.selected[0]) syncToolbar(e.selected[0]); });
         canvas.on('selection:cleared', () => hideToolbar());
     }
     
@@ -56,10 +56,9 @@ function initEditor() {
         };
     }
 
-    // v4.9.5: Global Keyboard Deletion Handler
+    // Global Keyboard Deletion
     document.addEventListener('keydown', (e) => {
-        if ((e.key === 'Delete' || e.key === 'Backspace') && canvas.getActiveObject()) {
-            // Don't delete if user is typing in an input/textarea
+        if ((e.key === 'Delete' || e.key === 'Backspace') && canvas && canvas.getActiveObject()) {
             if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
             deleteActiveObject();
         }
@@ -70,6 +69,7 @@ function initEditor() {
         const obj = canvas.getActiveObject();
         if (obj) {
             obj.set('fill', e.target.value);
+            if (obj.type === 'i-text') obj.set('stroke', null); // Text optimization
             canvas.renderAll();
         }
     });
@@ -95,17 +95,17 @@ function syncToolbar(obj) {
 
     // Sync Color
     const colorPicker = document.getElementById('itemColorPicker');
-    if (colorPicker && obj.fill) {
-        // Convert to hex if needed, but fabric often uses hex/rgb
+    if (colorPicker && obj.fill && typeof obj.fill === 'string' && obj.fill.startsWith('#')) {
         colorPicker.value = obj.fill;
     }
 
     // Sync Font Area
     const fontArea = document.getElementById('fontSelectorArea');
-    if (fontArea) {
+    const fontSelect = document.getElementById('itemFontSelector');
+    if (fontArea && fontSelect) {
         if (obj.type === 'i-text') {
             fontArea.style.display = "flex";
-            document.getElementById('itemFontSelector').value = obj.fontFamily || 'Outfit';
+            fontSelect.value = obj.fontFamily || 'Outfit';
         } else {
             fontArea.style.display = "none";
         }
@@ -129,12 +129,56 @@ function resizeCanvas() {
     const scale = Math.min(containerWidth / baseWidth, 1.0);
     
     wrapper.style.transform = `scale(${scale})`;
-    card.style.height = (baseHeight * scale + 150) + "px"; // Extra space for tools
+    card.style.height = (baseHeight * scale + 150) + "px"; 
     
     canvas.calcOffset();
 }
 
+// v4.9.6: TAB SWITCH STABILITY
+window.switchTab = (tab) => {
+    const analyzer = document.getElementById('analyzerView');
+    const editor = document.getElementById('editorView');
+    const tabs = document.querySelectorAll('.tab-btn');
+    
+    if (tab === 'analyzer') {
+        analyzer?.classList.remove('hidden');
+        editor?.classList.add('hidden');
+        tabs[0]?.classList.add('active');
+        tabs[1]?.classList.remove('active');
+    } else {
+        analyzer?.classList.add('hidden');
+        editor?.classList.remove('hidden');
+        tabs[1]?.classList.add('active');
+        tabs[0]?.classList.remove('active');
+        
+        // Critical: Update layout and access on switch
+        setTimeout(() => {
+            resizeCanvas();
+            checkPremiumAccess();
+            if (canvas) canvas.calcOffset();
+        }, 100);
+    }
+};
+
+function checkPremiumAccess() {
+    const gate = document.getElementById('editorPremiumGate');
+    if (!gate) return;
+    
+    // v4.9.6: Safely checking exported window.userState
+    const state = window.userState || {};
+    const hasAccess = state.isAdmin || 
+                      state.licenseStatus === 'approved' || 
+                      (Number(state.credits || 0) > 0);
+
+    if (hasAccess) {
+        gate.classList.add('hidden');
+    } else {
+        gate.classList.remove('hidden');
+    }
+}
+
 window.deleteActiveObject = () => {
+    if (!canvas) return;
     const obj = canvas.getActiveObject();
     if (obj) {
         canvas.remove(obj);
@@ -146,14 +190,8 @@ window.deleteActiveObject = () => {
 window.addTextToCanvas = () => {
     if (!canvas) return;
     const text = new fabric.IText('اپنی تحریر لکھیں', {
-        left: 400,
-        top: 300,
-        originX: 'center',
-        originY: 'center',
-        fontFamily: 'Outfit',
-        fill: '#1a1a1a',
-        fontSize: 60,
-        fontWeight: 'bold',
+        left: 400, top: 300, originX: 'center', originY: 'center',
+        fontFamily: 'Outfit', fill: '#1a1a1a', fontSize: 60, fontWeight: 'bold',
         shadow: new fabric.Shadow({ color: 'rgba(0,0,0,0.3)', blur: 20, offsetX: 10, offsetY: 10 })
     });
     canvas.add(text);
@@ -217,7 +255,7 @@ window.loadDesignFromCode = (rawCode) => {
         canvas.loadFromJSON(designData, () => {
             canvas.renderAll();
             canvas.calcOffset();
-            console.log("AI Design Loaded v4.9.5");
+            console.log("AI Design Loaded v4.9.6 Final Stability");
         });
     } catch (e) {
         console.error("AI Load Error:", e);
