@@ -82,6 +82,9 @@ const elements = {
     adminUsersList: document.getElementById('adminUsersList'),
     colorPaletteOut: document.getElementById('colorPaletteOut'),
     fontsUsedOut: document.getElementById('fontsUsedOut'),
+    detailedImprovementsOut: document.getElementById('detailedImprovementsOut'),
+    pricingEstimationOut: document.getElementById('pricingEstimationOut'),
+    clientImpressionOut: document.getElementById('clientImpressionOut'),
     resultsCard: document.querySelector('.results-card'),
     statusHeader: document.getElementById('statusHeader'),
     exportGroup: document.getElementById('exportGroup')
@@ -180,8 +183,8 @@ window.logout = async () => {
 };
 
 // --- VERSION TAG ---
-window.DESIGN_VERSION = "4.0";
-console.log("DesignCheck v4.0 Absolute Stability Loaded");
+window.DESIGN_VERSION = "4.6.0";
+console.log("DesignCheck v4.6.0 Professional Analysis Loaded");
 
 // Global Modal Toggle
 window.toggleModal = (id, show) => {
@@ -606,10 +609,25 @@ window.runAnalysis = async () => {
                 "contrast": "تضاد (اردو)",
                 "strengths": ["خوبی1", "خوبی2"],
                 "improvements": ["بہتری1", "بہتری2"],
+                "detailed_improvements": [
+                    { "text": "تفصیلی بہتری کا پوائنٹ 1", "priority": "mandatory" },
+                    { "text": "تفصیلی بہتری کا پوائنٹ 2", "priority": "optional" }
+                ],
+                "pricing": {
+                    "current": "موجودہ ریٹ (e.g. 2000-5000)",
+                    "improved": "بہتری کے بعد ریٹ (e.g. 8000-10000)"
+                },
+                "client_impression": {
+                    "level": "پروفیشنل / نوآموز / درمیانہ",
+                    "feedback": "کلائنٹ پر کیا اثر پڑے گا (اردو)",
+                    "warning": "اگر ڈیزائن بہت برا ہے تو وارننگ (اردو) ورنہ خالی چھوڑ دیں"
+                },
                 "colors": ["#hex1", "#hex2"],
                 "fonts": ["Font1", "Font2"]
             }
             جواب صرف اردو میں دیں۔
+            "priority" میں صرف "mandatory" یا "optional" لکھیں۔
+            "pricing" میں روپوں (PKR) کا ذکر کریں (اگر ضرورت ہو تو USD بھی لکھ سکتے ہیں)۔
         `;
 
         const safetySettings = [
@@ -752,6 +770,54 @@ function displayResults(data) {
     
     elements.reportGoodOut.innerHTML = data.strengths.map(s => `<div class="chip chip-success">${s}</div>`).join('');
     elements.reportBadOut.innerHTML = data.improvements.map(i => `<div class="chip chip-warning">${i}</div>`).join('');
+
+    // NEW: Detailed Improvements with priorities
+    if (data.detailed_improvements && data.detailed_improvements.length > 0) {
+        elements.detailedImprovementsOut.innerHTML = data.detailed_improvements.map(item => `
+            <div class="priority-item">
+                <span class="priority-text">${item.text}</span>
+                <span class="priority-tag ${item.priority === 'mandatory' ? 'tag-mandatory' : 'tag-optional'}">
+                    ${item.priority === 'mandatory' ? 'لازمی' : 'اختیاری'}
+                </span>
+            </div>
+        `).join('');
+    }
+
+    // NEW: Pricing Estimation
+    if (data.pricing) {
+        elements.pricingEstimationOut.innerHTML = `
+            <div class="pricing-card">
+                <div class="pricing-label">موجودہ معیار کے مطابق ریٹ</div>
+                <div class="price-value">${data.pricing.current}</div>
+            </div>
+            <div class="pricing-card" style="border-color: var(--success-green); background: rgba(0, 255, 157, 0.03);">
+                <div class="pricing-label">بہتری کے بعد ممکنہ ریٹ</div>
+                <div class="price-value" style="color: var(--success-green);">${data.pricing.improved}</div>
+            </div>
+        `;
+    }
+
+    // NEW: Client Impression
+    if (data.client_impression) {
+        let warningHtml = data.client_impression.warning ? `
+            <div class="warning-alert">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <span>${data.client_impression.warning}</span>
+            </div>
+        ` : '';
+
+        elements.clientImpressionOut.innerHTML = `
+            <div class="impression-container">
+                <div class="skill-header">
+                    <span style="font-size: 0.85rem; color: var(--text-muted);">آپ کا اسکیل لیول:</span>
+                    <span class="skill-level-badge">${data.client_impression.level}</span>
+                </div>
+                <p class="impression-feedback">${data.client_impression.feedback}</p>
+                ${warningHtml}
+            </div>
+        `;
+    }
+
 
     // Render Color Palette
     if (data.colors && data.colors.length > 0) {
