@@ -284,8 +284,8 @@ window.deleteHistoryItem = async (docId) => {
 };
 
 // --- VERSION TAG ---
-window.DESIGN_VERSION = "4.9.4";
-console.log("DesignCheck v4.9.4 Professional Analysis & Premium AI Editor Loaded");
+window.DESIGN_VERSION = "5.0.0";
+console.log("DesignCheck v5.0.0 Pro AI Graphic Editor & Analyzer Loaded");
 
 // ================ PREMIUM AI DESIGNER ================
 window.generateAIDesign = async () => {
@@ -345,13 +345,20 @@ window.generateAIDesign = async () => {
             try {
                 console.log(`AI Designer: Trying ${modelCandidate}...`);
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelCandidate}:generateContent?key=${keyToUse}`;
-                const aiPrompt = `
-                    You are a Senior Graphic Designer. 
-                    Generate a JSON design for Fabric.js for: "${prompt}"
-                    Canvas: 600x400. 
-                    Return ONLY raw JSON. Include background, text, shapes. 
-                    Must be valid Fabric JSON.
-                `;
+                const aiPrompt = `PRO MODE: You are a Senior Visual Designer (Expert in Urdu/Arabic/English typography).
+                    Generate a Fabric.js JSON for: "${prompt}"
+                    WORKSPACE: 1000x750 (High-Res). CENTER: {left: 500, top: 375}.
+                    
+                    DESIGN GUIDELINES:
+                    1. Use Large, Bold Headers (FontSize 70+).
+                    2. Use 'Gulzar' for Urdu text. Use 'Bebas Neue' or 'Montserrat' for English.
+                    3. BACKGROUND: Create a layered background (Main Rect + Accents).
+                    4. STYLE: Add 'shadow: {color: "rgba(0,0,0,0.4)", blur: 15, offsetX: 10, offsetY: 10}' to all objects.
+                    5. SHAPES: Use 'rx: 20, ry: 20' for Rects (Round corners).
+                    6. COLORS: Use High-End Palettes (e.g. Dark/Neon, Luxury Gold/White).
+                    7. CENTERING: Every object must have 'originX: center', 'originY: center' and use 500, 375 as base center.
+                    
+                    Return ONLY raw valid JSON. Do not include markdown code blocks.`;
 
                 const response = await fetch(url, {
                     method: 'POST',
