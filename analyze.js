@@ -142,6 +142,8 @@ async function setupUserPersistence(user) {
             userState.photoURL = user.photoURL;
             userState.isAdmin = ADMIN_EMAILS.includes(user.email);
             
+            // Expose for editor.js
+            window.userState = userState;
             updateUI();
         } else {
             // New User: Initialize with 10 credits
@@ -277,8 +279,71 @@ window.deleteHistoryItem = async (docId) => {
 };
 
 // --- VERSION TAG ---
-window.DESIGN_VERSION = "4.7.0";
-console.log("DesignCheck v4.7.0 Professional Analysis & History Loaded");
+window.DESIGN_VERSION = "4.8.0";
+console.log("DesignCheck v4.8.0 Professional Analysis & Premium AI Editor Loaded");
+
+// ================ PREMIUM AI DESIGNER ================
+window.generateAIDesign = async () => {
+    const promptArea = document.getElementById('aiDesignPrompt');
+    const prompt = promptArea.value.trim();
+    if (!prompt) return alert("براہ کرم بتائیں کہ آپ کیا بنانا چاہتے ہیں۔");
+
+    if (window.userState.licenseStatus !== 'approved' && !window.userState.isAdmin) {
+        return toggleModal('profileDropdown', true);
+    }
+
+    const genBtn = document.getElementById('generateAIDesignBtn');
+    const codeInput = document.getElementById('aiDesignCodeInput');
+    
+    genBtn.disabled = true;
+    genBtn.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> جنریٹ ہو رہا ہے...";
+    codeInput.value = "AI ڈیزائن کر رہا ہے انتظار کریں...";
+
+    try {
+        const keyToUse = getApiKey() || "AIzaSyC7f4QH6CSRN6dAhGNm7P4kMHTv12mtdEo";
+        const aiPrompt = `
+            تم ایک سینئر گرافک ڈیزائنر ہو (Senior Graphic Designer)۔
+            درج ذیل تفصیل کے مطابق Fabric.js کے لیے گرافک ڈیزائن (JSON) تیار کرو:
+            "${prompt}"
+            
+            ہدایات:
+            1. صرف JSON آؤٹ پٹ دو جس میں objects کی فہرست ہو۔
+            2. کینوس کا سائز 600x400 ہے۔
+            3. ڈیزائن میں کم از کم 4-5 مختلف اشیاء (Objects) ہونی چاہئیں جیسے ٹیکسٹ، بیک گراؤنڈ، شیپس وغیرہ۔
+            4. ٹیکسٹ کے لیے 'Outfit' فونٹس کا استعمال کرو۔
+            5. آؤٹ پٹ صرف پیور JSON ہونا چاہیے تاکہ canvas.loadFromJSON اسے براہ راست سمجھ سکے۔
+            6. اس میں ایک کمنٹ شامل کریں کہ "Design by DesignCheck AI".
+        `;
+
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${keyToUse}`;
+        const payload = {
+            contents: [{ parts: [{ text: aiPrompt }] }],
+            generationConfig: { response_mime_type: "application/json" }
+        };
+
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        
+        if (text) {
+            codeInput.value = text;
+            alert("ڈیزائن کوڈ تیار ہے! اب 'درست کریں' پر کلک کریں تاکہ کینوس پر دیکھا جا سکے۔");
+        } else {
+            throw new Error("No output from AI");
+        }
+    } catch (e) {
+        alert("ڈیزائن بنانے میں مسئلہ ہوا۔: " + e.message);
+        codeInput.value = "";
+    } finally {
+        genBtn.disabled = false;
+        genBtn.innerHTML = "<i class='fa-solid fa-wand-magic-sparkles'></i> ڈیزائن جنریٹ کریں";
+    }
+};
 
 // Global Modal Toggle
 window.toggleModal = (id, show) => {

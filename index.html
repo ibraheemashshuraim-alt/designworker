@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fabric"></script>
 </head>
 <body>
     <div class="background-backdrop"></div>
@@ -97,9 +98,15 @@
     <header class="hero-section">
         <h1 class="hero-title">Professional Design Analyzer</h1>
         <p class="hero-subtitle">اپنے ڈیزائن کو AI کی مدد سے بہتر بنائیں</p>
+        
+        <!-- Tab Navigation -->
+        <div class="tabs-nav">
+            <button class="tab-btn active" onclick="switchTab('analyzer')"><i class="fa-solid fa-magnifying-glass-chart"></i> Analyzer</button>
+            <button class="tab-btn" onclick="switchTab('editor')"><i class="fa-solid fa-layer-group"></i> AI Editor (Premium)</button>
+        </div>
     </header>
 
-    <main class="app-container">
+    <main class="app-container" id="analyzerView">
         <!-- Workspace Column -->
         <div class="dash-card workspace-card">
             <div class="card-content">
@@ -221,6 +228,66 @@
         </div>
     </main>
 
+    <!-- NEW: Editor View -->
+    <main class="app-container hidden" id="editorView">
+        <!-- Editor Toolbar -->
+        <div class="dash-card editor-toolbar-card">
+            <div class="card-header-status" style="padding: 10px;">
+                <span class="status-indicator">DESIGN TOOLS</span>
+            </div>
+            <div class="editor-tools-grid">
+                <button class="tool-btn" onclick="addTextToCanvas()"><i class="fa-solid fa-font"></i> <span>Add Text</span></button>
+                <button class="tool-btn" onclick="addRectToCanvas()"><i class="fa-solid fa-square"></i> <span>Rectangle</span></button>
+                <button class="tool-btn" onclick="addCircleToCanvas()"><i class="fa-solid fa-circle"></i> <span>Circle</span></button>
+                <button class="tool-btn" onclick="document.getElementById('editorFileInput').click()"><i class="fa-solid fa-image"></i> <span>Upload</span></button>
+                <input type="file" id="editorFileInput" hidden accept="image/*">
+                <button class="tool-btn danger-btn" onclick="clearCanvas()"><i class="fa-solid fa-trash-can"></i> <span>Clear</span></button>
+                <button class="tool-btn primary-btn" onclick="exportCanvas()" style="grid-column: span 2; margin-top: 10px;"><i class="fa-solid fa-download"></i> Download PNG</button>
+            </div>
+        </div>
+
+        <!-- Canvas Area -->
+        <div class="dash-card canvas-card" style="position: relative;">
+            <div class="canvas-container-wrapper">
+                <canvas id="designCanvas"></canvas>
+            </div>
+            
+            <!-- Premium Gate Overlay -->
+            <div id="editorPremiumGate" class="premium-gate">
+                <div class="gate-content">
+                    <i class="fa-solid fa-lock" style="font-size: 3rem; color: #ffd700; margin-bottom: 20px;"></i>
+                    <h2 style="color: #fff;">Premium ایڈیٹر لاک ہے</h2>
+                    <p style="color: var(--text-muted); margin: 15px 0 25px;">یہ فیچر صرف ان ممبرز کے لیے ہے جن کے پاس ڈیزائن چیک پریمیم لائسنس ہے۔</p>
+                    <button class="btn approve" style="padding: 15px 40px; font-size: 1.1rem;" onclick="toggleModal('profileDropdown', true)">
+                        <i class="fa-solid fa-gem"></i> پریمیم میں اپ گریڈ کریں
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Designer Section (Full Width below) -->
+        <div class="dash-card ai-designer-card" style="grid-column: 1 / -1; min-height: auto;">
+             <div class="card-header-status">
+                <span class="status-indicator">AI DESIGNER - TEXT TO DESIGN</span>
+            </div>
+            <div class="ai-designer-box">
+                <div class="ai-input-group">
+                    <textarea id="aiDesignPrompt" class="custom-input design-textarea" placeholder="مثال کے طور پر: 'ایک پیزا شاپ کا فلائر بنائیں جس میں ریڈ کلر کا بیک گراؤنڈ ہو اور برگر کی تصویر ہو'"></textarea>
+                    <button class="btn primary-btn" id="generateAIDesignBtn" onclick="generateAIDesign()">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> ڈیزائن جنریٹ کریں
+                    </button>
+                </div>
+                <div class="ai-code-group">
+                    <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 8px;">AI کا دیا گیا ڈیزائن کوڈ یہاں پیسٹ کریں:</p>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="text" id="aiDesignCodeInput" class="custom-input" placeholder="Paste Code Here..." style="margin-bottom: 0;">
+                        <button class="btn approve" onclick="loadDesignFromCode()" style="padding: 10px 20px;">درست کریں</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
     <!-- Admin Dashboard View -->
     <div id="adminDashboardView" class="modal hidden">
         <div class="modal-content admin-modal-content">
@@ -264,6 +331,7 @@
         <div>Powered by <strong>Gemini AI</strong> | <span id="uiVersion" style="color: var(--neon-cyan);">v4.7.0</span></div>
     </footer>
 
-    <script type="module" src="analyze.js?v=4.7.0"></script>
+    <script type="module" src="analyze.js?v=4.8.0"></script>
+    <script src="editor.js?v=4.8.0"></script>
 </body>
 </html>
