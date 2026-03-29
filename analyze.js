@@ -299,8 +299,31 @@ window.generateAIDesign = async () => {
     genBtn.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> جنریٹ ہو رہا ہے...";
     codeInput.value = "AI ڈیزائن کر رہا ہے انتظار کریں...";
 
+    const scanModal = document.getElementById('scanningModal');
+    if (scanModal) {
+        scanModal.classList.remove('hidden');
+        scanModal.querySelector('p').innerText = "AI ڈیزائن تیار کر رہا ہے...";
+    }
+
     try {
         const keyToUse = getApiKey() || "AIzaSyC7f4QH6CSRN6dAhGNm7P4kMHTv12mtdEo";
+        
+        // v4.8.4: Smart Model Detection (Flash 2.0 -> Flash 1.5 -> Pro)
+        let modelToUse = "gemini-1.5-flash"; 
+        try {
+            const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${keyToUse}`);
+            const listData = await listRes.json();
+            if (listData.models && listData.models.length > 0) {
+                const bestModel = listData.models.find(m => m.name.includes("gemini-2.0-flash") && m.supportedGenerationMethods.includes("generateContent")) || 
+                                  listData.models.find(m => m.name.includes("gemini-1.5-flash") && m.supportedGenerationMethods.includes("generateContent")) || 
+                                  listData.models.find(m => m.supportedGenerationMethods.includes("generateContent") && m.name.includes("flash"));
+                
+                if (bestModel) modelToUse = bestModel.name.split('/').pop();
+            }
+        } catch (e) { console.warn("Model detection failed", e); }
+
+        console.log(`Using model for Designer: ${modelToUse}`);
+
         const aiPrompt = `
             You are a Senior Graphic Designer. 
             Generate a JSON design for Fabric.js based on: "${prompt}"
@@ -310,7 +333,7 @@ window.generateAIDesign = async () => {
             Always include a background rectangle covering the full canvas.
         `;
 
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${keyToUse}`;
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelToUse}:generateContent?key=${keyToUse}`;
         const payload = {
             contents: [{ parts: [{ text: aiPrompt }] }]
         };
@@ -334,7 +357,7 @@ window.generateAIDesign = async () => {
             codeInput.value = cleanText;
             alert("ڈیزائن کوڈ تیار ہے! اب 'درست کریں' پر کلک کریں تاکہ کینوس پر دیکھا جا سکے۔");
         } else {
-            throw new Error("No output from AI. Check safety settings or prompt.");
+            throw new Error("No output from AI. Key might be model-restricted.");
         }
     } catch (e) {
         console.error("AI Designer Error:", e);
@@ -343,6 +366,7 @@ window.generateAIDesign = async () => {
     } finally {
         genBtn.disabled = false;
         genBtn.innerHTML = "<i class='fa-solid fa-wand-magic-sparkles'></i> ڈیزائن جنریٹ کریں";
+        if (scanModal) scanModal.classList.add('hidden');
     }
 };
 
