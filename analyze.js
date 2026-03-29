@@ -284,8 +284,8 @@ window.deleteHistoryItem = async (docId) => {
 };
 
 // --- VERSION TAG ---
-window.DESIGN_VERSION = "4.8.0";
-console.log("DesignCheck v4.8.0 Professional Analysis & Premium AI Editor Loaded");
+window.DESIGN_VERSION = "4.9.2";
+console.log("DesignCheck v4.9.2 Professional Analysis & Premium AI Editor Loaded");
 
 // ================ PREMIUM AI DESIGNER ================
 window.generateAIDesign = async () => {

@@ -1,4 +1,4 @@
-// ================ EDITOR LOGIC (v4.9.1) ================
+// ================ EDITOR LOGIC (v4.9.2) ================
 
 let canvas;
 const canvasWidth = 600;
@@ -20,6 +20,7 @@ function initEditor() {
     if (!canvasElement) return;
 
     if (!canvas) {
+        // v4.9.2: 100% Reliable Stack and Selection
         canvas = new fabric.Canvas('designCanvas', {
             width: canvasWidth,
             height: canvasHeight,
@@ -42,7 +43,8 @@ function initEditor() {
                     const scale = Math.min(250 / img.width, 250 / img.height);
                     img.scale(scale);
                     canvas.add(img);
-                    canvas.centerObject(img);
+                    canvas.centerObject(img); // Center in workspace
+                    img.setCoords();
                     canvas.setActiveObject(img);
                     canvas.renderAll();
                 });
@@ -87,20 +89,25 @@ window.switchTab = (tab) => {
         setTimeout(() => {
             resizeCanvas();
             checkPremiumAccess();
-        }, 100);
+        }, 150);
     }
 };
 
 function checkPremiumAccess() {
     const gate = document.getElementById('editorPremiumGate');
     if (!gate) return;
+    
     const hasAccess = window.userState && (
         window.userState.isAdmin || 
         window.userState.licenseStatus === 'approved' || 
         (Number(window.userState.credits || 0) > 0)
     );
-    if (hasAccess) gate.classList.add('hidden');
-    else gate.classList.remove('hidden');
+
+    if (hasAccess) {
+        gate.classList.add('hidden');
+    } else {
+        gate.classList.remove('hidden');
+    }
 }
 
 // Pro Styling Helper
@@ -111,20 +118,18 @@ const proShadow = new fabric.Shadow({
     offsetY: 5
 });
 
-// Manual Tools (v4.9.1 Definitive Centering)
+// Manual Tools (v4.9.2 Definitive Centering)
 window.addTextToCanvas = () => {
     if (!canvas) return;
     const text = new fabric.IText('اپنی تحریر لکھیں', {
-        left: canvasWidth / 2,
-        top: canvasHeight / 2,
-        originX: 'center',
-        originY: 'center',
         fontFamily: 'Outfit',
         fill: '#1a1a1a',
         fontSize: 50,
         shadow: proShadow
     });
     canvas.add(text);
+    canvas.centerObject(text); // v4.9.2: Perfect Centering
+    text.setCoords();
     canvas.setActiveObject(text);
     canvas.renderAll();
 };
@@ -132,10 +137,6 @@ window.addTextToCanvas = () => {
 window.addRectToCanvas = () => {
     if (!canvas) return;
     const rect = new fabric.Rect({
-        left: canvasWidth / 2,
-        top: canvasHeight / 2,
-        originX: 'center',
-        originY: 'center',
         fill: '#00e5ff',
         width: 180,
         height: 120,
@@ -146,6 +147,8 @@ window.addRectToCanvas = () => {
         strokeWidth: 2
     });
     canvas.add(rect);
+    canvas.centerObject(rect);
+    rect.setCoords();
     canvas.setActiveObject(rect);
     canvas.renderAll();
 };
@@ -153,10 +156,6 @@ window.addRectToCanvas = () => {
 window.addCircleToCanvas = () => {
     if (!canvas) return;
     const circle = new fabric.Circle({
-        left: canvasWidth / 2,
-        top: canvasHeight / 2,
-        originX: 'center',
-        originY: 'center',
         fill: '#ff0070',
         radius: 80,
         shadow: proShadow,
@@ -164,6 +163,8 @@ window.addCircleToCanvas = () => {
         strokeWidth: 2
     });
     canvas.add(circle);
+    canvas.centerObject(circle);
+    circle.setCoords();
     canvas.setActiveObject(circle);
     canvas.renderAll();
 };
@@ -173,33 +174,42 @@ window.clearCanvas = () => {
         canvas.clear();
         canvas.backgroundColor = '#ffffff';
         canvas.renderAll();
+        resizeCanvas();
     }
 };
 
 window.exportCanvas = () => {
     if (!canvas) return;
-    const scale = canvas.getZoom();
+    const originalScale = canvas.getZoom();
     canvas.setZoom(1);
     canvas.setDimensions({ width: canvasWidth, height: canvasHeight });
+    
     const link = document.createElement('a');
-    link.download = 'DesignCheck_Pro_Export.png';
+    link.download = 'DesignCheck_Export.png';
     link.href = canvas.toDataURL({ format: 'png', quality: 1 });
     link.click();
+    
     resizeCanvas();
 };
 
-// AI Engine Connector
+// AI Engine Connector (v4.9.2 Auto-Load Support)
 window.loadDesignFromCode = (rawCode) => {
     if (!canvas) return;
     const code = rawCode || document.getElementById('aiDesignCodeInput')?.value?.trim();
     if (!code) return;
 
     try {
-        const json = code.replace(/```json|```/g, '').trim();
-        canvas.loadFromJSON(JSON.parse(json), () => {
+        const jsonText = code.replace(/```json|```/g, '').trim();
+        const designData = JSON.parse(jsonText);
+        
+        canvas.loadFromJSON(designData, () => {
             canvas.renderAll();
             resizeCanvas();
-            setTimeout(() => canvas.renderAll(), 200);
+            // Force re-draw to ensure visibility
+            setTimeout(() => {
+                canvas.requestRenderAll();
+                console.log("AI Design loaded & rendered.");
+            }, 300);
         });
     } catch (e) {
         console.error("AI Load Error:", e);
