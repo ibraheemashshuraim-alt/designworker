@@ -300,19 +300,25 @@
              <div class="card-header-status">
                 <span class="status-indicator">AI DESIGNER - TEXT TO DESIGN</span>
             </div>
-            <div class="ai-designer-box">
-                <div class="ai-input-group">
-                    <textarea id="aiDesignPrompt" class="custom-input design-textarea" placeholder="مثال کے طور پر: 'ایک پیزا شاپ کا فلائر بنائیں جس میں ریڈ کلر کا بیک گراؤنڈ ہو اور برگر کی تصویر ہو'"></textarea>
-                    <button class="btn primary-btn" id="generateAIDesignBtn" onclick="generateAIDesign()">
-                        <i class="fa-solid fa-wand-magic-sparkles"></i> ڈیزائن جنریٹ کریں
+            <div class="ai-designer-box" style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 30px; padding: 25px; align-items: start;">
+                <!-- Column 1: Generate via AI -->
+                <div class="ai-input-group" style="display: flex; flex-direction: column; gap: 12px; height: 100%;">
+                    <div style="font-size: 0.85rem; color: var(--neon-cyan); margin-bottom: -5px; display: flex; align-items: center; gap: 8px;">
+                        <i class="fa-solid fa-sparkles"></i> اے آئی ڈیزائنر (Describe your design):
+                    </div>
+                    <textarea id="aiDesignPrompt" class="custom-input design-textarea" style="margin-bottom: 0; min-height: 100px; font-size: 0.95rem;" placeholder="مثال کے طور پر: 'ایک پیزا شاپ کا فلائر بنائیں جس میں ریڈ کلر کا بیک گراؤنڈ ہو اور برگر کی تصویر ہو'"></textarea>
+                    <button class="btn primary-btn" id="generateAIDesignBtn" onclick="generateAIDesign()" style="width: 100%; padding: 15px; font-size: 1rem; border-radius: 15px;">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> نیا ڈیزائن جنریٹ کریں (Generate)
                     </button>
                 </div>
-                <div class="ai-code-group">
-                    <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 8px;">AI کا دیا گیا ڈیزائن کوڈ یہاں پیسٹ کریں:</p>
-                    <div style="display: flex; gap: 10px;">
-                        <input type="text" id="aiDesignCodeInput" class="custom-input" placeholder="Paste Code Here..." style="margin-bottom: 0;">
-                        <button class="btn approve" onclick="loadDesignFromCode()" style="padding: 10px 20px;">درست کریں</button>
-                    </div>
+
+                <!-- Column 2: Paste Code -->
+                <div class="ai-code-group" style="display: flex; flex-direction: column; gap: 12px; background: rgba(255,255,255,0.03); padding: 20px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.05);">
+                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0;">AI کا دیا گیا کوڈ یہاں پیسٹ کریں:</div>
+                    <input type="text" id="aiDesignCodeInput" class="custom-input" placeholder="{ 'objects': [...] }" style="margin-bottom: 0; background: rgba(0,0,0,0.3); font-family: monospace; font-size: 0.8rem;">
+                    <button class="btn approve" onclick="loadDesignFromCode()" style="width: 100%; padding: 12px; font-size: 0.9rem; border-radius: 12px;">
+                        <i class="fa-solid fa-check"></i> ڈیزائن کینوس پر لائیں (Apply)
+                    </button>
                 </div>
             </div>
         </div>
