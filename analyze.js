@@ -290,10 +290,14 @@ console.log("DesignCheck v4.8.0 Professional Analysis & Premium AI Editor Loaded
 // ================ PREMIUM AI DESIGNER ================
 window.generateAIDesign = async () => {
     const promptArea = document.getElementById('aiDesignPrompt');
+    if (!promptArea) return;
     const prompt = promptArea.value.trim();
     if (!prompt) return alert("براہ کرم بتائیں کہ آپ کیا بنانا چاہتے ہیں۔");
 
-    if (window.userState.licenseStatus !== 'approved' && !window.userState.isAdmin) {
+    // v4.9.0: Expanded access logic (Admin, Approved License OR sufficient Credits)
+    const canAccess = window.userState.isAdmin || window.userState.licenseStatus === 'approved' || (window.userState.credits >= 5);
+    if (!canAccess) {
+        alert("اس فیچر کے لیے کم از کم 5 کریڈٹس کی ضرورت ہے۔ براہ کرم پریمیم لائسنس خریدیں یا کریڈٹس لوڈ کریں۔");
         return toggleModal('profileDropdown', true);
     }
 
@@ -379,6 +383,17 @@ window.generateAIDesign = async () => {
                     }
                     
                     alert("ڈیزائن کامیابی سے تیار ہو گیا ہے! اب 'AI Editor' ٹیب میں جا کر دیکھیں/ایڈٹ کریں۔");
+                    
+                    // v4.9.0: Credit Deduction for non-premium users
+                    if (!window.userState.isAdmin && window.userState.licenseStatus !== 'approved') {
+                        const userRef = doc(db, "users", window.userState.uid);
+                        await updateDoc(userRef, { 
+                            credits: increment(-5),
+                            usedCredits: increment(5)
+                        });
+                        console.log("5 Credits deducted for AI design.");
+                    }
+                    
                     break;
                 }
             } catch (innerE) {

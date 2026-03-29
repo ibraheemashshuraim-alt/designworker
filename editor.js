@@ -95,8 +95,15 @@ window.switchTab = (tab) => {
 function checkPremiumAccess() {
     const gate = document.getElementById('editorPremiumGate');
     if (!gate) return;
-    // userState is global from analyze.js
-    if (window.userState && (window.userState.isAdmin || window.userState.licenseStatus === 'approved')) {
+    
+    // v4.9.0: Relaxed Gate - Allow if Admin, Approved License OR has any Credits
+    const hasAccess = window.userState && (
+        window.userState.isAdmin || 
+        window.userState.licenseStatus === 'approved' || 
+        (Number(window.userState.credits || 0) > 0)
+    );
+
+    if (hasAccess) {
         gate.classList.add('hidden');
     } else {
         gate.classList.remove('hidden');
