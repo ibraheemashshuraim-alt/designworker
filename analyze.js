@@ -283,8 +283,8 @@ window.deleteHistoryItem = async (docId) => {
 };
 
 // --- VERSION TAG ---
-window.DESIGN_VERSION = "4.9.6";
-console.log("DesignCheck v4.9.6 Stability & Premium AI Editor Loaded");
+window.DESIGN_VERSION = "4.9.8";
+console.log("DesignCheck v4.9.8 Final Stability & Premium AI Editor Loaded");
 
 // v4.9.6: Export Local Module State to Global Window (CRITICAL FIX)
 window.userState = userState;
