@@ -1,4 +1,4 @@
-// ================ EDITOR LOGIC (v5.0.1 - UNLOCK & STABILIZE) ================
+// ================ EDITOR LOGIC (v5.0.2 - FINAL STABILITY) ================
 
 let canvas;
 const baseWidth = 1000; 
@@ -9,19 +9,16 @@ let removeBackground;
 import('https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.7.0/+esm')
     .then(module => {
         removeBackground = module.removeBackground;
-        console.log("AI BG Remover Loaded (v5.0.1)");
+        console.log("AI BG Remover Loaded (v5.0.2)");
     })
     .catch(err => console.error("BG Remover Load Fail:", err));
 
-// Initialization
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => initEditor());
-} else {
-    initEditor();
-}
+// --- Initialization Logic ---
 
 function initEditor() {
+    // 1. Check if Fabric Library is available globally
     if (typeof fabric === 'undefined') {
+        console.warn("Fabric.js not ready, retrying in 250ms...");
         setTimeout(initEditor, 250);
         return;
     }
@@ -67,10 +64,9 @@ function initEditor() {
 
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
-    
-    // v5.0.1: Periodic check to unlock if Firestore is slow
-    setInterval(checkPremiumAccess, 2000);
 }
+
+// --- CORE FUNCTIONS (Hoisted) ---
 
 function resizeCanvas() {
     const card = document.querySelector('.canvas-card');
@@ -85,22 +81,21 @@ function resizeCanvas() {
     canvas.calcOffset();
 }
 
-// UI Visibility
 function showSelectionToolbar() {
     const bar = document.getElementById('selectionTools');
     if (bar) bar.style.display = 'flex';
 }
+
 function hideSelectionToolbar() {
     const bar = document.getElementById('selectionTools');
     if (bar) bar.style.display = 'none';
 }
 
-// v5.0.1: CRITICAL - MISSING FUNCTION RE-DEFINED
-window.checkPremiumAccess = () => {
+function checkPremiumAccess() {
     const gate = document.getElementById('editorPremiumGate');
     if (!gate) return;
     
-    // v5.0.1: Emergency Power-User & Admin Bypass
+    // Power-User bypass
     const isPowerUser = window.userState && (
         window.userState.email === 'abdullqudus.77@gmail.com' ||
         window.userState.isAdmin || 
@@ -110,18 +105,35 @@ window.checkPremiumAccess = () => {
 
     if (isPowerUser) {
         gate.classList.add('hidden');
-        console.log("v5.0.1: Premium Editor Unlocked (Power/Credit User)");
+    } else if (window.userState && window.userState.loggedIn) {
+        gate.classList.remove('hidden');
+    }
+}
+
+// --- GLOBAL EXPORTS (Explicitly attached to window) ---
+
+window.switchTab = function(tab) {
+    const analyzer = document.getElementById('analyzerView');
+    const editor = document.getElementById('editorView');
+    const tabs = document.querySelectorAll('.tab-btn');
+    if (tab === 'analyzer') {
+        analyzer?.classList.remove('hidden');
+        editor?.classList.add('hidden');
+        tabs[0]?.classList.add('active');
+        tabs[1]?.classList.remove('active');
     } else {
-        // Only show gate if we definitely have user state and they aren't premium
-        if (window.userState && window.userState.loggedIn) {
-             gate.classList.remove('hidden');
-        }
+        analyzer?.classList.add('hidden');
+        editor?.classList.remove('hidden');
+        tabs[1]?.classList.add('active');
+        tabs[0]?.classList.remove('active');
+        setTimeout(() => { 
+            resizeCanvas(); 
+            checkPremiumAccess(); 
+        }, 150);
     }
 };
 
-// --- Pro Tool Implementations (Explicitly attached for onclick) ---
-
-window.changeFont = (fontName) => {
+window.changeFont = function(fontName) {
     const active = canvas.getActiveObject();
     if (active && (active.type === 'i-text' || active.type === 'text')) {
         active.set('fontFamily', fontName);
@@ -129,7 +141,7 @@ window.changeFont = (fontName) => {
     }
 };
 
-window.changeColor = (color) => {
+window.changeColor = function(color) {
     const active = canvas.getActiveObject();
     if (!active) return;
     if (active.type === 'activeSelection') {
@@ -140,23 +152,17 @@ window.changeColor = (color) => {
     canvas.requestRenderAll();
 };
 
-window.bringToFront = () => {
+window.bringToFront = function() {
     const active = canvas.getActiveObject();
-    if (active) {
-        active.bringToFront();
-        canvas.requestRenderAll();
-    }
+    if (active) { active.bringToFront(); canvas.requestRenderAll(); }
 };
 
-window.sendToBack = () => {
+window.sendToBack = function() {
     const active = canvas.getActiveObject();
-    if (active) {
-        active.sendToBack();
-        canvas.requestRenderAll();
-    }
+    if (active) { active.sendToBack(); canvas.requestRenderAll(); }
 };
 
-window.deleteSelected = () => {
+window.deleteSelected = function() {
     const active = canvas.getActiveObject();
     if (!active) return;
     if (active.type === 'activeSelection') {
@@ -168,12 +174,11 @@ window.deleteSelected = () => {
     canvas.requestRenderAll();
 };
 
-window.removeSelectedBackground = async () => {
+window.removeSelectedBackground = async function() {
     const active = canvas.getActiveObject();
     if (!active || active.type !== 'image' || !removeBackground) {
         return alert("براہ کرم ریمو کرنے کے لیے ایک تصویر کلک کریں (یا AI لوڈ ہو رہا ہے)۔");
     }
-
     const btn = document.getElementById('removeBGBtn');
     const oldHtml = btn.innerHTML;
     try {
@@ -189,72 +194,51 @@ window.removeSelectedBackground = async () => {
                 left: active.left, top: active.top,
                 scaleX: active.scaleX, scaleY: active.scaleY, angle: active.angle
             });
-            canvas.remove(active);
-            canvas.add(newImg);
-            canvas.setActiveObject(newImg);
-            canvas.requestRenderAll();
+            canvas.remove(active); canvas.add(newImg);
+            canvas.setActiveObject(newImg); canvas.requestRenderAll();
         });
     } catch (e) {
-        console.error("BG Remove Error:", e);
         alert("بیک گراؤنڈ ریمو کرنے میں مسئلہ ہوا۔");
     } finally {
-        btn.disabled = false;
-        btn.innerHTML = oldHtml;
+        btn.disabled = false; btn.innerHTML = oldHtml;
     }
 };
 
-// --- Standard Tools ---
-
-const proShadow = new fabric.Shadow({ color: 'rgba(0,0,0,0.3)', blur: 20, offsetX: 10, offsetY: 10 });
-
-window.addTextToCanvas = () => {
-    if (!canvas) return;
+window.addTextToCanvas = function() {
+    if (!canvas || typeof fabric === 'undefined') return;
     const text = new fabric.IText('اپنی تحریر لکھیں', {
         left: 500, top: 375, originX: 'center', originY: 'center',
-        fontFamily: 'Gulzar', fill: '#1a1a1a', fontSize: 70, shadow: proShadow
+        fontFamily: 'Gulzar', fill: '#1a1a1a', fontSize: 70
     });
-    canvas.add(text);
-    text.setCoords();
-    canvas.setActiveObject(text);
-    canvas.requestRenderAll();
+    canvas.add(text); text.setCoords(); canvas.setActiveObject(text); canvas.requestRenderAll();
 };
 
-window.addRectToCanvas = () => {
-    if (!canvas) return;
+window.addRectToCanvas = function() {
+    if (!canvas || typeof fabric === 'undefined') return;
     const rect = new fabric.Rect({
         left: 500, top: 375, originX: 'center', originY: 'center',
-        fill: '#00e5ff', width: 300, height: 250, rx: 25, ry: 25, shadow: proShadow
+        fill: '#00e5ff', width: 300, height: 250, rx: 25, ry: 25
     });
-    canvas.add(rect);
-    rect.setCoords();
-    canvas.setActiveObject(rect);
-    canvas.requestRenderAll();
+    canvas.add(rect); rect.setCoords(); canvas.setActiveObject(rect); canvas.requestRenderAll();
 };
 
-window.addCircleToCanvas = () => {
-    if (!canvas) return;
+window.addCircleToCanvas = function() {
+    if (!canvas || typeof fabric === 'undefined') return;
     const circle = new fabric.Circle({
         left: 500, top: 375, originX: 'center', originY: 'center',
-        fill: '#ff0070', radius: 150, shadow: proShadow
+        fill: '#ff0070', radius: 150
     });
-    canvas.add(circle);
-    circle.setCoords();
-    canvas.setActiveObject(circle);
-    canvas.requestRenderAll();
+    canvas.add(circle); circle.setCoords(); canvas.setActiveObject(circle); canvas.requestRenderAll();
 };
 
-window.clearCanvas = () => {
+window.clearCanvas = function() {
     if (confirm("کیا آپ پورا ڈیزائن ختم کرنا چاہتے ہیں؟")) {
-        canvas.clear();
-        canvas.backgroundColor = '#ffffff';
-        canvas.requestRenderAll();
-        resizeCanvas();
+        canvas.clear(); canvas.backgroundColor = '#ffffff'; canvas.requestRenderAll(); resizeCanvas();
     }
 };
 
-window.exportCanvas = () => {
+window.exportCanvas = function() {
     if (!canvas) return;
-    const originalScale = canvas.getZoom();
     canvas.setZoom(1);
     canvas.setDimensions({ width: baseWidth, height: baseHeight });
     const link = document.createElement('a');
@@ -264,15 +248,14 @@ window.exportCanvas = () => {
     resizeCanvas();
 };
 
-window.loadDesignFromCode = (rawCode) => {
+window.loadDesignFromCode = function(rawCode) {
     if (!canvas) return;
     const code = rawCode || document.getElementById('aiDesignCodeInput')?.value?.trim();
     if (!code) return;
     try {
         const jsonText = code.replace(/```json|```/g, '').trim();
         canvas.loadFromJSON(JSON.parse(jsonText), () => {
-            canvas.requestRenderAll();
-            resizeCanvas();
+            canvas.requestRenderAll(); resizeCanvas();
             setTimeout(() => { canvas.calcOffset(); canvas.requestRenderAll(); }, 500);
         });
     } catch (e) {
@@ -280,21 +263,7 @@ window.loadDesignFromCode = (rawCode) => {
     }
 };
 
-// Global View Switch (Enhanced)
-window.switchTab = (tab) => {
-    const analyzer = document.getElementById('analyzerView');
-    const editor = document.getElementById('editorView');
-    const tabs = document.querySelectorAll('.tab-btn');
-    if (tab === 'analyzer') {
-        analyzer?.classList.remove('hidden');
-        editor?.classList.add('hidden');
-        tabs[0]?.classList.add('active');
-        tabs[1]?.classList.remove('active');
-    } else {
-        analyzer?.classList.add('hidden');
-        editor?.classList.remove('hidden');
-        tabs[1]?.classList.add('active');
-        tabs[0]?.classList.remove('active');
-        setTimeout(() => { resizeCanvas(); checkPremiumAccess(); }, 150);
-    }
-};
+// --- Start Services ---
+initEditor();
+setInterval(checkPremiumAccess, 2500);
+window.checkPremiumAccess = checkPremiumAccess; // Export manually
