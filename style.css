@@ -826,24 +826,53 @@ footer {
 
 .canvas-card {
     grid-column: span 1;
-    overflow: hidden;
+    overflow: auto;
     background: #111 !important;
     display: flex;
     justify-content: center;
-    align-items: flex-start; /* v4.9.4 */
-    padding: 20px 0 !important;
-    min-height: 500px;
+    align-items: center;
+    position: relative;
+}
+
+.canvas-workspace-bg {
+    background: radial-gradient(circle, #2d2d2d 0%, #111 70%);
 }
 
 .canvas-container-wrapper {
-    width: 800px; /* v4.9.4: Absolute Base Width */
-    height: 600px; /* v4.9.4: Absolute Base Height */
-    display: block;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.8);
-    transform-origin: center top; 
-    transition: transform 0.1s ease-out;
+    width: 800px;
+    height: 600px;
     background: #fff;
+    box-shadow: 0 20px 80px rgba(0,0,0,0.6);
+    transform-origin: center center;
+    transition: transform 0.1s ease-out;
     flex-shrink: 0;
+}
+
+/* Font List Styling */
+.font-item-btn {
+    width: 100%;
+    text-align: left;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    padding: 10px 12px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: 0.2s;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.font-item-btn:hover {
+    background: rgba(0, 229, 255, 0.1);
+    color: var(--neon-cyan);
+}
+
+.font-item-btn.active {
+    background: var(--neon-cyan);
+    color: #000;
 }
 
 /* Premium Gate */

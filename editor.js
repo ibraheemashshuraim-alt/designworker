@@ -1,8 +1,22 @@
-// ================ EDITOR LOGIC (v4.9.6 - FINAL STABILITY) ================
+// ================ EDITOR LOGIC (v4.9.7 - DEFINITIVE PRO UPGRADE) ================
 
 let canvas;
 const baseWidth = 800; 
 const baseHeight = 600; 
+
+// Professional Font List (50+ items)
+const PRO_FONTS = [
+    "Outfit", "Roboto", "Noto Nastaliq Urdu", "Arial", "Verdana", "Times New Roman", 
+    "Georgia", "Impact", "Courier New", "Comic Sans MS", "Anton", "Bebas Neue", 
+    "Dancing Script", "Exo 2", "Inconsolata", "Kanit", "Lobster", "Montserrat", 
+    "Oswald", "Pacifico", "Playfair Display", "Quicksand", "Raleway", "Righteous", 
+    "Satisfy", "Titillium Web", "Varela Round", "Abril Fatface", "Alfa Slab One", 
+    "Amatic SC", "Architects Daughter", "Caveat", "Cinzel", "Comfortaa", 
+    "Courgette", "Domine", "Fredoka One", "Gloria Hallelujah", "Great Vibes", 
+    "Indie Flower", "Josefin Sans", "Kaushan Script", "Koushun", "Luckiest Guy", 
+    "Meriweather", "Orbitron", "Permanent Marker", "Poiret One", "Press Start 2P", 
+    "Sacramento", "Shadows Into Light", "Special Elite", "Yellowtail"
+];
 
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => initEditor());
@@ -29,34 +43,16 @@ function initEditor() {
         });
         window.dc_canvas = canvas; 
         
-        // v4.9.6: Robust Selection Sync
-        canvas.on('selection:created', (e) => { if(e.selected && e.selected[0]) syncToolbar(e.selected[0]); });
-        canvas.on('selection:updated', (e) => { if(e.selected && e.selected[0]) syncToolbar(e.selected[0]); });
-        canvas.on('selection:cleared', () => hideToolbar());
+        // Unified UI Listeners
+        canvas.on('selection:created', (e) => { if(e.selected[0]) syncProSidebar(e.selected[0]); });
+        canvas.on('selection:updated', (e) => { if(e.selected[0]) syncProSidebar(e.selected[0]); });
+        canvas.on('selection:cleared', () => clearSidebarSync());
     }
     
-    // File Upload Listener
-    const fileInput = document.getElementById('editorFileInput');
-    if (fileInput) {
-        fileInput.onchange = (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = (f) => {
-                fabric.Image.fromURL(f.target.result, (img) => {
-                    img.scaleToWidth(300);
-                    canvas.add(img);
-                    canvas.centerObject(img);
-                    img.setCoords();
-                    canvas.setActiveObject(img);
-                    canvas.renderAll();
-                });
-            };
-            reader.readAsDataURL(file);
-        };
-    }
+    populateFontList();
+    bindSidebarEvents();
 
-    // Global Keyboard Deletion
+    // v4.9.7: Global Keyboard Deletion
     document.addEventListener('keydown', (e) => {
         if ((e.key === 'Delete' || e.key === 'Backspace') && canvas && canvas.getActiveObject()) {
             if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
@@ -64,60 +60,66 @@ function initEditor() {
         }
     });
 
-    // Formatting Tool Listeners
-    document.getElementById('itemColorPicker')?.addEventListener('input', (e) => {
-        const obj = canvas.getActiveObject();
-        if (obj) {
-            obj.set('fill', e.target.value);
-            if (obj.type === 'i-text') obj.set('stroke', null); // Text optimization
-            canvas.renderAll();
-        }
-    });
-
-    document.getElementById('itemFontSelector')?.addEventListener('change', (e) => {
-        const obj = canvas.getActiveObject();
-        if (obj && obj.type === 'i-text') {
-            obj.set('fontFamily', e.target.value);
-            canvas.renderAll();
-        }
-    });
-
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
 }
 
-function syncToolbar(obj) {
-    const toolbar = document.getElementById('editorFormattingToolbar');
-    if (!toolbar) return;
+function populateFontList() {
+    const list = document.getElementById('fontListContainer');
+    if (!list) return;
+    list.innerHTML = "";
     
-    toolbar.style.opacity = "1";
-    toolbar.style.pointerEvents = "all";
+    PRO_FONTS.forEach(font => {
+        const btn = document.createElement('button');
+        btn.className = "font-item-btn";
+        btn.innerText = font;
+        btn.style.fontFamily = font;
+        btn.onclick = () => applyFontToActive(font);
+        list.appendChild(btn);
+    });
+}
 
+function bindSidebarEvents() {
+    document.getElementById('itemColorPicker')?.addEventListener('input', (e) => {
+        const obj = canvas.getActiveObject();
+        if (obj) {
+            obj.set('fill', e.target.value);
+            canvas.renderAll();
+        }
+    });
+}
+
+function applyFontToActive(font) {
+    const obj = canvas.getActiveObject();
+    if (obj && obj.type === 'i-text') {
+        obj.set('fontFamily', font);
+        canvas.renderAll();
+        
+        // Update active class in list
+        document.querySelectorAll('.font-item-btn').forEach(b => {
+            b.classList.toggle('active', b.innerText === font);
+        });
+    }
+}
+
+function syncProSidebar(obj) {
     // Sync Color
     const colorPicker = document.getElementById('itemColorPicker');
     if (colorPicker && obj.fill && typeof obj.fill === 'string' && obj.fill.startsWith('#')) {
         colorPicker.value = obj.fill;
     }
 
-    // Sync Font Area
-    const fontArea = document.getElementById('fontSelectorArea');
-    const fontSelect = document.getElementById('itemFontSelector');
-    if (fontArea && fontSelect) {
-        if (obj.type === 'i-text') {
-            fontArea.style.display = "flex";
-            fontSelect.value = obj.fontFamily || 'Outfit';
-        } else {
-            fontArea.style.display = "none";
-        }
+    // Sync Font
+    if (obj.type === 'i-text') {
+        const font = obj.fontFamily;
+        document.querySelectorAll('.font-item-btn').forEach(b => {
+            b.classList.toggle('active', b.innerText === font);
+        });
     }
 }
 
-function hideToolbar() {
-    const toolbar = document.getElementById('editorFormattingToolbar');
-    if (toolbar) {
-        toolbar.style.opacity = "0.5";
-        toolbar.style.pointerEvents = "none";
-    }
+function clearSidebarSync() {
+    document.querySelectorAll('.font-item-btn').forEach(b => b.classList.remove('active'));
 }
 
 function resizeCanvas() {
@@ -125,16 +127,15 @@ function resizeCanvas() {
     const wrapper = document.querySelector('.canvas-container-wrapper');
     if (!wrapper || !card || !canvas) return;
     
-    const containerWidth = card.offsetWidth - 40;
-    const scale = Math.min(containerWidth / baseWidth, 1.0);
+    const containerWidth = card.offsetWidth - 80;
+    const containerHeight = card.offsetHeight - 80;
+    
+    const scale = Math.min(containerWidth / baseWidth, containerHeight / baseHeight, 1.0);
     
     wrapper.style.transform = `scale(${scale})`;
-    card.style.height = (baseHeight * scale + 150) + "px"; 
-    
     canvas.calcOffset();
 }
 
-// v4.9.6: TAB SWITCH STABILITY
 window.switchTab = (tab) => {
     const analyzer = document.getElementById('analyzerView');
     const editor = document.getElementById('editorView');
@@ -147,38 +148,28 @@ window.switchTab = (tab) => {
         tabs[1]?.classList.remove('active');
     } else {
         analyzer?.classList.add('hidden');
+        editor?.style.display = 'grid'; // Enable sidebar grid
         editor?.classList.remove('hidden');
         tabs[1]?.classList.add('active');
         tabs[0]?.classList.remove('active');
         
-        // Critical: Update layout and access on switch
         setTimeout(() => {
             resizeCanvas();
             checkPremiumAccess();
-            if (canvas) canvas.calcOffset();
-        }, 100);
+        }, 150);
     }
 };
 
 function checkPremiumAccess() {
     const gate = document.getElementById('editorPremiumGate');
     if (!gate) return;
-    
-    // v4.9.6: Safely checking exported window.userState
     const state = window.userState || {};
-    const hasAccess = state.isAdmin || 
-                      state.licenseStatus === 'approved' || 
-                      (Number(state.credits || 0) > 0);
-
-    if (hasAccess) {
-        gate.classList.add('hidden');
-    } else {
-        gate.classList.remove('hidden');
-    }
+    const hasAccess = state.isAdmin || state.licenseStatus === 'approved' || (Number(state.credits || 0) > 0);
+    if (hasAccess) gate.classList.add('hidden');
+    else gate.classList.remove('hidden');
 }
 
 window.deleteActiveObject = () => {
-    if (!canvas) return;
     const obj = canvas.getActiveObject();
     if (obj) {
         canvas.remove(obj);
@@ -191,11 +182,9 @@ window.addTextToCanvas = () => {
     if (!canvas) return;
     const text = new fabric.IText('اپنی تحریر لکھیں', {
         left: 400, top: 300, originX: 'center', originY: 'center',
-        fontFamily: 'Outfit', fill: '#1a1a1a', fontSize: 60, fontWeight: 'bold',
-        shadow: new fabric.Shadow({ color: 'rgba(0,0,0,0.3)', blur: 20, offsetX: 10, offsetY: 10 })
+        fontFamily: 'Outfit', fill: '#1a1a1a', fontSize: 60, fontWeight: 'bold'
     });
     canvas.add(text);
-    text.setCoords();
     canvas.setActiveObject(text);
     canvas.renderAll();
 };
@@ -204,12 +193,9 @@ window.addRectToCanvas = () => {
     if (!canvas) return;
     const rect = new fabric.Rect({
         left: 400, top: 300, originX: 'center', originY: 'center',
-        fill: '#00e5ff', width: 250, height: 200, rx: 20, ry: 20,
-        stroke: '#00b8d4', strokeWidth: 4,
-        shadow: new fabric.Shadow({ color: 'rgba(0,0,0,0.3)', blur: 20, offsetX: 10, offsetY: 10 })
+        fill: '#00e5ff', width: 250, height: 200, rx: 20, ry: 20
     });
     canvas.add(rect);
-    rect.setCoords();
     canvas.setActiveObject(rect);
     canvas.renderAll();
 };
@@ -218,11 +204,9 @@ window.addCircleToCanvas = () => {
     if (!canvas) return;
     const circle = new fabric.Circle({
         left: 400, top: 300, originX: 'center', originY: 'center',
-        fill: '#ff0070', radius: 120, stroke: '#c50058', strokeWidth: 4,
-        shadow: new fabric.Shadow({ color: 'rgba(0,0,0,0.3)', blur: 20, offsetX: 10, offsetY: 10 })
+        fill: '#ff0070', radius: 120
     });
     canvas.add(circle);
-    circle.setCoords();
     canvas.setActiveObject(circle);
     canvas.renderAll();
 };
@@ -253,9 +237,23 @@ window.loadDesignFromCode = (rawCode) => {
         const designData = JSON.parse(jsonText);
         
         canvas.loadFromJSON(designData, () => {
+            // v4.9.7: Definitively Unlock All AI Objects
+            canvas.getObjects().forEach(obj => {
+                obj.set({
+                    selectable: true,
+                    evented: true,
+                    lockMovementX: false,
+                    lockMovementY: false,
+                    lockScalingX: false,
+                    lockScalingY: false,
+                    lockRotation: false,
+                    hasControls: true,
+                    hasBorders: true
+                });
+            });
             canvas.renderAll();
             canvas.calcOffset();
-            console.log("AI Design Loaded v4.9.6 Final Stability");
+            console.log("AI Design Unlocked & Loaded (v4.9.7)");
         });
     } catch (e) {
         console.error("AI Load Error:", e);

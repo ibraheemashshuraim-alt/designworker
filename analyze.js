@@ -6,8 +6,7 @@ import {
 import { getAnalytics, isSupported } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-analytics.js";
 // import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai"; // Removed unused
 window.addEventListener('error', (e) => {
-    console.error("GLOBAL SCRIPT ERROR:", e);
-    alert("فنی خرابی: " + e.message + " (" + e.lineno + ":" + e.colno + ")"); 
+    console.error("GLOBAL SCRIPT ERROR (v4.9.7):", e);
 });
 console.log("Analyze script loading started...");
 // alert("DesignCheck Script v3.9 Loaded! (Please confirm)"); // Removed
