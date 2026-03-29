@@ -94,6 +94,11 @@ const elements = {
 // Ensure session persistence
 setPersistence(auth, browserLocalPersistence);
 
+// Manual Event Binding for Module Compatibility
+if (elements.loginBtn) {
+    elements.loginBtn.onclick = () => window.login();
+}
+
 // ================ AUTH FLOW ================
 onAuthStateChanged(auth, async (user) => {
     if (user) {
@@ -384,7 +389,6 @@ window.generateAIDesign = async () => {
         genBtn.disabled = false;
         genBtn.innerHTML = "<i class='fa-solid fa-wand-magic-sparkles'></i> ڈیزائن جنریٹ کریں";
         if (scanModal) scanModal.classList.add('hidden');
-    }
     }
 };
 
