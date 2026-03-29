@@ -371,13 +371,14 @@ window.generateAIDesign = async () => {
                     codeInput.value = cleanText;
                     success = true;
                     
-                    // v4.8.8: Success Handling
+                    // v4.8.9: Success Handling (Modal closes BEFORE alert)
                     if (scanModal) scanModal.classList.add('hidden');
+                    
                     if (window.loadDesignFromCode) {
                         window.loadDesignFromCode(cleanText);
                     }
                     
-                    alert("ڈیزائن کامیابی سے تیار ہو گیا ہے!");
+                    alert("ڈیزائن کامیابی سے تیار ہو گیا ہے! اب 'AI Editor' ٹیب میں جا کر دیکھیں/ایڈٹ کریں۔");
                     break;
                 }
             } catch (innerE) {

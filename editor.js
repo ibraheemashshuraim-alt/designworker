@@ -1,4 +1,4 @@
-// ================ EDITOR LOGIC (v4.8.0) ================
+// ================ EDITOR LOGIC (v4.8.9) ================
 
 let canvas;
 const canvasWidth = 600;
@@ -12,20 +12,45 @@ if (document.readyState === 'loading') {
 
 function initEditor() {
     if (typeof fabric === 'undefined') {
-        console.warn("Fabric library not loaded yet, retrying...");
+        console.warn("Fabric library not loaded yet...");
         setTimeout(initEditor, 200);
         return;
     }
     
+    const canvasElement = document.getElementById('designCanvas');
+    if (!canvasElement) return;
+
     if (!canvas) {
+        // v4.8.9: Preserve Object Stack correctly
         canvas = new fabric.Canvas('designCanvas', {
             width: canvasWidth,
             height: canvasHeight,
-            backgroundColor: '#ffffff'
+            backgroundColor: '#ffffff',
+            preserveObjectStacking: true
         });
         window.dc_canvas = canvas; // Global access
     }
     
+    // Attach File Upload (Properly scoped)
+    const fileInput = document.getElementById('editorFileInput');
+    if (fileInput) {
+        fileInput.onchange = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (f) => {
+                fabric.Image.fromURL(f.target.result, (img) => {
+                    img.scaleToWidth(250);
+                    canvas.add(img);
+                    canvas.centerObject(img);
+                    canvas.setActiveObject(img);
+                    canvas.renderAll();
+                });
+            };
+            reader.readAsDataURL(file);
+        };
+    }
+
     // Responsive Scaling
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
@@ -33,12 +58,15 @@ function initEditor() {
 
 function resizeCanvas() {
     const container = document.querySelector('.canvas-container-wrapper');
-    if (!container) return;
+    if (!container || !canvas) return;
     
-    const scale = Math.min(container.offsetWidth / canvasWidth, 0.9);
+    // Smooth scaling without breaking selection
+    const scale = Math.min(container.offsetWidth / canvasWidth, 0.95);
     canvas.setZoom(scale);
-    canvas.setWidth(canvasWidth * scale);
-    canvas.setHeight(canvasHeight * scale);
+    canvas.setDimensions({
+        width: canvasWidth * scale,
+        height: canvasHeight * scale
+    });
 }
 
 // Tab Switching
@@ -48,26 +76,25 @@ window.switchTab = (tab) => {
     const tabs = document.querySelectorAll('.tab-btn');
     
     if (tab === 'analyzer') {
-        analyzer.classList.remove('hidden');
-        editor.classList.add('hidden');
-        tabs[0].classList.add('active');
-        tabs[1].classList.remove('active');
+        analyzer?.classList.remove('hidden');
+        editor?.classList.add('hidden');
+        tabs[0]?.classList.add('active');
+        tabs[1]?.classList.remove('active');
     } else {
-        analyzer.classList.add('hidden');
-        editor.classList.remove('hidden');
-        tabs[1].classList.add('active');
-        tabs[0].classList.remove('active');
+        analyzer?.classList.add('hidden');
+        editor?.classList.remove('hidden');
+        tabs[1]?.classList.add('active');
+        tabs[0]?.classList.remove('active');
         
-        // Refresh canvas size when shown
+        // Finalize canvas on switch
         setTimeout(resizeCanvas, 100);
-        
-        // Check Premium Gate
         checkPremiumAccess();
     }
 };
 
 function checkPremiumAccess() {
     const gate = document.getElementById('editorPremiumGate');
+    if (!gate) return;
     // userState is global from analyze.js
     if (window.userState && (window.userState.isAdmin || window.userState.licenseStatus === 'approved')) {
         gate.classList.add('hidden');
@@ -76,94 +103,108 @@ function checkPremiumAccess() {
     }
 }
 
-// Manual Tools (v4.8.8 Robustness)
+// Manual Tools (v4.8.9 Robustness & Centering)
 window.addTextToCanvas = () => {
-    const c = window.dc_canvas || canvas;
-    if (!c) return;
-    const text = new fabric.IText('خوش آمدید', {
-        left: 100, top: 100, fontFamily: 'Outfit', fill: '#333', fontSize: 30
+    if (!canvas) return;
+    const center = canvas.getVpCenter();
+    const text = new fabric.IText('اپنی تحریر لکھیں', {
+        left: center.x,
+        top: center.y,
+        originX: 'center',
+        originY: 'center',
+        fontFamily: 'Outfit',
+        fill: '#333',
+        fontSize: 40
     });
-    c.add(text);
-    c.setActiveObject(text);
-    c.renderAll();
+    canvas.add(text);
+    canvas.setActiveObject(text);
+    canvas.renderAll();
 };
 
 window.addRectToCanvas = () => {
-    const c = window.dc_canvas || canvas;
-    if (!c) return;
+    if (!canvas) return;
+    const center = canvas.getVpCenter();
     const rect = new fabric.Rect({
-        left: 150, top: 150, fill: '#00e5ff', width: 100, height: 100, rx: 10, ry: 10
+        left: center.x,
+        top: center.y,
+        originX: 'center',
+        originY: 'center',
+        fill: '#00e5ff',
+        width: 150,
+        height: 150,
+        rx: 15,
+        ry: 15
     });
-    c.add(rect);
-    c.setActiveObject(rect);
-    c.renderAll();
+    canvas.add(rect);
+    canvas.setActiveObject(rect);
+    canvas.renderAll();
 };
 
 window.addCircleToCanvas = () => {
-    const c = window.dc_canvas || canvas;
-    if (!c) return;
+    if (!canvas) return;
+    const center = canvas.getVpCenter();
     const circle = new fabric.Circle({
-        left: 200, top: 200, fill: '#9d00ff', radius: 50
+        left: center.x,
+        top: center.y,
+        originX: 'center',
+        originY: 'center',
+        fill: '#9d00ff',
+        radius: 75
     });
-    c.add(circle);
-    c.setActiveObject(circle);
-    c.renderAll();
+    canvas.add(circle);
+    canvas.setActiveObject(circle);
+    canvas.renderAll();
 };
 
 window.clearCanvas = () => {
-    if (confirm("Clear entire canvas?")) {
+    if (confirm("کیا آپ پورا کینوس صاف کرنا چاہتے ہیں؟")) {
         canvas.clear();
         canvas.backgroundColor = '#ffffff';
         canvas.renderAll();
+        resizeCanvas();
     }
 };
 
 window.exportCanvas = () => {
-    const dataURL = canvas.toDataURL({
-        format: 'png',
-        quality: 1
-    });
+    if (!canvas) return;
+    // Export at 1:1 scale (ignore zoom)
+    const originalScale = canvas.getZoom();
+    canvas.setZoom(1);
+    canvas.setDimensions({ width: canvasWidth, height: canvasHeight });
+    
+    const dataURL = canvas.toDataURL({ format: 'png', quality: 1 });
     const link = document.createElement('a');
-    link.download = 'design_check_export.png';
+    link.download = 'DesignCheck_Export.png';
     link.href = dataURL;
     link.click();
+    
+    // Restore zoom
+    resizeCanvas();
 };
 
-// File Upload for Editor
-const editorFileInput = document.getElementById('editorFileInput');
-if (editorFileInput) {
-    editorFileInput.onchange = (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (f) => {
-            fabric.Image.fromURL(f.target.result, (img) => {
-                img.scaleToWidth(200);
-                canvas.add(img);
-                canvas.centerObject(img);
-                canvas.renderAll();
-            });
-        };
-        reader.readAsDataURL(file);
-    };
-}
-
-// AI CODE TO DESIGN
-window.loadDesignFromCode = () => {
+// AI CODE TO DESIGN (v4.8.9 Automatic Support)
+window.loadDesignFromCode = (forcedCode) => {
     const codeInput = document.getElementById('aiDesignCodeInput');
-    const code = codeInput.value.trim();
-    if (!code) return alert("Please paste the design code first.");
+    const code = forcedCode || codeInput?.value?.trim();
+    
+    if (!code) {
+        if (!forcedCode) alert("براہ کرم پہلے ڈیزائن کوڈ پیسٹ کریں۔");
+        return;
+    }
 
     try {
-        // AI might give JSON or base64. User wants "special code". 
-        // We expect JSON for now, or we can handle simple cases.
-        const designData = JSON.parse(code.replace(/```json|```/g, '').trim());
+        const cleanJSON = code.replace(/```json|```/g, '').trim();
+        const designData = JSON.parse(cleanJSON);
+        
         canvas.loadFromJSON(designData, () => {
             canvas.renderAll();
-            alert("ڈیزائن کامیابی سے لوڈ ہو گیا ہے!");
+            resizeCanvas();
+            console.log("AI Design Loaded Successfully.");
+            // Force a slight delay to ensure rendering is visible
+            setTimeout(() => canvas.renderAll(), 100);
         });
     } catch (e) {
-        alert("Invalid Design Code. Please make sure to copy exact code from the AI.");
-        console.error("Parse Error:", e);
+        console.error("AI Design Load Error:", e);
+        if (!forcedCode) alert("کوڈ درست نہیں ہے۔ براہ کرم پورا کوڈ کاپی کر کے پیسٹ کریں۔");
     }
 };
