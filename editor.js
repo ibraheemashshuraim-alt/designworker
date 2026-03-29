@@ -1,8 +1,8 @@
-// ================ EDITOR LOGIC (v4.9.2) ================
+// ================ EDITOR LOGIC (v4.9.3 - RADICAL REFACTOR) ================
 
 let canvas;
-const canvasWidth = 600;
-const canvasHeight = 400;
+const baseWidth = 800; // Fixed internal High-Res width
+const baseHeight = 533; // Fixed internal High-Res height
 
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => initEditor());
@@ -20,10 +20,10 @@ function initEditor() {
     if (!canvasElement) return;
 
     if (!canvas) {
-        // v4.9.2: 100% Reliable Stack and Selection
+        // v4.9.3: High-Res Stable Workspace
         canvas = new fabric.Canvas('designCanvas', {
-            width: canvasWidth,
-            height: canvasHeight,
+            width: baseWidth,
+            height: baseHeight,
             backgroundColor: '#ffffff',
             preserveObjectStacking: true,
             selection: true
@@ -40,13 +40,12 @@ function initEditor() {
             const reader = new FileReader();
             reader.onload = (f) => {
                 fabric.Image.fromURL(f.target.result, (img) => {
-                    const scale = Math.min(250 / img.width, 250 / img.height);
-                    img.scale(scale);
+                    img.scaleToWidth(300);
                     canvas.add(img);
-                    canvas.centerObject(img); // Center in workspace
+                    canvas.centerObject(img); // v4.9.3: Absolute Centering
                     img.setCoords();
                     canvas.setActiveObject(img);
-                    canvas.renderAll();
+                    canvas.requestRenderAll();
                 });
             };
             reader.readAsDataURL(file);
@@ -61,12 +60,18 @@ function resizeCanvas() {
     const wrapper = document.querySelector('.canvas-container-wrapper');
     if (!wrapper || !canvas) return;
     
-    const scale = Math.min(wrapper.offsetWidth / canvasWidth, 0.98);
+    // v4.9.3: Stable Responsive Scaling
+    const containerWidth = wrapper.offsetWidth;
+    const scale = Math.min(containerWidth / baseWidth, 1.0);
+    
     canvas.setZoom(scale);
     canvas.setDimensions({
-        width: canvasWidth * scale,
-        height: canvasHeight * scale
+        width: baseWidth * scale,
+        height: baseHeight * scale
     });
+    
+    canvas.calcOffset(); // Critical for click mapping
+    canvas.requestRenderAll();
 }
 
 // Global View Switch
@@ -113,86 +118,94 @@ function checkPremiumAccess() {
 // Pro Styling Helper
 const proShadow = new fabric.Shadow({
     color: 'rgba(0,0,0,0.3)',
-    blur: 15,
-    offsetX: 5,
-    offsetY: 5
+    blur: 20,
+    offsetX: 8,
+    offsetY: 8
 });
 
-// Manual Tools (v4.9.2 Definitive Centering)
+// Manual Tools (v4.9.3 Absolute Centering)
 window.addTextToCanvas = () => {
     if (!canvas) return;
-    const text = new fabric.IText('اپنی تحریر لکھیں', {
+    const text = new fabric.IText('اپنی تحریر یہاں لکھیں', {
         fontFamily: 'Outfit',
         fill: '#1a1a1a',
-        fontSize: 50,
-        shadow: proShadow
+        fontSize: 60,
+        fontWeight: 'bold',
+        shadow: proShadow,
+        originX: 'center',
+        originY: 'center'
     });
     canvas.add(text);
-    canvas.centerObject(text); // v4.9.2: Perfect Centering
+    canvas.centerObject(text);
     text.setCoords();
     canvas.setActiveObject(text);
-    canvas.renderAll();
+    canvas.requestRenderAll();
 };
 
 window.addRectToCanvas = () => {
     if (!canvas) return;
     const rect = new fabric.Rect({
         fill: '#00e5ff',
-        width: 180,
-        height: 120,
-        rx: 15,
-        ry: 15,
+        width: 250,
+        height: 250,
+        rx: 20,
+        ry: 20,
         shadow: proShadow,
         stroke: '#00b8d4',
-        strokeWidth: 2
+        strokeWidth: 3,
+        originX: 'center',
+        originY: 'center'
     });
     canvas.add(rect);
     canvas.centerObject(rect);
     rect.setCoords();
     canvas.setActiveObject(rect);
-    canvas.renderAll();
+    canvas.requestRenderAll();
 };
 
 window.addCircleToCanvas = () => {
     if (!canvas) return;
     const circle = new fabric.Circle({
         fill: '#ff0070',
-        radius: 80,
+        radius: 125,
         shadow: proShadow,
         stroke: '#c50058',
-        strokeWidth: 2
+        strokeWidth: 3,
+        originX: 'center',
+        originY: 'center'
     });
     canvas.add(circle);
     canvas.centerObject(circle);
     circle.setCoords();
     canvas.setActiveObject(circle);
-    canvas.renderAll();
+    canvas.requestRenderAll();
 };
 
 window.clearCanvas = () => {
     if (confirm("کیا آپ پورا ڈیزائن ختم کرنا چاہتے ہیں؟")) {
         canvas.clear();
         canvas.backgroundColor = '#ffffff';
-        canvas.renderAll();
+        canvas.requestRenderAll();
         resizeCanvas();
     }
 };
 
 window.exportCanvas = () => {
     if (!canvas) return;
+    // Export at 1:1 scale (No zoom)
     const originalScale = canvas.getZoom();
     canvas.setZoom(1);
-    canvas.setDimensions({ width: canvasWidth, height: canvasHeight });
+    canvas.setDimensions({ width: baseWidth, height: baseHeight });
     
     const link = document.createElement('a');
-    link.download = 'DesignCheck_Export.png';
+    link.download = `DesignCheck_Export_${Date.now()}.png`;
     link.href = canvas.toDataURL({ format: 'png', quality: 1 });
     link.click();
     
     resizeCanvas();
 };
 
-// AI Engine Connector (v4.9.2 Auto-Load Support)
+// AI Engine Connector (v4.9.3 Stable Loader)
 window.loadDesignFromCode = (rawCode) => {
     if (!canvas) return;
     const code = rawCode || document.getElementById('aiDesignCodeInput')?.value?.trim();
@@ -203,13 +216,13 @@ window.loadDesignFromCode = (rawCode) => {
         const designData = JSON.parse(jsonText);
         
         canvas.loadFromJSON(designData, () => {
-            canvas.renderAll();
+            canvas.requestRenderAll();
             resizeCanvas();
-            // Force re-draw to ensure visibility
             setTimeout(() => {
+                canvas.calcOffset();
                 canvas.requestRenderAll();
-                console.log("AI Design loaded & rendered.");
-            }, 300);
+                console.log("AI Design loaded successfully (v4.9.3).");
+            }, 500);
         });
     } catch (e) {
         console.error("AI Load Error:", e);
