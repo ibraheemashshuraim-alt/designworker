@@ -4,22 +4,27 @@ let canvas;
 const canvasWidth = 600;
 const canvasHeight = 400;
 
-document.addEventListener('DOMContentLoaded', () => {
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => initEditor());
+} else {
     initEditor();
-});
+}
 
 function initEditor() {
     if (typeof fabric === 'undefined') {
-        console.error("Fabric library not loaded yet.");
-        setTimeout(initEditor, 100);
+        console.warn("Fabric library not loaded yet, retrying...");
+        setTimeout(initEditor, 200);
         return;
     }
     
-    canvas = new fabric.Canvas('designCanvas', {
-        width: canvasWidth,
-        height: canvasHeight,
-        backgroundColor: '#ffffff'
-    });
+    if (!canvas) {
+        canvas = new fabric.Canvas('designCanvas', {
+            width: canvasWidth,
+            height: canvasHeight,
+            backgroundColor: '#ffffff'
+        });
+        window.dc_canvas = canvas; // Global access
+    }
     
     // Responsive Scaling
     resizeCanvas();
@@ -154,10 +159,10 @@ window.loadDesignFromCode = () => {
     try {
         // AI might give JSON or base64. User wants "special code". 
         // We expect JSON for now, or we can handle simple cases.
-        const designData = JSON.parse(code);
+        const designData = JSON.parse(code.replace(/```json|```/g, '').trim());
         canvas.loadFromJSON(designData, () => {
             canvas.renderAll();
-            alert("Design Loaded Successfully!");
+            alert("ڈیزائن کامیابی سے لوڈ ہو گیا ہے!");
         });
     } catch (e) {
         alert("Invalid Design Code. Please make sure to copy exact code from the AI.");

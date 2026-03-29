@@ -302,23 +302,17 @@ window.generateAIDesign = async () => {
     try {
         const keyToUse = getApiKey() || "AIzaSyC7f4QH6CSRN6dAhGNm7P4kMHTv12mtdEo";
         const aiPrompt = `
-            تم ایک سینئر گرافک ڈیزائنر ہو (Senior Graphic Designer)۔
-            درج ذیل تفصیل کے مطابق Fabric.js کے لیے گرافک ڈیزائن (JSON) تیار کرو:
-            "${prompt}"
-            
-            ہدایات:
-            1. صرف JSON آؤٹ پٹ دو جس میں objects کی فہرست ہو۔
-            2. کینوس کا سائز 600x400 ہے۔
-            3. ڈیزائن میں کم از کم 4-5 مختلف اشیاء (Objects) ہونی چاہئیں جیسے ٹیکسٹ، بیک گراؤنڈ، شیپس وغیرہ۔
-            4. ٹیکسٹ کے لیے 'Outfit' فونٹس کا استعمال کرو۔
-            5. آؤٹ پٹ صرف پیور JSON ہونا چاہیے تاکہ canvas.loadFromJSON اسے براہ راست سمجھ سکے۔
-            6. اس میں ایک کمنٹ شامل کریں کہ "Design by DesignCheck AI".
+            You are a Senior Graphic Designer. 
+            Generate a JSON design for Fabric.js based on: "${prompt}"
+            Canvas size: 600x400. 
+            Include at least 5 objects (background, text with 'Outfit' font, shapes).
+            Return ONLY raw JSON that can be used with canvas.loadFromJSON().
+            Always include a background rectangle covering the full canvas.
         `;
 
         const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${keyToUse}`;
         const payload = {
-            contents: [{ parts: [{ text: aiPrompt }] }],
-            generationConfig: { response_mime_type: "application/json" }
+            contents: [{ parts: [{ text: aiPrompt }] }]
         };
 
         const response = await fetch(url, {
@@ -328,15 +322,22 @@ window.generateAIDesign = async () => {
         });
 
         const data = await response.json();
+        
+        if (data.error) {
+            throw new Error(`API Error: ${data.error.message}`);
+        }
+
         const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
         
         if (text) {
-            codeInput.value = text;
+            const cleanText = text.replace(/```json|```/g, '').trim();
+            codeInput.value = cleanText;
             alert("ڈیزائن کوڈ تیار ہے! اب 'درست کریں' پر کلک کریں تاکہ کینوس پر دیکھا جا سکے۔");
         } else {
-            throw new Error("No output from AI");
+            throw new Error("No output from AI. Check safety settings or prompt.");
         }
     } catch (e) {
+        console.error("AI Designer Error:", e);
         alert("ڈیزائن بنانے میں مسئلہ ہوا۔: " + e.message);
         codeInput.value = "";
     } finally {
