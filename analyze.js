@@ -310,7 +310,7 @@ window.generateAIDesign = async () => {
             Always include a background rectangle covering the full canvas.
         `;
 
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${keyToUse}`;
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${keyToUse}`;
         const payload = {
             contents: [{ parts: [{ text: aiPrompt }] }]
         };
