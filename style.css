@@ -705,6 +705,61 @@ footer {
     align-items: center;
 }
 
+/* History Modal & Cards */
+.history-modal-content {
+    max-width: 900px; width: 95%; height: 80vh; 
+    display: flex; flex-direction: column; 
+    border-color: var(--neon-cyan);
+}
+
+.history-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
+    gap: 20px; padding: 10px; overflow-y: auto; flex: 1;
+}
+
+.history-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 18px; padding: 15px; display: flex; flex-direction: column; gap: 12px;
+    transition: 0.3s; cursor: pointer; position: relative;
+}
+
+.history-card:hover {
+    background: rgba(255, 255, 255, 0.07);
+    border-color: var(--neon-cyan);
+    transform: translateY(-5px);
+}
+
+.history-thumb {
+    width: 100%; height: 160px; object-fit: cover; border-radius: 12px;
+    background: #000; border: 1px solid rgba(255,255,255,0.05);
+}
+
+.history-meta {
+    display: flex; justify-content: space-between; align-items: center;
+}
+
+.history-date { font-size: 0.75rem; color: var(--text-muted); }
+
+.history-score {
+    background: var(--neon-cyan); color: #000; font-weight: 800; font-size: 0.9rem;
+    padding: 2px 8px; border-radius: 6px;
+}
+
+.history-actions {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 5px;
+}
+
+.history-btn {
+    padding: 8px; border-radius: 8px; border: none; font-size: 0.75rem; font-weight: 700; cursor: pointer; transition: 0.2s;
+}
+
+.view-hist-btn { background: rgba(0, 229, 255, 0.1); color: var(--neon-cyan); border: 1px solid rgba(0, 229, 255, 0.2); }
+.view-hist-btn:hover { background: var(--neon-cyan); color: #000; }
+
+.del-hist-btn { background: rgba(255, 82, 82, 0.1); color: #ff5252; border: 1px solid rgba(255, 82, 82, 0.2); }
+.del-hist-btn:hover { background: #ff5252; color: #fff; }
+
 /* Export Group */
 .export-group {
     display: flex;

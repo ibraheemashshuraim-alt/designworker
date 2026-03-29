@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
 import { 
-    getFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot, collection, query, where, getDocs, deleteDoc, increment, serverTimestamp 
+    getFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot, collection, query, where, getDocs, deleteDoc, increment, serverTimestamp, addDoc, orderBy 
 } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
 import { getAnalytics, isSupported } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-analytics.js";
 // import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai"; // Removed unused
@@ -85,6 +85,7 @@ const elements = {
     detailedImprovementsOut: document.getElementById('detailedImprovementsOut'),
     pricingEstimationOut: document.getElementById('pricingEstimationOut'),
     clientImpressionOut: document.getElementById('clientImpressionOut'),
+    historyList: document.getElementById('historyList'),
     resultsCard: document.querySelector('.results-card'),
     statusHeader: document.getElementById('statusHeader'),
     exportGroup: document.getElementById('exportGroup')
@@ -182,9 +183,102 @@ window.logout = async () => {
     }
 };
 
+// ================ HISTORY LOGIC (v4.7.0) ================
+async function saveAnalysisToHistory(results, image) {
+    if (!userState.uid) return;
+    try {
+        const historyRef = collection(db, "users", userState.uid, "history");
+        await addDoc(historyRef, {
+            ...results,
+            image: image,
+            createdAt: serverTimestamp()
+        });
+        console.log("Analysis saved to history.");
+    } catch (e) {
+        console.error("Error saving history:", e);
+    }
+}
+
+window.openHistory = async () => {
+    toggleModal('historyModal', true);
+    elements.historyList.innerHTML = "<div class='spinner' style='margin: 30px auto;'></div>";
+    
+    if (!userState.uid) {
+        elements.historyList.innerHTML = "<p style='text-align:center; padding: 20px;'>براہ کرم پہلے لاگ ان کریں۔</p>";
+        return;
+    }
+
+    try {
+        const historyRef = collection(db, "users", userState.uid, "history");
+        const q = query(historyRef, orderBy("createdAt", "desc"));
+        const snapshot = await getDocs(q);
+        
+        if (snapshot.empty) {
+            elements.historyList.innerHTML = "<p style='text-align:center; padding: 20px; opacity:0.5;'>کوئی ریکارڈ دستیاب نہیں ہے۔</p>";
+            return;
+        }
+
+        let html = "";
+        snapshot.forEach(docSnap => {
+            const data = docSnap.data();
+            const date = data.createdAt ? new Date(data.createdAt.seconds * 1000).toLocaleDateString() : "Pending";
+            html += `
+                <div class="history-card">
+                    <img src="${data.image}" class="history-thumb" alt="Preview">
+                    <div class="history-meta">
+                        <span class="history-date">${date}</span>
+                        <span class="history-score">${data.score}</span>
+                    </div>
+                    <div class="history-actions">
+                        <button class="history-btn view-hist-btn" onclick="restoreHistoryItem('${docSnap.id}')">View</button>
+                        <button class="history-btn del-hist-btn" onclick="deleteHistoryItem('${docSnap.id}')">Delete</button>
+                    </div>
+                </div>
+            `;
+        });
+        elements.historyList.innerHTML = html;
+    } catch (e) {
+        console.error("History fetch error:", e);
+        elements.historyList.innerHTML = "<p style='color:red; text-align:center;'>تاریخ لوڈ کرنے میں مسئلہ ہوا۔</p>";
+    }
+};
+
+window.restoreHistoryItem = async (docId) => {
+    try {
+        const docRef = doc(db, "users", userState.uid, "history", docId);
+        const docSnap = await getDoc(docRef);
+        
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            currentImageBase64 = data.image;
+            elements.designPreview.src = currentImageBase64;
+            elements.previewContainer.classList.remove('hidden');
+            elements.dropZone.classList.add('hidden');
+            
+            displayResults(data);
+            toggleModal('historyModal', false);
+            toggleModal('profileDropdown', false);
+            window.scrollTo({ top: elements.resultsPanel.offsetTop - 100, behavior: 'smooth' });
+        }
+    } catch (e) {
+        alert("ڈیٹا بحال کرنے میں مسئلہ ہوا۔");
+    }
+};
+
+window.deleteHistoryItem = async (docId) => {
+    if (!confirm("کیا آپ اس ریکارڈ کو مستقل طور پر حذف کرنا چاہتے ہیں؟")) return;
+    try {
+        const docRef = doc(db, "users", userState.uid, "history", docId);
+        await deleteDoc(docRef);
+        openHistory(); // Refresh list
+    } catch (e) {
+        alert("ڈیٹا حذف کرنے میں مسئلہ ہوا۔");
+    }
+};
+
 // --- VERSION TAG ---
-window.DESIGN_VERSION = "4.6.0";
-console.log("DesignCheck v4.6.0 Professional Analysis Loaded");
+window.DESIGN_VERSION = "4.7.0";
+console.log("DesignCheck v4.7.0 Professional Analysis & History Loaded");
 
 // Global Modal Toggle
 window.toggleModal = (id, show) => {
@@ -714,6 +808,11 @@ window.runAnalysis = async () => {
         if (!text) throw new Error("AI نے کوئی جواب نہیں دیا۔");
         
         displayResults(JSON.parse(text));
+
+        // v4.7.0: Auto-Save to History
+        if (userState.loggedIn) {
+            saveAnalysisToHistory(JSON.parse(text), compressedBase64);
+        }
 
         // v4.5.1: Credit system restored
         if (userState.loggedIn && !userState.isAdmin && userState.licenseStatus !== 'approved') {
