@@ -649,6 +649,19 @@ footer {
     border: 1px solid rgba(0, 229, 255, 0.3);
 }
 
+/* v4.18.2: Highlight BG Removal Tool */
+#bgRemovalBtn {
+    background: rgba(34, 211, 238, 0.1);
+    border: 1px solid var(--neon-cyan);
+    box-shadow: 0 0 10px rgba(34, 211, 238, 0.2);
+    transition: all 0.3s ease;
+}
+#bgRemovalBtn:hover {
+    background: var(--neon-cyan);
+    color: #000;
+    box-shadow: 0 0 20px var(--neon-cyan);
+}
+
 /* Pricing Grid */
 .pricing-container {
     display: grid;

@@ -286,7 +286,7 @@ window.deleteHistoryItem = async (docId) => {
 };
 
 // --- VERSION TAG ---
-window.DESIGN_VERSION = "4.18.0";
+window.DESIGN_VERSION = "4.18.2";
 console.log("DesignCheck v4.18.0 Gemini Architect Loaded");
 
 // v4.9.6: Export Local Module State to Global Window (CRITICAL FIX)
