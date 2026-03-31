@@ -1,4 +1,4 @@
-// ================ EDITOR LOGIC (v4.18.3 - GEMINI ARCHITECT) ================
+// ================ EDITOR LOGIC (v4.18.5 - BULLETPROOF EDITION) ================
 
 // v4.9.8: GLOBAL NAVIGATION (MUST BE AT TOP)
 window.switchTab = (tab) => {
@@ -34,6 +34,12 @@ const baseHeight = 600;
 let historyUndo = [];
 let historyRedo = [];
 let isStateChanging = false;
+
+// v4.18.5: Global Canvas States
+let isDrawingMode = false;
+let shapeToDraw = null;
+let startingPoint = { x: 0, y: 0 };
+let drawingObject = null;
 
 const PRO_FONTS = [
     "Outfit", "Roboto", "Noto Nastaliq Urdu", "Arial", "Verdana", "Times New Roman", 
@@ -149,6 +155,10 @@ function initEditor() {
         console.log("AI Editor Initialized (v4.9.8)");
     } catch (err) {
         console.error("Editor Init Error:", err);
+        // v4.18.5: Soft failure in developer console, no aggressive alert unless library missing
+        if (typeof fabric === 'undefined') {
+            alert("ایڈیٹر لائبریری لوڈ کرنے میں مسئلہ ہوا، پیج ریفریش کریں۔");
+        }
     }
 }
 
@@ -352,104 +362,7 @@ function syncProSidebar(obj) {
     if (opacitySlider) opacitySlider.value = obj.opacity !== undefined ? obj.opacity : 1;
 }
 
-function clearSidebarSync() {
-    document.getElementById('contextToolbar')?.classList.add('hidden');
-}
-
-// ==== DRAWING MODE SYSTEM ==== //
-let isDrawingMode = false;
-let shapeToDraw = null;
-let startingPoint = null;
-let drawingObject = null;
-
-function setupDrawingListeners() {
-    canvas.on('mouse:down', function(o) {
-        if (!isDrawingMode || !shapeToDraw) return;
-        
-        const pointer = canvas.getPointer(o.e);
-        startingPoint = { x: pointer.x, y: pointer.y };
-
-        if (shapeToDraw === 'rect') {
-            drawingObject = new fabric.Rect({
-                left: startingPoint.x, top: startingPoint.y,
-                originX: 'left', originY: 'top',
-                width: 0, height: 0,
-                fill: '#00e5ff', rx: 10, ry: 10,
-                selectable: false, evented: false
-            });
-            canvas.add(drawingObject);
-        } else if (shapeToDraw === 'circle') {
-            drawingObject = new fabric.Circle({
-                left: startingPoint.x, top: startingPoint.y,
-                originX: 'center', originY: 'center',
-                radius: 0, fill: '#ff0070',
-                selectable: false, evented: false
-            });
-            canvas.add(drawingObject);
-        } else if (shapeToDraw === 'triangle') {
-            drawingObject = new fabric.Triangle({
-                left: startingPoint.x, top: startingPoint.y,
-                originX: 'left', originY: 'top',
-                width: 0, height: 0,
-                fill: '#ffbb00',
-                selectable: false, evented: false
-            });
-            canvas.add(drawingObject);
-        } else if (shapeToDraw === 'line') {
-            drawingObject = new fabric.Line([startingPoint.x, startingPoint.y, startingPoint.x, startingPoint.y], {
-                stroke: '#1a1a1a', strokeWidth: 5,
-                selectable: false, evented: false
-            });
-            canvas.add(drawingObject);
-        }
-    });
-
-    canvas.on('mouse:move', function(o) {
-        if (!isDrawingMode || !drawingObject) return;
-        
-        const pointer = canvas.getPointer(o.e);
-
-        if (shapeToDraw === 'rect' || shapeToDraw === 'triangle') {
-            const w = Math.abs(pointer.x - startingPoint.x);
-            const h = Math.abs(pointer.y - startingPoint.y);
-            
-            drawingObject.set({
-                width: w,
-                height: h,
-                left: Math.min(pointer.x, startingPoint.x),
-                top: Math.min(pointer.y, startingPoint.y)
-            });
-        } else if (shapeToDraw === 'circle') {
-            const radius = Math.max(Math.abs(pointer.x - startingPoint.x), Math.abs(pointer.y - startingPoint.y)) / 2;
-            drawingObject.set({ radius: radius });
-        } else if (shapeToDraw === 'line') {
-            drawingObject.set({ x2: pointer.x, y2: pointer.y });
-        }
-        canvas.renderAll();
-    });
-
-    canvas.on('mouse:up', function(o) {
-        if (!isDrawingMode || !drawingObject) return;
-
-        drawingObject.set({
-            selectable: true,
-            evented: true
-        });
-        drawingObject.setCoords();
-        
-        // Stop drawing mode
-        isDrawingMode = false;
-        shapeToDraw = null;
-        drawingObject = null;
-        document.querySelector('.canvas-card').classList.remove('drawing-mode');
-        canvas.defaultCursor = 'default';
-        canvas.hoverCursor = 'move';
-        
-        // Re-enable selection
-        canvas.selection = true;
-        canvas.getObjects().forEach(obj => obj.set('selectable', true));
-    });
-}
+// ==== UI DROPDOWNS & NAVIGATION ==== //
 
 
 function resizeCanvas() {
@@ -823,4 +736,175 @@ window.loadDesignFromCode = async function(rawCode) {
         isStateChanging = false;
         console.error("LOAD FATAL:", e);
     }
+};
+
+// v4.18.5: CONTEXTUAL SYNC ENGINE (RESTORED)
+function syncProSidebar(obj) {
+    const toolbar = document.getElementById('contextToolbar');
+    if (!toolbar) return;
+
+    toolbar.classList.remove('hidden');
+
+    // Groups
+    const textGroup = document.getElementById('textToolsGroup');
+    const shapeGroup = document.getElementById('shapeToolsGroup');
+    const imgGroup = document.getElementById('imgToolsGroup');
+
+    if (obj.type === 'i-text') {
+        textGroup?.classList.remove('hidden');
+        shapeGroup?.classList.add('hidden');
+        imgGroup?.classList.add('hidden');
+        const display = document.getElementById('selectedFontDisplay');
+        if (display) display.value = obj.fontFamily;
+    } else if (obj.type === 'image') {
+        textGroup?.classList.add('hidden');
+        shapeGroup?.classList.add('hidden');
+        imgGroup?.classList.remove('hidden');
+    } else {
+        textGroup?.classList.add('hidden');
+        shapeGroup?.classList.remove('hidden');
+        imgGroup?.classList.add('hidden');
+        const slider = document.getElementById('shapeStrokeWidthSlider');
+        if (slider) slider.value = obj.strokeWidth || 0;
+    }
+
+    if (document.getElementById('topColorPicker')) {
+        document.getElementById('topColorPicker').value = obj.fill || obj.stroke || '#000000';
+    }
+    if (document.getElementById('opacitySlider')) {
+        document.getElementById('opacitySlider').value = obj.opacity || 1;
+    }
+
+    const bound = obj.getBoundingRect();
+    toolbar.style.top = (bound.top - 80) + "px";
+    toolbar.style.left = (bound.left + bound.width / 2) + "px";
+}
+
+function clearSidebarSync() {
+    document.getElementById('contextToolbar')?.classList.add('hidden');
+}
+
+// v4.18.5: DRAWING ENGINE (RESTORED)
+
+window.startDrawingShape = (type) => {
+    isDrawingMode = true;
+    shapeToDraw = type;
+    canvas.defaultCursor = 'crosshair';
+    canvas.selection = false;
+    alert(`ٹولز ایکٹو: کینوس پر ماؤس ڈریگ کر کے ${type} بنائیں۔`);
+};
+
+function setupDrawingListeners() {
+    if (!canvas) return;
+
+    canvas.on('mouse:down', function(o) {
+        if (!isDrawingMode) return;
+        const pointer = canvas.getPointer(o.e);
+        startingPoint = { x: pointer.x, y: pointer.y };
+
+        const common = {
+            left: pointer.x, top: pointer.y,
+            fill: 'rgba(34, 211, 238, 0.3)', 
+            stroke: 'var(--neon-cyan)', strokeWidth: 2,
+            originX: 'left', originY: 'top',
+            selectable: false, evented: false
+        };
+
+        if (shapeToDraw === 'rect') drawingObject = new fabric.Rect({ ...common, width: 0, height: 0 });
+        else if (shapeToDraw === 'circle') drawingObject = new fabric.Circle({ ...common, radius: 0 });
+        else if (shapeToDraw === 'triangle') drawingObject = new fabric.Triangle({ ...common, width: 0, height: 0 });
+
+        if (drawingObject) canvas.add(drawingObject);
+    });
+
+    canvas.on('mouse:move', function(o) {
+        if (!isDrawingMode || !drawingObject) return;
+        const pointer = canvas.getPointer(o.e);
+        const w = Math.abs(pointer.x - startingPoint.x);
+        const h = Math.abs(pointer.y - startingPoint.y);
+
+        if (shapeToDraw === 'rect' || shapeToDraw === 'triangle') {
+            drawingObject.set({ 
+                width: w, height: h,
+                left: Math.min(pointer.x, startingPoint.x),
+                top: Math.min(pointer.y, startingPoint.y)
+            });
+        } else if (shapeToDraw === 'circle') {
+            drawingObject.set({ radius: w / 2 });
+        }
+        canvas.renderAll();
+    });
+
+    canvas.on('mouse:up', function() {
+        if (!isDrawingMode) return;
+        isDrawingMode = false;
+        canvas.defaultCursor = 'default';
+        canvas.selection = true;
+        if (drawingObject) {
+            drawingObject.set({ selectable: true, evented: true });
+            drawingObject.setCoords();
+            canvas.setActiveObject(drawingObject);
+        }
+        canvas.renderAll();
+        saveState();
+        drawingObject = null;
+    });
+}
+
+// v4.18.5: ADDITIONAL TOOLS
+window.processRemoveBackground = async () => {
+    const activeImage = canvas.getActiveObject();
+    if (!activeImage || activeImage.type !== 'image') {
+        return alert("براہ کرم وہ تصویر سلیکٹ کریں جس کا بیک گراؤنڈ ہٹانا ہے۔");
+    }
+
+    const modal = document.getElementById('bgProcessingModal');
+    if (modal) modal.style.display = 'flex';
+
+    try {
+        const url = activeImage.getSrc();
+        const blob = await fetch(url).then(r => r.blob());
+        const resultBlob = await imglyRemoveBackground(blob);
+        const resultUrl = URL.createObjectURL(resultBlob);
+
+        fabric.Image.fromURL(resultUrl, (newImg) => {
+            newImg.set({
+                left: activeImage.left, top: activeImage.top,
+                scaleX: activeImage.scaleX, scaleY: activeImage.scaleY,
+                originX: activeImage.originX, originY: activeImage.originY
+            });
+            canvas.remove(activeImage);
+            canvas.add(newImg);
+            canvas.setActiveObject(newImg);
+            canvas.renderAll();
+            saveState();
+            if (modal) modal.style.display = 'none';
+        });
+    } catch (e) {
+        console.error("BG Removal fail", e);
+        alert("بیک گراؤنڈ ہٹانے میں مسئلہ ہوا۔ دوبارہ کوشش کریں۔");
+        if (modal) modal.style.display = 'none';
+    }
+};
+
+function applyFontToActive(font) {
+    const obj = canvas.getActiveObject();
+    if (obj && obj.type === 'i-text') {
+        obj.set('fontFamily', font);
+        canvas.renderAll();
+        saveState();
+    }
+}
+
+window.toggleTextFormat = (format) => {
+    const obj = canvas.getActiveObject();
+    if (!obj || obj.type !== 'i-text') return;
+
+    if (format === 'bold') {
+        obj.set('fontWeight', obj.fontWeight === 'bold' ? 'normal' : 'bold');
+    } else if (format === 'italic') {
+        obj.set('fontStyle', obj.fontStyle === 'italic' ? 'normal' : 'italic');
+    }
+    canvas.renderAll();
+    saveState();
 };
