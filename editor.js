@@ -383,6 +383,15 @@ function setupDrawingListeners() {
     });
 }
 
+function dataURLtoBlob(dataurl) {
+    var arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
+        bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
+    while(n--){
+        u8arr[n] = bstr.charCodeAt(n);
+    }
+    return new Blob([u8arr], {type:mime});
+}
+
 // Background Removal (v4.18.12 Bulletproof CORS Fix)
 window.processRemoveBackground = async () => {
     const obj = canvas.getActiveObject();
@@ -398,26 +407,26 @@ window.processRemoveBackground = async () => {
         console.log("BG removal started for:", obj.getSrc());
         const src = obj.getSrc();
         
-        // v4.18.12: Nuclear CORS Handling
         let blob;
-        try {
-            const resp = await fetch(src, { mode: 'cors' });
-            blob = await resp.blob();
-        } catch (corsErr) {
-            console.warn("CORS fetch failed, attempting Canvas bridge fallback...", corsErr);
-            // Fallback: If image is already on canvas, try to extract its data
+        if (src.startsWith('data:')) {
+            blob = dataURLtoBlob(src);
+        } else {
             try {
-                const tempCanvas = document.createElement('canvas');
-                tempCanvas.width = obj.width;
-                tempCanvas.height = obj.height;
-                const ctx = tempCanvas.getContext('2d');
-                // Note: This might still fail if canvas is tainted, but it's worth a shot
-                ctx.drawImage(obj._element, 0, 0);
-                const dataURL = tempCanvas.toDataURL('image/png');
-                const resp = await fetch(dataURL);
+                const resp = await fetch(src, { mode: 'cors' });
                 blob = await resp.blob();
-            } catch (bridgeErr) {
-                throw new Error("CORS Access Denied: This image's host does not allow direct processing. Try uploading from your computer.");
+            } catch (corsErr) {
+                console.warn("CORS fetch failed, attempting Canvas bridge fallback...", corsErr);
+                try {
+                    const tempCanvas = document.createElement('canvas');
+                    tempCanvas.width = obj._element.naturalWidth || obj.width;
+                    tempCanvas.height = obj._element.naturalHeight || obj.height;
+                    const ctx = tempCanvas.getContext('2d');
+                    ctx.drawImage(obj._element, 0, 0, tempCanvas.width, tempCanvas.height);
+                    const dataURL = tempCanvas.toDataURL('image/png');
+                    blob = dataURLtoBlob(dataURL);
+                } catch (bridgeErr) {
+                    throw new Error("CORS Access Denied: This image's host does not allow direct processing. Try uploading from your computer.");
+                }
             }
         }
         
@@ -478,15 +487,13 @@ function saveState() {
 }
 
 window.clearCanvas = () => {
-    if (!canvas) return;
-    if (confirm("کیا آپ واقعی سب کچھ مٹانا چاہتے ہیں؟")) {
-        isStateChanging = true;
-        canvas.clear();
-        canvas.backgroundColor = '#ffffff';
-        canvas.renderAll();
-        isStateChanging = false;
-        saveState();
-    }
+    if (!window.dc_canvas) return;
+    window.dc_canvas.clear();
+    window.dc_canvas.backgroundColor = '#ffffff';
+    window.dc_canvas.renderAll();
+    historyUndo = [];
+    historyRedo = [];
+    saveState();
 };
 
 window.undo = () => {
