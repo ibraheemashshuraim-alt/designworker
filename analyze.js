@@ -379,28 +379,36 @@ window.generateAIDesign = async () => {
                 console.log(`AI Designer: Trying ${modelCandidate}...`);
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelCandidate}:generateContent?key=${keyToUse}`;
                 
-                // v4.11.3: ELITE CANVA-STYLE DESIGN PROMPT
+                // v4.13.0: ELITE CANVA-STYLE DESIGN PROMPT (ULTIMATE UPGRADE)
                 let aiPrompt = `
-                    You are an Elite Graphics Designer (expert in Canva & Photoshop aesthetics).
-                    Your task is to generate a highly sophisticated Fabric.js JSON design for: "${prompt}"
+                    You are a World-Class Graphics Designer (Senior Creative Director at a top agency).
+                    Goal: Generate a stunning, premium, high-converting Fabric.js JSON design for: "${prompt}"
 
                     ### WORKSPACE SPECS:
-                    - Resolution: 800x600 pixels.
-                    - Background: MUST be a full-size Rect (800x600, left:0, top:0) with a professional, aesthetic color (e.g., Deep Ocean #0f172a, Warm Beige #f5f5dc, or Modern Slate #334155).
+                    - 800x600 pixels (Landscape).
+                    - ALL objects must stay within coordinates [0,0] to [800,600].
 
-                    ### DESIGN RULES (CANVA STYLE):
-                    1. LAYERING: Background -> 2-3 Decorative semi-transparent shapes (Circles/Rects) in corners for texture (opacity: 0.1) -> Central Main Content Card.
-                    2. MAIN CONTENT CARD: A central container Rect (width: 550, height: 400, left: 125, top: 100, rx: 25, ry: 25).
-                       - Shadow: { "color": "rgba(0,0,0,0.2)", "blur": 35, "offsetX": 0, "offsetY": 15 }.
-                    3. TYPOGRAPHY: 
-                       - Heading: Large (64pt+), Bold ("fontWeight": "bold"), centered vertically/horizontally on the card.
-                       - Subheading: Medium (24pt), regular weight, perfectly aligned below.
-                    4. IMAGES: Use "https://image.pollinations.ai/prompt/[ENGLISH_KEYWORDS]?width=800&height=800&nologo=true" for any visual elements.
-                       - Always add "crossOrigin": "anonymous".
+                    ### VISUAL DESIGN RULES:
+                    1. BACKGROUND: Use a lush, deep background. DON'T just use #ffffff. Use #0f172a (Navy), #1e1b4b (Indigo), or #450a0a (Deep Wine).
+                    2. DECORATIVE ELEMENTS: Add 3-5 subtle decorative shapes (circles/polygons) with low opacity (0.05 - 0.15) to create depth.
+                    3. MAIN CONTENT: Everything must be perfectly centered or follow the Golden Ratio / Rule of Thirds.
+                    4. CONTENT CARD: A large, rounded-corner Rect (width: 500-600, height: 400-500, rx: 30, ry: 30) that acts as the glassmorphism container.
+                       - Fill: "rgba(255, 255, 255, 0.05)"
+                       - Stroke: "rgba(255, 255, 255, 0.1)"
+                       - Shadow: { "color": "rgba(0,0,0,0.5)", "blur": 40, "offsetX": 0, "offsetY": 20 }
+                    5. TYPOGRAPHY (CRITICAL):
+                       - HEADING: Max 80pt, "fontWeight": "bold", "fill": "#ffffff", "fontFamily": "Outfit".
+                       - SUBHEADING: 20-30pt, "fill": "#cbd5e1" (Muted Slate), spaced perfectly below.
+                       - Use Urdu (Noto Nastaliq Urdu) if the user asks in Urdu.
+                    6. IMAGES: Search keywords should be professional (e.g. 'high-end coffee logo', 'minimalist fitness vector').
+                       - Use: https://image.pollinations.ai/prompt/[KEYWORDS]?width=512&height=512&nologo=true
+                       - MUST have "crossOrigin": "anonymous".
+                    7. GROUPING: Logical separation of objects.
 
-                    ### OUTPUT:
-                    - Return ONLY the JSON object { "objects": [...] }.
-                    - NO markdown formatting.
+                    ### OUTPUT FORMAT:
+                    - Return ONLY a valid JSON { "objects": [...] }.
+                    - NO markdown, NO text before/after.
+                    - Objects must be flat in the array.
                 `;
 
                 const partsArray = [{ text: aiPrompt }];

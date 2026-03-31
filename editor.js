@@ -682,26 +682,9 @@ window.exportCanvas = () => {
     link.click();
 };
 
-// v4.12.0: UI LOGGER
-function uiLog(msg, type='info') {
-    const logArea = document.getElementById('debugLog');
-    if (logArea) {
-        logArea.innerHTML += `<div style="color: ${type==='error'?'#ff4d4d':'#00ff00'}">[${new Date().toLocaleTimeString()}] ${msg}</div>`;
-        logArea.scrollTop = logArea.scrollHeight;
-    }
-    console.log(`[UI LOG] ${msg}`);
-}
-
-window.onerror = function(msg, url, line) {
-    uiLog(`CRITICAL: ${msg} (at line ${line})`, 'error');
-    return false;
-};
-
-window.loadDesignFromCode = function(rawCode) {
-    uiLog("🚀 Direct Loader v4.12.3 Started...");
+window.loadDesignFromCode = async function(rawCode) {
     if (!canvas) {
-        uiLog("Canvas object missing!", 'error');
-        alert("Canvas error.");
+        alert("Canvas error. Please refresh.");
         return;
     }
     
@@ -709,10 +692,7 @@ window.loadDesignFromCode = function(rawCode) {
     const codeBox = document.getElementById('aiDesignCodeInput');
     let code = rawCode || codeBox?.value?.trim();
     
-    if (!code || code.includes("انتظر")) {
-        uiLog("Empty or waiting code - skipped.");
-        return;
-    }
+    if (!code || code.includes("انتظر")) return;
 
     try {
         let jsonText = code.trim();
@@ -736,86 +716,86 @@ window.loadDesignFromCode = function(rawCode) {
         const data = JSON.parse(jsonText);
         const objs = data.objects || data;
 
-        if (!Array.isArray(objs)) throw new Error("Parsed successfully but no objects array found.");
+        if (!Array.isArray(objs)) throw new Error("No objects found.");
 
-        uiLog(`Found ${objs.length} elements. Loading objects...`);
-        
         isStateChanging = true;
         canvas.clear();
         canvas.backgroundColor = data.background || data.backgroundColor || '#ffffff';
         
-        let loadedCount = 0;
-        let errorCount = 0;
+        // v4.13.0: Async Pre-loading Factory
+        const loadPromises = objs.map((o, index) => {
+            return new Promise((resolve) => {
+                try {
+                    if (typeof o.left !== 'number') o.left = 100 + (index * 10);
+                    if (typeof o.top !== 'number') o.top = 100 + (index * 10);
+                    
+                    const type = (o.type || 'rect').toLowerCase();
 
-        // Custom Fault-Tolerant Factory
-        objs.forEach((o, index) => {
-            try {
-                // Sanitize common issues
-                if (typeof o.left !== 'number') o.left = 100 + (index * 10);
-                if (typeof o.top !== 'number') o.top = 100 + (index * 10);
-                
-                let fabObj = null;
-                const type = (o.type || 'rect').toLowerCase();
-
-                if (type.includes('text')) {
-                    fabObj = new fabric.IText(o.text || 'Text', o);
-                } else if (type === 'rect') {
-                    fabObj = new fabric.Rect(o);
-                } else if (type === 'circle') {
-                    fabObj = new fabric.Circle(o);
-                } else if (type === 'triangle') {
-                    fabObj = new fabric.Triangle(o);
-                } else if (type === 'ellipse') {
-                    fabObj = new fabric.Ellipse(o);
-                } else if (type === 'image') {
-                    fabric.Image.fromURL(o.src, function(img) {
-                        img.set(o);
-                        canvas.add(img);
-                        loadedCount++;
-                        checkFinished();
-                    }, { crossOrigin: 'anonymous' });
-                    return; // Async handled
-                } else {
-                    // Generic fallback for unknown types
-                    uiLog(`Unknown type: ${type}, trying generic...`, 'warn');
-                    const Klass = fabric.util.getKlass(type);
-                    if (Klass) fabObj = new Klass(o);
+                    if (type.includes('text')) {
+                        const t = new fabric.IText(o.text || 'Text', o);
+                        resolve(t);
+                    } else if (type === 'rect') {
+                        resolve(new fabric.Rect(o));
+                    } else if (type === 'circle') {
+                        resolve(new fabric.Circle(o));
+                    } else if (type === 'triangle') {
+                        resolve(new fabric.Triangle(o));
+                    } else if (type === 'ellipse') {
+                        resolve(new fabric.Ellipse(o));
+                    } else if (type === 'image' && o.src) {
+                        fabric.Image.fromURL(o.src, (img) => {
+                            img.set(o);
+                            resolve(img);
+                        }, { crossOrigin: 'anonymous' });
+                    } else {
+                        const Klass = fabric.util.getKlass(type);
+                        resolve(Klass ? new Klass(o) : null);
+                    }
+                } catch (e) {
+                    console.error("Obj load fail:", e);
+                    resolve(null);
                 }
-
-                if (fabObj) {
-                    fabObj.set({
-                        selectable: true,
-                        evented: true,
-                        cornerColor: 'var(--neon-cyan)',
-                        transparentCorners: false,
-                        cornerStyle: 'circle'
-                    });
-                    canvas.add(fabObj);
-                    loadedCount++;
-                }
-
-            } catch (objE) {
-                errorCount++;
-                uiLog(`Obj ${index} fail: ${objE.message}`, 'error');
-            }
+            });
         });
 
-        function checkFinished() {
-            canvas.renderAll();
-            canvas.calcOffset();
-            if (loadedCount + errorCount >= objs.length) {
-                isStateChanging = false;
-                saveState();
-                uiLog(`✅ LOAD COMPLETE: ${loadedCount} OK, ${errorCount} Fail`);
+        const results = await Promise.all(loadPromises);
+        const validObjs = results.filter(obj => obj !== null);
+
+        validObjs.forEach(obj => {
+            obj.set({
+                selectable: true,
+                evented: true,
+                cornerColor: 'var(--neon-cyan)',
+                transparentCorners: false,
+                cornerStyle: 'circle'
+            });
+            if (obj.type && obj.type.includes('text')) {
+                obj.set({ originX: 'center', originY: 'center' });
             }
+            canvas.add(obj);
+        });
+
+        // v4.13.0: Optional Auto-grouping for complex designs
+        if (validObjs.length > 3) {
+            const activeGroup = new fabric.ActiveSelection(canvas.getObjects(), {
+                canvas: canvas
+            });
+            canvas.setActiveObject(activeGroup);
+            // We don't permanently group yet, just select them
         }
 
-        // Final sync check
-        setTimeout(checkFinished, 1000);
+        canvas.renderAll();
+        canvas.calcOffset();
+        
+        setTimeout(() => {
+            canvas.renderAll();
+            isStateChanging = false;
+            saveState();
+            console.log(`✅ LOAD SUCCESSFUL: ${validObjs.length} elements.`);
+        }, 500);
 
     } catch (e) {
         isStateChanging = false;
-        uiLog("LOAD FATAL: " + e.message, 'error');
-        alert("Fatal Error: " + e.message);
+        console.error("LOAD FATAL:", e);
     }
 };
