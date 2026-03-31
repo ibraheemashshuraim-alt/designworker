@@ -322,10 +322,29 @@ window.startDrawingShape = (type) => {
     canvas.selection = false;
 };
 
+function getAccuratePointer(e) {
+    if (!canvas || !canvas.lowerCanvasEl) return canvas.getPointer(e);
+    const rect = canvas.lowerCanvasEl.getBoundingClientRect();
+    const scale = window.editorScaleRatio || 1;
+    let clientX = e.clientX;
+    let clientY = e.clientY;
+    
+    // For touch devices (mobile/tablet)
+    if (e.touches && e.touches.length > 0) {
+        clientX = e.touches[0].clientX;
+        clientY = e.touches[0].clientY;
+    }
+
+    return {
+        x: (clientX - rect.left) / scale,
+        y: (clientY - rect.top) / scale,
+    };
+}
+
 function setupDrawingListeners() {
     canvas.on('mouse:down', (o) => {
         if (!isDrawingMode) return;
-        const p = canvas.getPointer(o.e);
+        const p = getAccuratePointer(o.e);
         startingPoint = { x: p.x, y: p.y };
         const common = { left: p.x, top: p.y, fill: 'rgba(34,211,238,0.3)', stroke: '#22d3ee', strokeWidth: 2 };
         if (shapeToDraw === 'rect') drawingObject = new fabric.Rect({ ...common, width: 0, height: 0 });
@@ -344,7 +363,7 @@ function setupDrawingListeners() {
     });
     canvas.on('mouse:move', (o) => {
         if (!isDrawingMode || !drawingObject) return;
-        const p = canvas.getPointer(o.e);
+        const p = getAccuratePointer(o.e);
         const w = Math.abs(p.x - startingPoint.x);
         const h = Math.abs(p.y - startingPoint.y);
         if (shapeToDraw === 'rect') drawingObject.set({ width: w, height: h, left: Math.min(p.x, startingPoint.x), top: Math.min(p.y, startingPoint.y) });
@@ -482,6 +501,8 @@ function resizeCanvas() {
     if (!wrapper || !card || !canvas) return;
     const scale = Math.min((card.offsetWidth-80)/baseWidth, (card.offsetHeight-80)/baseHeight, 1.0);
     wrapper.style.transform = `scale(${scale})`;
+    window.editorScaleRatio = scale;
+    setTimeout(() => canvas.calcOffset(), 50);
  }
 
 window.checkPremiumAccess = () => {
