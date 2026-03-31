@@ -1,4 +1,4 @@
-// ================ EDITOR LOGIC (v4.18.6 - FINAL STABLE EDITION) ================
+// ================ EDITOR LOGIC (v4.18.9 - FINAL STABLE EDITION) ================
 
 // v4.9.8: GLOBAL NAVIGATION
 window.switchTab = (tab) => {

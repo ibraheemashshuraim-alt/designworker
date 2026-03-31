@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DesignCheck - Premium AI Critique (v4.18.7)</title>
+    <title>DesignCheck - Premium AI Critique (v4.18.9)</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css?v=4.18.7">
@@ -32,6 +32,9 @@
                 <span class="brand-name">DesignCheck</span>
                 <span class="ai-badge">AI</span>
             </div>
+            <button class="btn browse-btn" onclick="hardResetApp()" style="padding: 5px 12px; font-size: 0.7rem; border-radius: 20px; border-color: rgba(255,255,255,0.1); margin-right:15px; background: rgba(255,82,82,0.1); color: #ff5252;">
+                <i class="fa-solid fa-broom"></i> Repair System
+            </button>
         </div>
         <div class="nav-right">
             <div id="authContainer" class="hidden" style="display: flex; align-items: center; position: relative;">
@@ -435,25 +438,42 @@
     </div>
 
 
-        <div>Powered by <strong>Gemini AI</strong> | <span id="uiVersion" style="color: var(--neon-cyan);">v4.18.7</span></div>
+        <div>Powered by <strong>Gemini AI</strong> | <span id="uiVersion" style="color: var(--neon-cyan);">v4.18.9</span></div>
     </footer>
 
-    <script type="module" src="analyze.js?v=4.18.7"></script>
-    <script src="editor.js?v=4.18.7"></script>
+    <script type="module" src="analyze.js?v=4.18.9"></script>
+    <script src="editor.js?v=4.18.9"></script>
     <script>
-        // v4.18.7: Programmatic Cache Clear
+        // v4.18.9: Nuclear Cache Clear
+        window.hardResetApp = async function() {
+            if (!confirm("کیا آپ سسٹم کو ری سیٹ کرنا چاہتے ہیں؟ اس سے تمام عارضی ڈیٹا صاف ہو جائے گا۔")) return;
+            
+            // 1. Unregister Service Workers
+            if (window.navigator && navigator.serviceWorker) {
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                for (let reg of registrations) { await reg.unregister(); }
+            }
+            
+            // 2. Clear Storages
+            localStorage.clear();
+            sessionStorage.clear();
+            
+            // 3. Clear Cache API (if exists)
+            if (window.caches) {
+                const names = await caches.keys();
+                for (let name of names) { await caches.delete(name); }
+            }
+            
+            alert("سسٹم ری سیٹ ہو گیا۔ اب صفحہ دوبارہ لوڈ ہو گا۔");
+            window.location.reload(true);
+        };
+
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.getRegistrations().then(function(registrations) {
                 for(let registration of registrations) {
                     registration.unregister();
-                    console.log("Old ServiceWorker Unregistered");
                 }
             });
-        }
-        // Specific hack to break any persistence in localStorage if needed
-        if (localStorage.getItem('app_version') !== '4.18.5') {
-            localStorage.setItem('app_version', '4.18.5');
-            // We don't clear all localStorage to avoid logging user out
         }
     </script>
 </body>
