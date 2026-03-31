@@ -785,6 +785,181 @@ function clearSidebarSync() {
 }
 
 // v4.18.5: DRAWING ENGINE (RESTORED)
+let isDrawingMode = false;
+let shapeToDraw = null;
+let startingPoint = { x: 0, y: 0 };
+let drawingObject = null;
+
+window.startDrawingShape = (type) => {
+    isDrawingMode = true;
+    shapeToDraw = type;
+    canvas.defaultCursor = 'crosshair';
+    canvas.selection = false;
+    alert(`ٹولز ایکٹو: کینوس پر ماؤس ڈریگ کر کے ${type} بنائیں۔`);
+};
+
+function setupDrawingListeners() {
+    if (!canvas) return;
+
+    canvas.on('mouse:down', function(o) {
+        if (!isDrawingMode) return;
+        const pointer = canvas.getPointer(o.e);
+        startingPoint = { x: pointer.x, y: pointer.y };
+
+        const common = {
+            left: pointer.x, top: pointer.y,
+            fill: 'rgba(34, 211, 238, 0.3)', 
+            stroke: 'var(--neon-cyan)', strokeWidth: 2,
+            originX: 'left', originY: 'top',
+            selectable: false, evented: false
+        };
+
+        if (shapeToDraw === 'rect') drawingObject = new fabric.Rect({ ...common, width: 0, height: 0 });
+        else if (shapeToDraw === 'circle') drawingObject = new fabric.Circle({ ...common, radius: 0 });
+        else if (shapeToDraw === 'triangle') drawingObject = new fabric.Triangle({ ...common, width: 0, height: 0 });
+
+        if (drawingObject) canvas.add(drawingObject);
+    });
+
+    canvas.on('mouse:move', function(o) {
+        if (!isDrawingMode || !drawingObject) return;
+        const pointer = canvas.getPointer(o.e);
+        const w = Math.abs(pointer.x - startingPoint.x);
+        const h = Math.abs(pointer.y - startingPoint.y);
+
+        if (shapeToDraw === 'rect' || shapeToDraw === 'triangle') {
+            drawingObject.set({ 
+                width: w, height: h,
+                left: Math.min(pointer.x, startingPoint.x),
+                top: Math.min(pointer.y, startingPoint.y)
+            });
+        } else if (shapeToDraw === 'circle') {
+            drawingObject.set({ radius: w / 2 });
+        }
+        canvas.renderAll();
+    });
+
+    canvas.on('mouse:up', function() {
+        if (!isDrawingMode) return;
+        isDrawingMode = false;
+        canvas.defaultCursor = 'default';
+        canvas.selection = true;
+        if (drawingObject) {
+            drawingObject.set({ selectable: true, evented: true });
+            drawingObject.setCoords();
+            canvas.setActiveObject(drawingObject);
+        }
+        canvas.renderAll();
+        saveState();
+        drawingObject = null;
+    });
+}
+
+// v4.18.5: ADDITIONAL TOOLS
+window.processRemoveBackground = async () => {
+    const activeImage = canvas.getActiveObject();
+    if (!activeImage || activeImage.type !== 'image') {
+        return alert("براہ کرم وہ تصویر سلیکٹ کریں جس کا بیک گراؤنڈ ہٹانا ہے۔");
+    }
+
+    const modal = document.getElementById('bgProcessingModal');
+    if (modal) modal.style.display = 'flex';
+
+    try {
+        const url = activeImage.getSrc();
+        const blob = await fetch(url).then(r => r.blob());
+        const resultBlob = await imglyRemoveBackground(blob);
+        const resultUrl = URL.createObjectURL(resultBlob);
+
+        fabric.Image.fromURL(resultUrl, (newImg) => {
+            newImg.set({
+                left: activeImage.left, top: activeImage.top,
+                scaleX: activeImage.scaleX, scaleY: activeImage.scaleY,
+                originX: activeImage.originX, originY: activeImage.originY
+            });
+            canvas.remove(activeImage);
+            canvas.add(newImg);
+            canvas.setActiveObject(newImg);
+            canvas.renderAll();
+            saveState();
+            if (modal) modal.style.display = 'none';
+        });
+    } catch (e) {
+        console.error("BG Removal fail", e);
+        alert("بیک گراؤنڈ ہٹانے میں مسئلہ ہوا۔ دوبارہ کوشش کریں۔");
+        if (modal) modal.style.display = 'none';
+    }
+};
+
+function applyFontToActive(font) {
+    const obj = canvas.getActiveObject();
+    if (obj && obj.type === 'i-text') {
+        obj.set('fontFamily', font);
+        canvas.renderAll();
+        saveState();
+    }
+}
+
+window.toggleTextFormat = (format) => {
+    const obj = canvas.getActiveObject();
+    if (!obj || obj.type !== 'i-text') return;
+
+    if (format === 'bold') {
+        obj.set('fontWeight', obj.fontWeight === 'bold' ? 'normal' : 'bold');
+    } else if (format === 'italic') {
+        obj.set('fontStyle', obj.fontStyle === 'italic' ? 'normal' : 'italic');
+    }
+    canvas.renderAll();
+    saveState();
+};
+
+// v4.18.5: CONTEXTUAL SYNC ENGINE (RESTORED)
+function syncProSidebar(obj) {
+    const toolbar = document.getElementById('contextToolbar');
+    if (!toolbar) return;
+
+    toolbar.classList.remove('hidden');
+
+    // Groups
+    const textGroup = document.getElementById('textToolsGroup');
+    const shapeGroup = document.getElementById('shapeToolsGroup');
+    const imgGroup = document.getElementById('imgToolsGroup');
+
+    if (obj.type === 'i-text') {
+        textGroup?.classList.remove('hidden');
+        shapeGroup?.classList.add('hidden');
+        imgGroup?.classList.add('hidden');
+        const display = document.getElementById('selectedFontDisplay');
+        if (display) display.value = obj.fontFamily;
+    } else if (obj.type === 'image') {
+        textGroup?.classList.add('hidden');
+        shapeGroup?.classList.add('hidden');
+        imgGroup?.classList.remove('hidden');
+    } else {
+        textGroup?.classList.add('hidden');
+        shapeGroup?.classList.remove('hidden');
+        imgGroup?.classList.add('hidden');
+        const slider = document.getElementById('shapeStrokeWidthSlider');
+        if (slider) slider.value = obj.strokeWidth || 0;
+    }
+
+    if (document.getElementById('topColorPicker')) {
+        document.getElementById('topColorPicker').value = obj.fill || obj.stroke || '#000000';
+    }
+    if (document.getElementById('opacitySlider')) {
+        document.getElementById('opacitySlider').value = obj.opacity || 1;
+    }
+
+    const bound = obj.getBoundingRect();
+    toolbar.style.top = (bound.top - 80) + "px";
+    toolbar.style.left = (bound.left + bound.width / 2) + "px";
+}
+
+function clearSidebarSync() {
+    document.getElementById('contextToolbar')?.classList.add('hidden');
+}
+
+// v4.18.5: DRAWING ENGINE (RESTORED)
 
 window.startDrawingShape = (type) => {
     isDrawingMode = true;
