@@ -379,33 +379,37 @@ window.generateAIDesign = async () => {
                 console.log(`AI Designer: Trying ${modelCandidate}...`);
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelCandidate}:generateContent?key=${keyToUse}`;
                 
-                // v4.14.0: ELITE CREATIVE ADVISOR PROMPT (PREMIUM BRANDING)
+                // v4.15.0: ELITE CREATIVE AGENCY PROMPT (MAGIC AESTHETICS)
                 let aiPrompt = `
-                    You are a High-End Creative Director (Expert in Figma, Canva & Brand Identity).
-                    Objective: Generate a stunning, world-class Fabric.js JSON design for: "${prompt}"
+                    You are a World-Class Creative Director at a top-tier Design Agency.
+                    Task: Create a masterpiece design for: "${prompt}"
 
-                    ### BRANDING & COMPOSITION RULES:
-                    1. PALETTE: Use a cohesive, modern palette. 
-                       - Dark Premium: Navy #0f172a / Gold #fbbf24 / White #f8fafc.
-                       - Vibrant Tech: Indigo #4f46e5 / Cyan #06b6d4 / White #ffffff.
-                       - Earthy Minimal: Charcoal #334155 / Sage #d1d5db / Cream #f5f5dc.
-                    2. LAYERING (THE DEPTH RULE):
+                    ### WORKSPACE SPECS:
+                    - 800x600 pixels (Landscape).
+                    - High-End Visual Hierarchy (Premium Agency Style).
+
+                    ### DESIGN PHILOSOPHY:
+                    1. PALETTES (CHOOSE ONE):
+                       - ROYAL LUXURY: Deep Navy #010409 / Gold #D4AF37 / White #FFFFFF.
+                       - NEON CYBER: Dark Blue #0F172A / Cyan #22D3EE / Fuchsia #D946EF.
+                       - SOFT MINIMAL: Off-White #F8FAFC / Sage #334155 / Charcoal #1E293B.
+                    2. LAYERING (THE MAGIC ORDER):
                        - BASE: Large Rect (800x600, top:0, left:0) for background.
-                       - TEXTURE: 2-4 semi-transparent "faded" circles/rects (opacity 0.05-0.1) in corners to create visual interest.
-                       - FOCUS CARD: A large, rounded Rect (rx/ry: 40) centered, serving as the main content area (e.g., glassmorphism style with stroke).
-                    3. TYPOGRAPHY:
-                       - HEADING: Large (72pt+), Extra Bold, centered.
-                       - BODY/TAGLINE: 22-26pt, Light weight, placed with generous spacing below the heading.
-                       - Support Urdu (Noto Nastaliq Urdu) if context allows.
-                    4. VISUALS:
-                       - Keywords should be specific: "High resolution minimalist logo of [object]", "Abstract vector background pattern".
-                       - Image URL: https://image.pollinations.ai/prompt/[KEYWORDS]?width=512&height=512&nologo=true
-                       - MUST have "crossOrigin": "anonymous".
-                    5. PROPERTIES: Use "shadow" (blur: 30, color: "rgba(0,0,0,0.3)"), "stroke", and "strokeWidth".
+                       - TEXTURE: 3-5 semi-transparent circles/rects (opacity 0.05-0.12) as "Modern Accents".
+                       - HERO CARD: A central rounded Card Rect (width: 550, height: 450, rx: 45, ry: 45, centered).
+                         - Shadow: { "color": "rgba(0,0,0,0.5)", "blur": 50, "offsetY": 25 }.
+                    3. TYPOGRAPHY (HIERARCHY):
+                       - PRIMARY HEADING: Massive (82pt+), centered inside Hero Card.
+                       - TAGLINE: 22pt, light-weight, exactly 30px below heading.
+                    4. VISUALS (CRITICAL):
+                       - Keywords: Always include "isolated", "studio lighting", "high definition", "flat background".
+                       - For Burger: "Juicy delicious gourmet burger isolated on empty white background".
+                       - Image URL: https://image.pollinations.ai/prompt/[KEYWORDS]?width=600&height=600&nologo=true
+                       - MUST include "crossOrigin": "anonymous".
 
-                    ### JSON OUTPUT:
+                    ### OUTPUT:
                     - Return ONLY { "objects": [...] }.
-                    - No preamble, no markdown.
+                    - Strictly no extra text or markdown.
                 `;
 
                 const partsArray = [{ text: aiPrompt }];

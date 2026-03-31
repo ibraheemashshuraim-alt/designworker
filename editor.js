@@ -694,6 +694,13 @@ window.loadDesignFromCode = async function(rawCode) {
     
     if (!code || code.includes("انتظر")) return;
 
+    // Show processing modal for Magic BG removal
+    const bgModal = document.getElementById('bgProcessingModal');
+    if (bgModal) {
+        bgModal.classList.remove('hidden');
+        bgModal.style.display = 'flex';
+    }
+
     try {
         let jsonText = code.trim();
         jsonText = jsonText.replace(/```json/g, '').replace(/```/g, '').trim();
@@ -722,63 +729,80 @@ window.loadDesignFromCode = async function(rawCode) {
         canvas.clear();
         canvas.backgroundColor = data.background || data.backgroundColor || '#ffffff';
         
-        // v4.14.0: SNAPPY HYBRID LOADER (TEXT/SHAPES INSTANT, IMAGES LAZY)
         let totalItems = objs.length;
-        let loadedItems = 0;
+        let processedItems = 0;
 
-        objs.forEach((o, index) => {
+        for (let i = 0; i < objs.length; i++) {
+            const o = objs[i];
             try {
-                if (typeof o.left !== 'number') o.left = 100 + (index * 10);
-                if (typeof o.top !== 'number') o.top = 100 + (index * 10);
+                if (typeof o.left !== 'number') o.left = 100 + (i * 20);
+                if (typeof o.top !== 'number') o.top = 100 + (i * 20);
                 
                 const type = (o.type || 'rect').toLowerCase();
 
-                // 1. Shapes & Text (Sychronous Add)
                 if (type.includes('text') || type === 'rect' || type === 'circle' || type === 'triangle' || type === 'ellipse') {
-                    let fabObj = null;
-                    if (type.includes('text')) {
-                        fabObj = new fabric.IText(o.text || 'Text', o);
-                    } else if (type === 'rect') {
-                        fabObj = new fabric.Rect(o);
-                    } else if (type === 'circle') {
-                        fabObj = new fabric.Circle(o);
-                    } else if (type === 'triangle') {
-                        fabObj = new fabric.Triangle(o);
-                    } else if (type === 'ellipse') {
-                        fabObj = new fabric.Ellipse(o);
-                    }
+                    let fabObj;
+                    if (type.includes('text')) fabObj = new fabric.IText(o.text || 'Text', o);
+                    else if (type === 'rect') fabObj = new fabric.Rect(o);
+                    else if (type === 'circle') fabObj = new fabric.Circle(o);
+                    else if (type === 'triangle') fabObj = new fabric.Triangle(o);
+                    else if (type === 'ellipse') fabObj = new fabric.Ellipse(o);
                     
                     if (fabObj) {
                         applyDefaultStyles(fabObj);
                         canvas.add(fabObj);
-                        canvas.renderAll();
-                        loadedItems++;
                     }
+                    processedItems++;
                 } 
-                // 2. Images (Asynchronous Add)
                 else if (type === 'image' && o.src) {
-                    fabric.Image.fromURL(o.src, (img) => {
-                        img.set(o);
-                        applyDefaultStyles(img);
-                        canvas.add(img);
-                        canvas.renderAll();
-                        loadedItems++;
-                        if (loadedItems >= totalItems) finalizeLoad();
-                    }, { crossOrigin: 'anonymous' });
+                    // MAGIC: Auto Background Removal for AI Images
+                    try {
+                        const blob = await imglyRemoveBackground(o.src);
+                        const reader = new FileReader();
+                        await new Promise((resolve) => {
+                            reader.onload = async (e) => {
+                                fabric.Image.fromURL(e.target.result, (img) => {
+                                    img.set(o);
+                                    applyDefaultStyles(img);
+                                    canvas.add(img);
+                                    // Move to Front if it's a logo style keyword
+                                    if (o.src.toLowerCase().includes('logo') || o.src.toLowerCase().includes('burger')) {
+                                        canvas.bringToFront(img);
+                                    }
+                                    resolve();
+                                }, { crossOrigin: 'anonymous' });
+                            };
+                            reader.readAsDataURL(blob);
+                        });
+                    } catch (bgE) {
+                        console.warn("Auto BG Removal failed, loading as-is:", bgE);
+                        await new Promise((resolve) => {
+                            fabric.Image.fromURL(o.src, (img) => {
+                                img.set(o);
+                                applyDefaultStyles(img);
+                                canvas.add(img);
+                                resolve();
+                            }, { crossOrigin: 'anonymous' });
+                        });
+                    }
+                    processedItems++;
                 } else {
                     const Klass = fabric.util.getKlass(type);
                     if (Klass) {
                         const generic = new Klass(o);
                         applyDefaultStyles(generic);
                         canvas.add(generic);
-                        loadedItems++;
                     }
+                    processedItems++;
                 }
+                
+                canvas.renderAll();
+                if (processedItems >= totalItems) finalizeLoad();
             } catch (e) {
                 console.error("Obj load fail:", e);
-                loadedItems++;
+                processedItems++;
             }
-        });
+        }
 
         function applyDefaultStyles(obj) {
             obj.set({
@@ -794,17 +818,24 @@ window.loadDesignFromCode = async function(rawCode) {
         }
 
         function finalizeLoad() {
+            if (bgModal) {
+                bgModal.classList.add('hidden');
+                bgModal.style.display = 'none';
+            }
             canvas.renderAll();
             canvas.calcOffset();
             isStateChanging = false;
             saveState();
-            console.log(`✅ ALL ELEMENTS LOADED (${loadedItems}/${totalItems})`);
         }
 
-        // Failsafe if images take too long
-        setTimeout(finalizeLoad, 3000);
+        // Safety timeout
+        setTimeout(finalizeLoad, 10000);
 
     } catch (e) {
+        if (bgModal) {
+            bgModal.classList.add('hidden');
+            bgModal.style.display = 'none';
+        }
         isStateChanging = false;
         console.error("LOAD FATAL:", e);
     }
