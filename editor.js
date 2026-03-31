@@ -783,11 +783,28 @@ window.loadDesignFromCode = async function(rawCode) {
                 evented: true,
                 cornerColor: 'var(--neon-cyan)',
                 transparentCorners: false,
-                cornerStyle: 'circle'
+                cornerStyle: 'circle',
+                originX: 'center',
+                originY: 'center'
             });
-            if (obj.type && obj.type.includes('text')) {
-                obj.set({ originX: 'center', originY: 'center' });
+
+            // v4.17.0: SMART SCALER (Prevent Canvas Overflow)
+            const maxWidth = 700; // 800 - 100 padding
+            const maxHeight = 500; // 600 - 100 padding
+            
+            const curWidth = obj.width * obj.scaleX;
+            const curHeight = obj.height * obj.scaleY;
+
+            if (curWidth > maxWidth || curHeight > maxHeight) {
+                const scale = Math.min(maxWidth / obj.width, maxHeight / obj.height);
+                obj.set({ scaleX: scale * 0.9, scaleY: scale * 0.9 });
             }
+
+            // Ensure coordinates are within safe bounds if AI messed up
+            if (obj.left < 100) obj.left = 100;
+            if (obj.left > 700) obj.left = 700;
+            if (obj.top < 100) obj.top = 100;
+            if (obj.top > 500) obj.top = 500;
         }
 
         function finalizeLoad() {

@@ -379,37 +379,34 @@ window.generateAIDesign = async () => {
                 console.log(`AI Designer: Trying ${modelCandidate}...`);
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelCandidate}:generateContent?key=${keyToUse}`;
                 
-                // v4.15.0: ELITE CREATIVE AGENCY PROMPT (MAGIC AESTHETICS)
+                // v4.17.0: AESTHETIC MASTERPIECE PROMPT (STRICT LAYOUT)
                 let aiPrompt = `
-                    You are a World-Class Creative Director at a top-tier Design Agency.
-                    Task: Create a masterpiece design for: "${prompt}"
+                    You are a World-Class Creative Director at a top Design Agency.
+                    Task: Create a BALANCED, PREMIUM graphic for: "${prompt}"
 
                     ### WORKSPACE SPECS:
                     - 800x600 pixels (Landscape).
-                    - High-End Visual Hierarchy (Premium Agency Style).
+                    - SAFE ZONE: All content MUST have 60px padding from canvas edges.
 
-                    ### DESIGN PHILOSOPHY:
-                    1. PALETTES (CHOOSE ONE):
-                       - ROYAL LUXURY: Deep Navy #010409 / Gold #D4AF37 / White #FFFFFF.
-                       - NEON CYBER: Dark Blue #0F172A / Cyan #22D3EE / Fuchsia #D946EF.
-                       - SOFT MINIMAL: Off-White #F8FAFC / Sage #334155 / Charcoal #1E293B.
-                    2. LAYERING (THE MAGIC ORDER):
-                       - BASE: Large Rect (800x600, top:0, left:0) for background.
-                       - TEXTURE: 3-5 semi-transparent circles/rects (opacity 0.05-0.12) as "Modern Accents".
-                       - HERO CARD: A central rounded Card Rect (width: 550, height: 450, rx: 45, ry: 45, centered).
-                         - Shadow: { "color": "rgba(0,0,0,0.5)", "blur": 50, "offsetY": 25 }.
-                    3. TYPOGRAPHY (HIERARCHY):
-                       - PRIMARY HEADING: Massive (82pt+), centered inside Hero Card.
-                       - TAGLINE: 22pt, light-weight, exactly 30px below heading.
-                    4. VISUALS (CRITICAL):
-                       - Keywords: Always include "isolated", "studio lighting", "high definition", "flat background".
-                       - For Burger: "Juicy delicious gourmet burger isolated on empty white background".
-                       - Image URL: https://image.pollinations.ai/prompt/[KEYWORDS]?width=600&height=600&nologo=true
-                       - MUST include "crossOrigin": "anonymous".
+                    ### CHOOSE ONE LAYOUT TEMPLATE (STRICT):
+                    1. "THE CENTERPIECE": Image at center (top:200, left:400) -> Heading above (top:100) -> Subheading below (top:500).
+                    2. "MODERN SPLIT": Image on Left (left:220, top:300) -> Heading on Right (left:580, top:250) -> Subheading below Heading.
+                    3. "FLOATING GLASS": Large rounded Rect (width:700, height:500, left:400, top:300) -> Heading & Subheading inside.
+
+                    ### DESIGN RULES:
+                    - PALETTE: Use #0F172A (Navy) / #F8FAFC (Paper) / #FACC15 (Luxury Gold).
+                    - TEXT SIZE: HEADING (Max 65pt, reduce if word is >7 chars). TAGLINE (Max 24pt).
+                    - OBJECTS:
+                      - Background: RECT (800x600, top:300, left:400, fill: [PALETTE_BASE]).
+                      - Shapes: Use "rx": 30, "ry": 30 for all rects.
+                      - Shadows: { "color": "rgba(0,0,0,0.4)", "blur": 40, "offsetY": 20 }.
+                    - IMAGES: Use "isolated minimalist [object] high quality" for better BG removal later.
+                      - URL: https://image.pollinations.ai/prompt/[KEYWORDS]?width=512&height=512&nologo=true
+                      - MUST "crossOrigin": "anonymous".
 
                     ### OUTPUT:
                     - Return ONLY { "objects": [...] }.
-                    - Strictly no extra text or markdown.
+                    - All coordinates (left, top) MUST be centered (originX/Y is center).
                 `;
 
                 const partsArray = [{ text: aiPrompt }];
