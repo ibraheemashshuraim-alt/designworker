@@ -246,6 +246,17 @@ function bindSidebarEvents() {
 
 // Drawing Logic
 window.startDrawingShape = (type) => {
+    if (type === 'freehand') {
+        canvas.isDrawingMode = true;
+        canvas.freeDrawingBrush.color = '#22d3ee';
+        canvas.freeDrawingBrush.width = 3;
+        isDrawingMode = false; // Custom shape drawing disabled
+        return;
+    }
+    
+    // Disable freehand if another shape selected
+    canvas.isDrawingMode = false;
+    
     isDrawingMode = true;
     shapeToDraw = type;
     canvas.defaultCursor = 'crosshair';
@@ -260,6 +271,8 @@ function setupDrawingListeners() {
         const common = { left: p.x, top: p.y, fill: 'rgba(34,211,238,0.3)', stroke: '#22d3ee', strokeWidth: 2 };
         if (shapeToDraw === 'rect') drawingObject = new fabric.Rect({ ...common, width: 0, height: 0 });
         else if (shapeToDraw === 'circle') drawingObject = new fabric.Circle({ ...common, radius: 0 });
+        else if (shapeToDraw === 'triangle') drawingObject = new fabric.Triangle({ ...common, width: 0, height: 0 });
+        
         if (drawingObject) canvas.add(drawingObject);
     });
     canvas.on('mouse:move', (o) => {
@@ -269,6 +282,7 @@ function setupDrawingListeners() {
         const h = Math.abs(p.y - startingPoint.y);
         if (shapeToDraw === 'rect') drawingObject.set({ width: w, height: h, left: Math.min(p.x, startingPoint.x), top: Math.min(p.y, startingPoint.y) });
         else if (shapeToDraw === 'circle') drawingObject.set({ radius: w / 2 });
+        else if (shapeToDraw === 'triangle') drawingObject.set({ width: w, height: h, left: Math.min(p.x, startingPoint.x), top: Math.min(p.y, startingPoint.y) });
         canvas.renderAll();
     });
     canvas.on('mouse:up', () => {

@@ -260,10 +260,10 @@
         <!-- Unified Professional Sidebar -->
         <div class="dash-card editor-toolbar-card" style="height: auto; min-height: 500px;">
             <div class="sidebar-tabs" style="display: flex; border-bottom: 1px solid rgba(255,255,255,0.05);">
-                <button id="manualTabBtn" class="sidebar-tab active" onclick="switchSidebarTab('manual')">
-                    <i class="fa-solid fa-hand"></i> Manual
+                <button id="manualTabBtn" class="sidebar-tab active" style="flex: 1;" onclick="switchSidebarTab('manual')">
+                    <i class="fa-solid fa-hand"></i> Manual Tools
                 </button>
-                <button id="aiTabBtn" class="sidebar-tab" onclick="switchSidebarTab('ai')">
+                <button id="aiTabBtn" class="sidebar-tab hidden" style="display: none;" onclick="switchSidebarTab('ai')">
                     <i class="fa-solid fa-wand-magic-sparkles"></i>
                     <span>AI Designer</span>
                 </button>
@@ -280,14 +280,17 @@
                     </div>
                 </div>
 
-                <!-- Group 2: Elements -->
+                <!-- Group 2: Elements & Shapes -->
                 <div class="manual-tool-group">
-                    <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 12px; font-weight:700;">ADD ELEMENTS</div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 12px; font-weight:700;">ADD SHAPES & ELEMENTS</div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
                         <button class="tool-btn" onclick="addText()"><i class="fa-solid fa-t"></i> Text</button>
                         <button class="tool-btn" onclick="document.getElementById('imgUpload').click()"><i class="fa-solid fa-image"></i> Image</button>
-                        <button class="tool-btn" onclick="startDrawingShape('rect')"><i class="fa-solid fa-square"></i> Rect</button>
+                        <button class="tool-btn" onclick="processRemoveBackground()" style="color:var(--neon-purple); border-color:rgba(157,0,255,0.3);"><i class="fa-solid fa-wand-sparkles"></i> BG Cut</button>
+                        <button class="tool-btn" onclick="startDrawingShape('rect')"><i class="fa-solid fa-square"></i> Square</button>
                         <button class="tool-btn" onclick="startDrawingShape('circle')"><i class="fa-solid fa-circle"></i> Circle</button>
+                        <button class="tool-btn" onclick="startDrawingShape('triangle')"><i class="fa-solid fa-play" style="transform: rotate(-90deg);"></i> Triangle</button>
+                        <button class="tool-btn" onclick="startDrawingShape('freehand')" style="grid-column: span 3; flex-direction: row; justify-content: center;"><i class="fa-solid fa-pen-nib"></i> Freehand Draw</button>
                     </div>
                     <input type="file" id="imgUpload" hidden accept="image/*">
                 </div>
