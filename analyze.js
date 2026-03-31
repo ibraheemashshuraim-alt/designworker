@@ -379,21 +379,23 @@ window.generateAIDesign = async () => {
                 console.log(`AI Designer: Trying ${modelCandidate}...`);
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelCandidate}:generateContent?key=${keyToUse}`;
                 
-                // v4.9.5: PROFESSIONAL CREATIVE PROMPT
+                // v4.10.0: PRO DESIGN QUALITY PROMPT
                 let aiPrompt = `
-                    You are an Expert UI/UX & Graphic Designer.
-                    Your task is to create a Fabric.js JSON object for: "${prompt}"
+                    You are a World-Class UI/UX & Graphic Designer (like a Canva Pro expert).
+                    Your task is to create a stunning, professional Fabric.js JSON design for: "${prompt}"
 
-                    WORKSPACE: 800x600 size.
+                    WORKSPACE BASE: 800x600 size.
                     
-                    CRITICAL INSTRUCTIONS:
-                    1. BE CREATIVE: Do not just output plain text. Create a full visual composition.
-                    2. SHAPES: Use Rectangles, Circles, or complex compositions to create a stunning background or header section.
-                    3. TYPOGRAPHY: Center the main text and use appropriate hierarchy (Headings, subtitles).
-                    4. COLOR PALETTE: Use modern, harmonious colors. No default neon/ugly colors unless requested.
-                    5. If a REFERENCE IMAGE is provided, extract its design style, layout aesthetics, and color palette, then apply them to this design.
+                    CRITICAL DESIGN RULES (DO NOT IGNORE):
+                    1. VISUAL RICHNESS: Never output just plain text on a white canvas. ALWAYS start with a large background "Rect" (width: 800, height: 600, left:0, top:0) filled with a beautiful solid color or simulated gradient.
+                    2. SHAPES & LAYERS: Use decorative shapes (Circles, Triangles, Rects). Give them drop shadows (add "shadow": { "color": "rgba(0,0,0,0.4)", "blur": 15, "offsetX": 5, "offsetY": 5 }) to create professional depth and glassmorphic feel.
+                    3. TYPOGRAPHY: Use modern fonts ("Outfit", "Montserrat", or "Roboto"). Create a clear hierarchy: 
+                       - A large, bold, high-contrast Hero Heading.
+                       - A smaller, lighter sub-heading or paragraph.
+                    4. COMPOSITION: Center elements beautifully or align them cleanly. Ensure text is readable against the background.
+                    5. REFERENCE STYLE (IF IMAGE PROVIDED): Extract its mood, exact layout geometry, and exact HEX color palette. Reproduce that aesthetic exactly using FabricJS shapes and text.
                     
-                    RETURN ONLY VALID JSON. MUST strictly contain an "objects" array with FabricJS entities.
+                    Return ONLY VALID JSON containing an "objects" array with FabricJS entities. NO markdown formatting, just the raw JSON structure. Example: { "objects": [...] }
                 `;
 
                 const partsArray = [{ text: aiPrompt }];

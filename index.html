@@ -10,6 +10,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+    <script src="https://unpkg.com/@imgly/background-removal@1.4.3/dist/browser/imgly-background-removal.js"></script>
 </head>
 <body>
     <div class="background-backdrop"></div>
@@ -242,9 +243,19 @@
                     <div class="result-label" style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 10px;"><i class="fa-solid fa-plus"></i> نئی چیز شامل کریں (Add Items):</div>
                     <div class="editor-tools-grid" style="grid-template-columns: 1fr 1fr; gap: 8px;">
                         <button class="tool-btn" onclick="addTextToCanvas()"><i class="fa-solid fa-font"></i> <span>ٹیکسٹ</span></button>
-                        <button class="tool-btn" onclick="addRectToCanvas()"><i class="fa-solid fa-square"></i> <span>باکس</span></button>
-                        <button class="tool-btn" onclick="addCircleToCanvas()"><i class="fa-solid fa-circle"></i> <span>دائرہ</span></button>
-                        <button class="tool-btn" onclick="document.getElementById('editorFileInput').click()"><i class="fa-solid fa-image"></i> <span>اپ لوڈ</span></button>
+                        
+                        <!-- NEW: Expandable Shapes Menu -->
+                        <div style="position: relative;">
+                            <button class="tool-btn" style="width: 100%;" onclick="toggleShapesMenu(event)"><i class="fa-solid fa-shapes"></i> <span>شکلیں</span></button>
+                            <div id="shapesDropdownMenu" class="custom-dropdown-menu hidden" style="width: 130px; top: 110%;">
+                                <div class="dropdown-item" onclick="startDrawingShape('rect')"><i class="fa-regular fa-square" style="width:15px; text-align:center;"></i> باکس</div>
+                                <div class="dropdown-item" onclick="startDrawingShape('circle')"><i class="fa-regular fa-circle" style="width:15px; text-align:center;"></i> دائرہ</div>
+                                <div class="dropdown-item" onclick="startDrawingShape('triangle')"><i class="fa-solid fa-caret-up" style="width:15px; text-align:center;"></i> تکون</div>
+                                <div class="dropdown-item" onclick="startDrawingShape('line')"><i class="fa-solid fa-minus" style="width:15px; text-align:center;"></i> لکیر</div>
+                            </div>
+                        </div>
+
+                        <button class="tool-btn" onclick="document.getElementById('editorFileInput').click()" style="grid-column: 1 / -1;"><i class="fa-solid fa-image"></i> <span>تصویر اپ لوڈ کریں</span></button>
                         <input type="file" id="editorFileInput" hidden accept="image/*">
                     </div>
                 </div>
@@ -265,22 +276,38 @@
             
             <!-- NEW: Contextual Floating Toolbar -->
             <div id="contextToolbar" class="context-toolbar hidden">
+                <!-- Action Tools -->
+                <div class="toolbar-group action-tools" id="actionToolsGroup">
+                    <button class="tool-btn-small" onclick="duplicateObject()" title="کاپی کریں (Duplicate)"><i class="fa-solid fa-copy"></i></button>
+                    <button class="tool-btn-small" onclick="bringForward()" title="آگے لائیں (Bring Forward)"><i class="fa-solid fa-layer-group"></i><i class="fa-solid fa-arrow-up" style="font-size:0.5rem; margin-left:-2px;"></i></button>
+                    <button class="tool-btn-small" onclick="sendBackward()" title="پیچھے بھیجیں (Send Backward)"><i class="fa-solid fa-layer-group"></i><i class="fa-solid fa-arrow-down" style="font-size:0.5rem; margin-left:-2px;"></i></button>
+                    <button class="tool-btn-small danger-text" style="color: #ff4d4d;" onclick="deleteActiveObject()" title="مٹائیں (Delete)"><i class="fa-solid fa-trash-can"></i></button>
+                </div>
+
+                <!-- Text Tools Group -->
                 <div class="toolbar-group text-tools hidden" id="textToolsGroup">
                     <button class="tool-btn-small" id="boldBtn" onclick="toggleTextFormat('bold')" title="Bold"><i class="fa-solid fa-bold"></i></button>
                     <button class="tool-btn-small" id="italicBtn" onclick="toggleTextFormat('italic')" title="Italic"><i class="fa-solid fa-italic"></i></button>
-                    <div class="font-dropdown-wrapper">
-                        <select id="topFontSelect" class="custom-select-small" onchange="applyFontToActive(this.value)">
-                            <option value="Outfit">Outfit</option>
-                        </select>
+                    
+                    <!-- NEW LIVE FONT DROPDOWN -->
+                    <div class="font-dropdown-wrapper" style="position: relative;">
+                        <input type="button" id="selectedFontDisplay" class="custom-select-small" onclick="toggleFontDropdown(event)" value="Outfit">
+                        <ul id="customFontListMenu" class="custom-dropdown-menu hidden" style="max-height: 250px; overflow-y: auto; width: 180px;">
+                            <!-- JS populates fonts here -->
+                        </ul>
                     </div>
                 </div>
                 
                 <div class="toolbar-group color-tools" id="colorToolsGroup">
-                    <input type="color" id="topColorPicker" class="color-swatch-small" title="Color">
+                    <input type="color" id="topColorPicker" class="color-swatch-small" title="Color" style="margin-right: 5px;">
+                    <div style="display: flex; align-items: center; gap: 5px;" title="Opacity">
+                        <i class="fa-solid fa-droplet" style="font-size: 0.7rem; color: #aaa;"></i>
+                        <input type="range" id="opacitySlider" min="0" max="1" step="0.05" value="1" style="width: 70px;">
+                    </div>
                 </div>
                 
                 <div class="toolbar-group img-tools hidden" id="imgToolsGroup">
-                    <button class="tool-btn-small btn-magic" onclick="alert('یہ فیچر ابھی ٹیسٹنگ میں ہے۔ (Remove BG API)')" title="Remove Background"><i class="fa-solid fa-wand-magic-sparkles"></i> BG Remove</button>
+                    <button class="tool-btn-small btn-magic" onclick="processRemoveBackground()" title="Remove Background"><i class="fa-solid fa-wand-magic-sparkles"></i> BG Remove</button>
                 </div>
             </div>
             <div class="canvas-workspace-bg" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; overflow: auto; padding: 40px;">
@@ -298,6 +325,15 @@
                     <button class="btn approve" style="padding: 15px 40px; font-size: 1.1rem;" onclick="toggleModal('profileDropdown', true)">
                         <i class="fa-solid fa-gem"></i> پریمیم میں اپ گریڈ کریں
                     </button>
+                </div>
+            </div>
+
+            <!-- Processing BG Overlay -->
+            <div id="bgProcessingModal" class="premium-gate hidden" style="z-index: 1000; background: rgba(0,0,0,0.85); display: none; align-items: center; justify-content: center; position: absolute; top:0; left:0; right:0; bottom:0;">
+                <div style="text-align: center;">
+                    <i class="fa-solid fa-wand-magic-sparkles" style="font-size: 3rem; color: var(--neon-purple); animation: pulseFloat 1.5s infinite; margin-bottom: 20px;"></i>
+                    <h3 style="color: #fff; margin-bottom: 10px;">بیک گراؤنڈ ہٹایا جا رہا ہے...</h3>
+                    <p style="color: var(--text-muted); font-size: 0.9rem;">پہلی بار ماڈل لوڈ ہونے میں کچھ سیکنڈ لگ سکتے ہیں</p>
                 </div>
             </div>
         </div>
