@@ -3,16 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DesignCheck - Premium AI Critique</title>
+    <title>DesignCheck - Premium AI Critique (v4.18.0)</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="style.css?v=4.17.0">
+    <link rel="stylesheet" href="style.css?v=4.18.0">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
     <script src="https://unpkg.com/@imgly/background-removal@1.4.3/dist/browser/imgly-background-removal.js"></script>
     
-    <!-- v4.17.0: Aggressive Cache Control -->
+    <!-- v4.18.0: Aggressive Cache Control -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
@@ -447,13 +447,13 @@
 
 
     <footer style="display: flex; justify-content: space-between; align-items: center; padding: 20px 40px; border-top: 1px solid var(--border-dim); font-size: 0.8rem; color: var(--text-muted);">
-        <div>Powered by <strong>Gemini AI</strong> | <span id="uiVersion" style="color: var(--neon-cyan);">v4.17.0</span></div>
+        <div>Powered by <strong>Gemini AI</strong> | <span id="uiVersion" style="color: var(--neon-cyan);">v4.18.0</span></div>
     </footer>
 
-    <script type="module" src="analyze.js?v=4.17.0"></script>
-    <script src="editor.js?v=4.17.0"></script>
+    <script type="module" src="analyze.js?v=4.18.0"></script>
+    <script src="editor.js?v=4.18.0"></script>
     <script>
-        // v4.17.0: Programmatic Cache Clear
+        // v4.18.0: Programmatic Cache Clear
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.getRegistrations().then(function(registrations) {
                 for(let registration of registrations) {
@@ -463,8 +463,8 @@
             });
         }
         // Specific hack to break any persistence in localStorage if needed
-        if (localStorage.getItem('app_version') !== '4.17.0') {
-            localStorage.setItem('app_version', '4.17.0');
+        if (localStorage.getItem('app_version') !== '4.18.0') {
+            localStorage.setItem('app_version', '4.18.0');
             // We don't clear all localStorage to avoid logging user out
         }
     </script>

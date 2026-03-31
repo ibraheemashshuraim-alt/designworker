@@ -286,8 +286,8 @@ window.deleteHistoryItem = async (docId) => {
 };
 
 // --- VERSION TAG ---
-window.DESIGN_VERSION = "4.16.0";
-console.log("DesignCheck v4.10.0 Final Pro Stability Loaded");
+window.DESIGN_VERSION = "4.18.0";
+console.log("DesignCheck v4.18.0 Gemini Architect Loaded");
 
 // v4.9.6: Export Local Module State to Global Window (CRITICAL FIX)
 window.userState = userState;
@@ -379,34 +379,31 @@ window.generateAIDesign = async () => {
                 console.log(`AI Designer: Trying ${modelCandidate}...`);
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelCandidate}:generateContent?key=${keyToUse}`;
                 
-                // v4.17.0: AESTHETIC MASTERPIECE PROMPT (STRICT LAYOUT)
+                // v4.18.0: THE GEMINI ARCHITECT PROMPT (AWARD-WINNING DESIGNER)
                 let aiPrompt = `
-                    You are a World-Class Creative Director at a top Design Agency.
-                    Task: Create a BALANCED, PREMIUM graphic for: "${prompt}"
+                    You are a World-Class Creative Director at a top Design Studio (Expert in Modern Branding & UI/UX).
+                    Objective: Architect a premium, breathtaking graphic for: "${prompt}"
 
-                    ### WORKSPACE SPECS:
-                    - 800x600 pixels (Landscape).
-                    - SAFE ZONE: All content MUST have 60px padding from canvas edges.
+                    ### ARTISTIC CORE PRINCIPLES:
+                    1. VISUAL PHYSICS: Use "Depth & Glow". Backgrounds must feel deep, and Hero elements must "pop" with soft, large shadows.
+                    2. COLOR HARMONY: Prefer Gradients. Avoid flat ugly colors. 
+                       - LUXURY: Dark Navy -> Deep Slate. Gold -> Soft Yellow.
+                       - VIBRANT: Indigo -> Purple. Cyan -> Azure.
+                    3. SPATIAL IQ (800x600): Everything centered with exact coordinates (originX: center, originY: center).
+                    4. COMPOSITION TEMPLATES:
+                       - THE SPLIT: Image Left (250, 300), Content Right (600, 300).
+                       - THE CENTERPIECE: Massive Image (400, 300) with Text Overlaid elegantly or below.
 
-                    ### CHOOSE ONE LAYOUT TEMPLATE (STRICT):
-                    1. "THE CENTERPIECE": Image at center (top:200, left:400) -> Heading above (top:100) -> Subheading below (top:500).
-                    2. "MODERN SPLIT": Image on Left (left:220, top:300) -> Heading on Right (left:580, top:250) -> Subheading below Heading.
-                    3. "FLOATING GLASS": Large rounded Rect (width:700, height:500, left:400, top:300) -> Heading & Subheading inside.
+                    ### ADVANCED JSON CAPABILITIES:
+                    - FILL WITH GRADIENTS: You CAN use gradient objects for "fill". 
+                      Example: { "type": "linear", "coords": { "x1": 0, "y1": 0, "x2": 0, "y2": 1 }, "colorStops": [{ "offset": 0, "color": "#121d33" }, { "offset": 1, "color": "#010409" }] }
+                    - SHADOWS: Must use blur (30-60) and offsetY (10-30).
+                    - IMAGES: Keywords: "high resolution [object] minimalist aesthetic isolated studio lighting".
+                    - PROPERTIES: Use "rx": 40, "ry": 40 for rectangles.
 
-                    ### DESIGN RULES:
-                    - PALETTE: Use #0F172A (Navy) / #F8FAFC (Paper) / #FACC15 (Luxury Gold).
-                    - TEXT SIZE: HEADING (Max 65pt, reduce if word is >7 chars). TAGLINE (Max 24pt).
-                    - OBJECTS:
-                      - Background: RECT (800x600, top:300, left:400, fill: [PALETTE_BASE]).
-                      - Shapes: Use "rx": 30, "ry": 30 for all rects.
-                      - Shadows: { "color": "rgba(0,0,0,0.4)", "blur": 40, "offsetY": 20 }.
-                    - IMAGES: Use "isolated minimalist [object] high quality" for better BG removal later.
-                      - URL: https://image.pollinations.ai/prompt/[KEYWORDS]?width=512&height=512&nologo=true
-                      - MUST "crossOrigin": "anonymous".
-
-                    ### OUTPUT:
-                    - Return ONLY { "objects": [...] }.
-                    - All coordinates (left, top) MUST be centered (originX/Y is center).
+                    ### OUTPUT FORMAT (NO TEXT BEFORE/AFTER):
+                    - Return ONLY valid JSON: { "objects": [...] }.
+                    - Do NOT use markdown code blocks (\`\`\`).
                 `;
 
                 const partsArray = [{ text: aiPrompt }];

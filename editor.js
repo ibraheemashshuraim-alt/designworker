@@ -742,7 +742,7 @@ window.loadDesignFromCode = async function(rawCode) {
                     else if (type === 'ellipse') fabObj = new fabric.Ellipse(o);
                     
                     if (fabObj) {
-                        applyDefaultStyles(fabObj);
+                        applyAdvancedFeatures(fabObj, o);
                         canvas.add(fabObj);
                     }
                     processedItems++;
@@ -750,9 +750,8 @@ window.loadDesignFromCode = async function(rawCode) {
                 else if (type === 'image' && o.src) {
                     fabric.Image.fromURL(o.src, (img) => {
                         img.set(o);
-                        applyDefaultStyles(img);
+                        applyAdvancedFeatures(img, o);
                         canvas.add(img);
-                        // Ensure images are behind text but on top of background
                         if (o.src.toLowerCase().includes('logo') || o.src.toLowerCase().includes('burger')) {
                             canvas.bringToFront(img);
                         }
@@ -764,7 +763,7 @@ window.loadDesignFromCode = async function(rawCode) {
                     const Klass = fabric.util.getKlass(type);
                     if (Klass) {
                         const generic = new Klass(o);
-                        applyDefaultStyles(generic);
+                        applyAdvancedFeatures(generic, o);
                         canvas.add(generic);
                     }
                     processedItems++;
@@ -777,7 +776,8 @@ window.loadDesignFromCode = async function(rawCode) {
             }
         });
 
-        function applyDefaultStyles(obj) {
+        function applyAdvancedFeatures(obj, data) {
+            // 1. Basic Styles
             obj.set({
                 selectable: true,
                 evented: true,
@@ -788,10 +788,14 @@ window.loadDesignFromCode = async function(rawCode) {
                 originY: 'center'
             });
 
-            // v4.17.0: SMART SCALER (Prevent Canvas Overflow)
-            const maxWidth = 700; // 800 - 100 padding
-            const maxHeight = 500; // 600 - 100 padding
-            
+            // 2. Gradient Support (v4.18.0)
+            if (data.fill && typeof data.fill === 'object' && data.fill.type) {
+                obj.set('fill', new fabric.Gradient(data.fill));
+            }
+
+            // 3. Smart Scaler (Refined)
+            const maxWidth = 750;
+            const maxHeight = 550;
             const curWidth = obj.width * obj.scaleX;
             const curHeight = obj.height * obj.scaleY;
 
@@ -800,11 +804,10 @@ window.loadDesignFromCode = async function(rawCode) {
                 obj.set({ scaleX: scale * 0.9, scaleY: scale * 0.9 });
             }
 
-            // Ensure coordinates are within safe bounds if AI messed up
-            if (obj.left < 100) obj.left = 100;
-            if (obj.left > 700) obj.left = 700;
-            if (obj.top < 100) obj.top = 100;
-            if (obj.top > 500) obj.top = 500;
+            // 4. Shadow Support (v4.18.0)
+            if (data.shadow) {
+                obj.setShadow(data.shadow);
+            }
         }
 
         function finalizeLoad() {
