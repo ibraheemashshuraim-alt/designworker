@@ -100,16 +100,24 @@ function initEditor() {
                 deleteActiveObject();
             }
             
-            // Undo: Ctrl+Z
-            if (e.ctrlKey && e.key === 'z') {
+            const isInput = ['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName);
+            if (isInput) return;
+
+            // Undo: Ctrl + Z
+            const isUndo = (e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z' || e.code === 'KeyZ') && !e.shiftKey;
+            if (isUndo) {
                 e.preventDefault();
-                undo();
+                console.log("Keyboard Undo Triggered");
+                if (typeof window.undo === 'function') window.undo();
             }
             
-            // Redo: Ctrl+Y or Ctrl+Shift+Z
-            if (e.ctrlKey && (e.key === 'y' || (e.shiftKey && e.key === 'Z'))) {
+            // Redo: Ctrl + Y or Ctrl + Shift + Z
+            const isRedo = ((e.ctrlKey || e.metaKey) && (e.key === 'y' || e.key === 'Y' || e.code === 'KeyY')) || 
+                           ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'z' || e.key === 'Z' || e.code === 'KeyZ'));
+            if (isRedo) {
                 e.preventDefault();
-                redo();
+                console.log("Keyboard Redo Triggered");
+                if (typeof window.redo === 'function') window.redo();
             }
         });
 

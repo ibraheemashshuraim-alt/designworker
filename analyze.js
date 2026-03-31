@@ -379,26 +379,11 @@ window.generateAIDesign = async () => {
                 console.log(`AI Designer: Trying ${modelCandidate}...`);
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelCandidate}:generateContent?key=${keyToUse}`;
                 
-                // v4.11.0: MEGA PRO DESIGN QUALITY PROMPT (STRICT VERSION)
+                // v4.11.2: ELITE CANVA-STYLE DESIGN PROMPT
                 let aiPrompt = `
-                    
-                    MANDATORY DESIGN THEORY & STRUCTURE (MUST FOLLOW STRICTLY):
                     1. FOUNDATION (Background): You MUST start with a large background "Rect" (width: 800, height: 600, left:0, top:0). Fill it with a rich, modern, aesthetic hex color that fits the theme (e.g., deep blue, warm beige, sleek black). DO NOT USE plain white unless it is a minimalist theme.
                     2. DECORATIVE ELEMENTS: You MUST add 3 to 5 background decorative shapes (e.g., large Circles or Triangles placed in corners or offset from the center). Give them interesting contrasting colors or partial opacity (e.g., opacity: 0.15) to make the background less boring.
                     3. MAIN CONTENT CARD (Container): Create a central container "Rect" for the text (e.g., width: 500, height: 350, left: 150, top: 125, rx: 20, ry: 20). Fill it with a high-contrast color compared to the background (e.g., white if background is dark, or dark grey if background is light). 
-                       - You MUST add a heavy drop shadow to this card for depth: "shadow": { "color": "rgba(0,0,0,0.5)", "blur": 25, "offsetX": 0, "offsetY": 15 }.
-                    4. TYPOGRAPHY (Hierarchy & Alignment):
-                       - Add a Hero Heading (type: 'i-text'). Use a modern font like "Outfit" or "Montserrat". Make it large (fontSize: 50-70), bold (fontWeight: 'bold', fill: '#000' or '#fff' depending on card background), and visually striking.
-                       - Add a Subheading (type: 'i-text'). Make it smaller (fontSize: 20-25) and regular weight.
-                       - Ensure PERFECT ALIGNMENT (e.g., center text horizontally inside the main card at left: 400).
-                    5. ACCENT ELEMENTS: Add small accent shapes (e.g., a thin Solid Line under the heading, or small bright Circles near the text) to make it look like a real graphic design flyer/banner.
-                    6. IMAGES & LOGOS (CRITICAL FOR GRAPHICS): If the user asks for a specific logo, product, photo, or visual item (e.g., "Coffee Cup", "Car", "Burger Logo"), you MUST include a FabricJS Image object to represent it. Since you cannot upload files, use this dynamic AI Image Generator URL for the "src":
-                       "https://image.pollinations.ai/prompt/[SEARCH_KEYWORDS]?width=400&height=400&nologo=true"
-                       (Replace [SEARCH_KEYWORDS] with URL-encoded ENGLISH words ONLY, e.g., "minimalist%20coffee%20cup%20logo". NEVER use Urdu or emojis in the URL).
-                       You MUST add "crossOrigin": "anonymous" to the image object so it loads properly.
-                       Example Image Object: { "type": "image", "src": "https://image.pollinations.ai/prompt/coffee%20cup?width=300&height=300&nologo=true", "originX": "center", "originY": "center", "left": 400, "top": 300, "crossOrigin": "anonymous" }
-                    7. REFERENCE SYNC: If you received a Reference Image, you MUST extract its exact mood, layout geometry, and its exact HEX color palette. Reproduce its aesthetic perfectly using FabricJS shapes and text.
-                    
                     DO NOT just output 3 floating circles or plain text. You MUST output a fully composed, highly stylized, magazine-quality flyer or poster using Fabric JS JSON.
                     
                     Return ONLY VALID JSON containing an "objects" array with FabricJS entities. NO markdown formatting, just the raw JSON structured as:
