@@ -123,7 +123,7 @@ function populateFontList() {
     PRO_FONTS.forEach(font => {
         const li = document.createElement('li');
         li.innerText = font;
-        li.style.fontFamily = font;
+        li.style.fontFamily = `"${font}", sans-serif`;
         
         li.onmouseenter = () => {
             const obj = canvas?.getActiveObject();
@@ -166,6 +166,29 @@ function bindSidebarEvents() {
         const obj = canvas.getActiveObject();
         if (obj) {
             obj.set('opacity', parseFloat(e.target.value));
+            canvas.renderAll();
+        }
+    });
+
+    // NEW: Border (Stroke) Color
+    document.getElementById('shapeStrokeColorPicker')?.addEventListener('input', (e) => {
+        const obj = canvas.getActiveObject();
+        if (obj && obj.type !== 'i-text' && obj.type !== 'image') {
+            obj.set('stroke', e.target.value);
+            canvas.renderAll();
+        }
+    });
+
+    // NEW: Border (Stroke) Width
+    document.getElementById('shapeStrokeWidthSlider')?.addEventListener('input', (e) => {
+        const obj = canvas.getActiveObject();
+        if (obj && obj.type !== 'i-text' && obj.type !== 'image') {
+            obj.set('strokeWidth', parseInt(e.target.value, 10));
+            // Ensure stroke color exists if width > 0 and no stroke was set
+            if (parseInt(e.target.value, 10) > 0 && !obj.stroke) {
+                const color = document.getElementById('shapeStrokeColorPicker')?.value || '#000000';
+                obj.set('stroke', color);
+            }
             canvas.renderAll();
         }
     });
@@ -240,6 +263,7 @@ function syncProSidebar(obj) {
     const textGroup = document.getElementById('textToolsGroup');
     const colorGroup = document.getElementById('colorToolsGroup');
     const imgGroup = document.getElementById('imgToolsGroup');
+    const shapeGroup = document.getElementById('shapeToolsGroup');
     
     if (!toolbar) return;
     
@@ -247,6 +271,7 @@ function syncProSidebar(obj) {
     textGroup.classList.add('hidden');
     colorGroup.classList.add('hidden');
     imgGroup.classList.add('hidden');
+    if (shapeGroup) shapeGroup.classList.add('hidden');
 
     const topColor = document.getElementById('topColorPicker');
 
@@ -267,11 +292,20 @@ function syncProSidebar(obj) {
         
     } else if (obj.type === 'rect' || obj.type === 'circle' || obj.type === 'triangle' || obj.type === 'path' || obj.type === 'polygon' || obj.type === 'line') {
         colorGroup.classList.remove('hidden');
+        if (shapeGroup) shapeGroup.classList.remove('hidden');
+        
         if (topColor && obj.type === 'line') {
-            topColor.value = obj.stroke;
+            topColor.value = obj.stroke || '#ffffff';
         } else if (topColor && obj.fill && typeof obj.fill === 'string' && obj.fill.startsWith('#')) {
             topColor.value = obj.fill;
         }
+
+        // Sync stroke inputs
+        const strokeColor = document.getElementById('shapeStrokeColorPicker');
+        const strokeWidth = document.getElementById('shapeStrokeWidthSlider');
+        if (strokeColor) strokeColor.value = (typeof obj.stroke === 'string' && obj.stroke.startsWith('#')) ? obj.stroke : '#ffffff';
+        if (strokeWidth) strokeWidth.value = obj.strokeWidth || 0;
+
     } else if (obj.type === 'image') {
         imgGroup.classList.remove('hidden');
         colorGroup.classList.remove('hidden'); // allow opacity on image
