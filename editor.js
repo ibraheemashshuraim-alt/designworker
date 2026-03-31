@@ -430,8 +430,8 @@ window.processRemoveBackground = async () => {
             }
         }
         
-        // Import imgly library dynamically
-        const imgly = await import('https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.4.3/+esm');
+        // Import imgly library dynamically using esm.sh to avoid lodash ESM module export errors
+        const imgly = await import('https://esm.sh/@imgly/background-removal@1.4.3');
         const removeBackground = imgly.default || imgly.removeBackground;
 
         if (!removeBackground) {
