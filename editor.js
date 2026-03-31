@@ -246,9 +246,17 @@ function bindSidebarEvents() {
 
 // Element Addition Logic
 window.addText = () => {
-    if (!canvas) return;
-    const text = new fabric.IText('Double Click to Edit', {
-        left: 100, top: 100,
+    if (!window.dc_canvas) {
+        alert("Canvas load ho raha hai, zara intezar karen.");
+        return;
+    }
+    // Disable drawing mode when adding text
+    window.dc_canvas.isDrawingMode = false;
+    isDrawingMode = false;
+    window.dc_canvas.defaultCursor = 'default';
+
+    const text = new fabric.IText('Double Click to Edit\n(یہاں لکھیں)', {
+        left: 200, top: 200,
         fontFamily: 'Outfit',
         fill: '#000000',
         fontSize: 32,
@@ -256,34 +264,44 @@ window.addText = () => {
         cornerColor: '#22d3ee',
         cornerStyle: 'circle'
     });
-    canvas.add(text).setActiveObject(text).renderAll();
+    window.dc_canvas.add(text).setActiveObject(text).renderAll();
     saveState();
 };
 
-document.getElementById('imgUpload')?.addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (!file || !canvas) return;
-    const reader = new FileReader();
-    reader.onload = (f) => {
-        const data = f.target.result;
-        fabric.Image.fromURL(data, (img) => {
-            // Scale down if too large
-            if (img.width > baseWidth / 2) {
-                img.scaleToWidth(baseWidth / 2);
-            }
-            img.set({
-                left: baseWidth/2 - (img.width*img.scaleX)/2,
-                top: baseHeight/2 - (img.height*img.scaleY)/2,
-                cornerColor: '#22d3ee',
-                cornerStyle: 'circle'
-            });
-            canvas.add(img).setActiveObject(img).renderAll();
-            saveState();
-        });
-    };
-    reader.readAsDataURL(file);
-    e.target.value = ''; // Reset input
-});
+window.triggerImageUpload = () => {
+    const input = document.getElementById('imgUpload');
+    if (!input.onchange) {
+        input.onchange = (e) => {
+            const file = e.target.files[0];
+            if (!file || !window.dc_canvas) return;
+            const reader = new FileReader();
+            reader.onload = (f) => {
+                const data = f.target.result;
+                fabric.Image.fromURL(data, (img) => {
+                    // Disable drawing mode
+                    window.dc_canvas.isDrawingMode = false;
+                    isDrawingMode = false;
+
+                    // Scale down if too large
+                    if (img.width > baseWidth / 1.5) {
+                        img.scaleToWidth(baseWidth / 1.5);
+                    }
+                    img.set({
+                        left: baseWidth/2 - (img.width*img.scaleX)/2,
+                        top: baseHeight/2 - (img.height*img.scaleY)/2,
+                        cornerColor: '#22d3ee',
+                        cornerStyle: 'circle'
+                    });
+                    window.dc_canvas.add(img).setActiveObject(img).renderAll();
+                    saveState();
+                });
+            };
+            reader.readAsDataURL(file);
+            e.target.value = ''; // Reset input
+        };
+    }
+    input.click();
+};
 
 // Drawing Logic
 window.startDrawingShape = (type) => {
@@ -313,6 +331,14 @@ function setupDrawingListeners() {
         if (shapeToDraw === 'rect') drawingObject = new fabric.Rect({ ...common, width: 0, height: 0 });
         else if (shapeToDraw === 'circle') drawingObject = new fabric.Circle({ ...common, radius: 0 });
         else if (shapeToDraw === 'triangle') drawingObject = new fabric.Triangle({ ...common, width: 0, height: 0 });
+        else if (shapeToDraw === 'pentagon') {
+            // Polygon approximation for Pentagon during draw is tricky, we use a simple regular polygon logic
+            // To make it easy, we just draw a static pentagon shape that resizes.
+            drawingObject = new fabric.Polygon([
+                {x: 50, y: 0}, {x: 100, y: 38}, {x: 81, y: 100}, {x: 19, y: 100}, {x: 0, y: 38}
+            ], { ...common, scaleX: 0, scaleY: 0, left: p.x, top: p.y, strokeWidth: 2/5 }); 
+            // the scale logic will be handled below
+        }
         
         if (drawingObject) canvas.add(drawingObject);
     });
@@ -324,6 +350,7 @@ function setupDrawingListeners() {
         if (shapeToDraw === 'rect') drawingObject.set({ width: w, height: h, left: Math.min(p.x, startingPoint.x), top: Math.min(p.y, startingPoint.y) });
         else if (shapeToDraw === 'circle') drawingObject.set({ radius: w / 2 });
         else if (shapeToDraw === 'triangle') drawingObject.set({ width: w, height: h, left: Math.min(p.x, startingPoint.x), top: Math.min(p.y, startingPoint.y) });
+        else if (shapeToDraw === 'pentagon') drawingObject.set({ scaleX: w/100, scaleY: h/100, left: Math.min(p.x, startingPoint.x), top: Math.min(p.y, startingPoint.y) });
         canvas.renderAll();
     });
     canvas.on('mouse:up', () => {

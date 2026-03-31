@@ -269,19 +269,27 @@
                     </div>
                 </div>
 
-                <!-- Group 2: Elements & Shapes -->
+                <!-- Group 2: Elements -->
                 <div class="manual-tool-group">
-                    <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 12px; font-weight:700;">ADD SHAPES & ELEMENTS</div>
+                    <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 12px; font-weight:700;">ADD ELEMENTS & MEDIA</div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
                         <button class="tool-btn" onclick="addText()"><i class="fa-solid fa-t"></i> Text</button>
-                        <button class="tool-btn" onclick="document.getElementById('imgUpload').click()"><i class="fa-solid fa-image"></i> Image</button>
+                        <button class="tool-btn" onclick="triggerImageUpload()"><i class="fa-solid fa-image"></i> Image</button>
                         <button class="tool-btn" onclick="processRemoveBackground()" style="color:var(--neon-purple); border-color:rgba(157,0,255,0.3);"><i class="fa-solid fa-wand-sparkles"></i> BG Cut</button>
-                        <button class="tool-btn" onclick="startDrawingShape('rect')"><i class="fa-solid fa-square"></i> Square</button>
-                        <button class="tool-btn" onclick="startDrawingShape('circle')"><i class="fa-solid fa-circle"></i> Circle</button>
-                        <button class="tool-btn" onclick="startDrawingShape('triangle')"><i class="fa-solid fa-play" style="transform: rotate(-90deg);"></i> Triangle</button>
-                        <button class="tool-btn" onclick="startDrawingShape('freehand')" style="grid-column: span 3; flex-direction: row; justify-content: center;"><i class="fa-solid fa-pen-nib"></i> Freehand Draw</button>
                     </div>
                     <input type="file" id="imgUpload" hidden accept="image/*">
+                </div>
+
+                <!-- Group 3: Shapes & Drawing -->
+                <div class="manual-tool-group" style="margin-top: 20px;">
+                    <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 12px; font-weight:700;">SHAPES FOLDER</div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
+                        <button class="tool-btn" style="background: rgba(255,255,255,0.02);" onclick="startDrawingShape('rect')"><i class="fa-solid fa-square"></i> Square</button>
+                        <button class="tool-btn" style="background: rgba(255,255,255,0.02);" onclick="startDrawingShape('circle')"><i class="fa-solid fa-circle"></i> Circle</button>
+                        <button class="tool-btn" style="background: rgba(255,255,255,0.02);" onclick="startDrawingShape('triangle')"><i class="fa-solid fa-play" style="transform: rotate(-90deg);"></i> Triangle</button>
+                        <button class="tool-btn" style="background: rgba(255,255,255,0.02);" onclick="startDrawingShape('pentagon')"><i class="fa-solid fa-gem"></i> Pentagon</button>
+                        <button class="tool-btn" style="background: rgba(255,255,255,0.02); grid-column: span 2; flex-direction: row; justify-content: center;" onclick="startDrawingShape('freehand')"><i class="fa-solid fa-pen-nib"></i> Freehand Draw</button>
+                    </div>
                 </div>
 
                 <!-- Group 3: Export -->
@@ -459,11 +467,8 @@
     </div>
 
 
-        <div style="display: flex; align-items: center; gap: 15px;">
-            <div id="apiStatus" style="font-size: 0.75rem;">
-                <span class="status-dot status-online"></span> Gemini API: Online
-            </div>
-            <div><span id="uiVersion" style="color: var(--neon-cyan);">v4.18.14</span></div>
+        <div style="display: flex; align-items: center; justify-content: center; width: 100%;">
+            <div><span id="uiVersion" style="color: var(--neon-cyan); font-family: monospace;">DesignCheck Studio v4.18.15</span></div>
         </div>
     </footer>
 
