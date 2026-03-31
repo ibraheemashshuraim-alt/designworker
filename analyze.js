@@ -303,13 +303,14 @@ window.showAiDiagnosticModal = (message, errorRaw) => {
     const projectMatch = errorRaw?.match(/project ([0-9]+)/i);
     if (projectMatch) projectID = projectMatch[1];
     
+    const isBlocked = errorRaw?.toLowerCase().includes("blocked");
     const isQuota = errorRaw?.includes("429") || errorRaw?.toLowerCase().includes("quota");
     const fixLink = isQuota ? "https://aistudio.google.com/app/apikey" : `https://console.developers.google.com/apis/api/generativelanguage.googleapis.com/overview?project=${projectID}`;
     
-    title.innerText = isQuota ? "Gemini Quota ختم ہو گیا ہے" : "Gemini API ایکٹیویشن ضروری ہے";
+    title.innerText = isQuota ? "Gemini Quota ختم ہو گیا ہے" : (isBlocked ? "API رسائی بلاک ہے" : "Gemini API ایکٹیویشن ضروری ہے");
     body.innerHTML = `
-        <p style="margin-bottom:10px;"><b>وجہ:</b> ${isQuota ? "آپ کا فری ٹائر کوٹہ ختم ہو گیا ہے۔" : "گوگل پراجیکٹ میں ابھی Gemini API فعال نہیں کی گئی ہے۔"}</p>
-        <p><b>حل:</b> ${isQuota ? "اپنی ذاتی Google AI Studio API Key استعمال کریں یا تھوڑی دیر انتظار کریں۔" : "نیچے دیے گئے بٹن پر کلک کریں اور API کو 'Enable' کریں۔"}</p>
+        <p style="margin-bottom:10px;"><b>وجہ:</b> ${isQuota ? "آپ کا فری ٹائر کوٹہ ختم ہو گیا ہے۔" : (isBlocked ? "آپ کی API Key یا پراجیکٹ سے ریکوئسٹس بلاک ہو رہی ہیں۔" : "گوگل پراجیکٹ میں ابھی Gemini API فعال نہیں کی گئی ہے۔")}</p>
+        <p><b>حل:</b> ${isQuota ? "اپنی ذاتی Google AI Studio API Key استعمال کریں یا تھوڑی دیر انتظار کریں۔" : "نیچے دیے گئے بٹن پر کلک کریں اور API کو 'Enable' کریں یا سیٹنگز چیک کریں۔"}</p>
         <div class="diag-error-box">ERROR: ${message}</div>
     `;
     
@@ -506,8 +507,9 @@ window.generateAIDesign = async () => {
         console.error("AI Designer Error:", e);
         if (scanModal) scanModal.classList.add('hidden');
 
-        // v4.18.11: Diagnostic Handling
-        if (e.message.includes("Generative Language API has not been used") || e.message.includes("disabled")) {
+        // v4.18.12: Diagnostic Handling (Broadened Detection)
+        const errLower = e.message.toLowerCase();
+        if (errLower.includes("blocked") || errLower.includes("not been used") || errLower.includes("disabled") || errLower.includes("generativeservice")) {
             window.showAiDiagnosticModal(e.message, e.message);
             return;
         }
