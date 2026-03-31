@@ -124,6 +124,16 @@ body {
     transition: 0.4s;
 }
 
+.tool-btn.disabled {
+    opacity: 0.3 !important;
+    pointer-events: none !important;
+    filter: grayscale(1);
+}
+
+.tool-btn:active {
+    transform: scale(0.95);
+}
+
 .results-card {
     border-color: rgba(0, 229, 255, 0.1);
 }

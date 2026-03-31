@@ -379,12 +379,8 @@ window.generateAIDesign = async () => {
                 console.log(`AI Designer: Trying ${modelCandidate}...`);
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelCandidate}:generateContent?key=${keyToUse}`;
                 
-                // v4.11.0: MEGA PRO DESIGN QUALITY PROMPT
+                // v4.11.0: MEGA PRO DESIGN QUALITY PROMPT (STRICT VERSION)
                 let aiPrompt = `
-                    You are an Elite UI/UX & Graphic Designer (expert in Canva & Photoshop).
-                    Your task is to create a stunning, highly creative, and professionally structured Fabric.js JSON design for this request: "${prompt}"
-
-                    WORKSPACE BASE: 800x600 pixels.
                     
                     MANDATORY DESIGN THEORY & STRUCTURE (MUST FOLLOW STRICTLY):
                     1. FOUNDATION (Background): You MUST start with a large background "Rect" (width: 800, height: 600, left:0, top:0). Fill it with a rich, modern, aesthetic hex color that fits the theme (e.g., deep blue, warm beige, sleek black). DO NOT USE plain white unless it is a minimalist theme.

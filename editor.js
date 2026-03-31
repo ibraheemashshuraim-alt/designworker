@@ -30,6 +30,11 @@ let canvas;
 const baseWidth = 800; 
 const baseHeight = 600; 
 
+// v4.11.0: UNDO/REDO STATE
+let historyUndo = [];
+let historyRedo = [];
+let isStateChanging = false;
+
 const PRO_FONTS = [
     "Outfit", "Roboto", "Noto Nastaliq Urdu", "Arial", "Verdana", "Times New Roman", 
     "Georgia", "Impact", "Courier New", "Comic Sans MS", "Anton", "Bebas Neue", 
@@ -73,6 +78,15 @@ function initEditor() {
             canvas.on('selection:created', (e) => { if(e.selected && e.selected[0]) syncProSidebar(e.selected[0]); });
             canvas.on('selection:updated', (e) => { if(e.selected && e.selected[0]) syncProSidebar(e.selected[0]); });
             canvas.on('selection:cleared', () => clearSidebarSync());
+
+            // UNDO/REDO LISTENERS
+            canvas.on('object:added', () => saveState());
+            canvas.on('object:removed', () => saveState());
+            canvas.on('object:modified', () => saveState());
+            canvas.on('path:created', () => saveState());
+            
+            // Initial state
+            saveState();
         }
         
         populateFontList();
@@ -80,9 +94,22 @@ function initEditor() {
         setupDrawingListeners();
 
         document.addEventListener('keydown', (e) => {
+            // Delete key
             if ((e.key === 'Delete' || e.key === 'Backspace') && canvas && canvas.getActiveObject()) {
                 if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
                 deleteActiveObject();
+            }
+            
+            // Undo: Ctrl+Z
+            if (e.ctrlKey && e.key === 'z') {
+                e.preventDefault();
+                undo();
+            }
+            
+            // Redo: Ctrl+Y or Ctrl+Shift+Z
+            if (e.ctrlKey && (e.key === 'y' || (e.shiftKey && e.key === 'Z'))) {
+                e.preventDefault();
+                redo();
             }
         });
 
@@ -497,8 +524,65 @@ window.duplicateObject = () => {
         }
         canvas.setActiveObject(clonedObj);
         canvas.requestRenderAll();
+        saveState(); // Capture duplication
     });
 };
+
+// ==== UNDO / REDO SYSTEM ==== //
+window.saveState = () => {
+    if (isStateChanging) return;
+    if (!canvas) return;
+    
+    const json = JSON.stringify(canvas.toDatalessJSON());
+    
+    // Only push if different from last state
+    if (historyUndo.length > 0 && historyUndo[historyUndo.length - 1] === json) return;
+
+    historyUndo.push(json);
+    if (historyUndo.length > 50) historyUndo.shift(); // Limit to 50
+    historyRedo = []; // Clear redo on new action
+    
+    // Update UI buttons if they exist
+    updateUndoRedoUI();
+};
+
+window.undo = () => {
+    if (historyUndo.length <= 1) return; // Need at least 1 state to go back
+    
+    isStateChanging = true;
+    const currentState = historyUndo.pop();
+    historyRedo.push(currentState);
+    
+    const lastState = historyUndo[historyUndo.length - 1];
+    
+    canvas.loadFromJSON(lastState, () => {
+        canvas.renderAll();
+        isStateChanging = false;
+        updateUndoRedoUI();
+    });
+};
+
+window.redo = () => {
+    if (historyRedo.length === 0) return;
+    
+    isStateChanging = true;
+    const nextState = historyRedo.pop();
+    historyUndo.push(nextState);
+    
+    canvas.loadFromJSON(nextState, () => {
+        canvas.renderAll();
+        isStateChanging = false;
+        updateUndoRedoUI();
+    });
+};
+
+function updateUndoRedoUI() {
+    const undoBtn = document.getElementById('undoBtn');
+    const redoBtn = document.getElementById('redoBtn');
+    
+    if (undoBtn) undoBtn.classList.toggle('disabled', historyUndo.length <= 1);
+    if (redoBtn) redoBtn.classList.toggle('disabled', historyRedo.length === 0);
+}
 
 window.bringForward = () => {
     const activeObject = canvas.getActiveObject();
@@ -604,12 +688,18 @@ window.loadDesignFromCode = (rawCode) => {
                     evented: true,
                     lockMovementX: false, lockMovementY: false,
                     lockScalingX: false, lockScalingY: false,
-                    lockRotation: false, hasControls: true, hasBorders: true
+                    lockRotation: false, hasControls: true, hasBorders: true,
+                    cornerColor: 'var(--neon-cyan)',
+                    cornerStrokeColor: '#fff',
+                    borderColor: 'var(--neon-cyan)',
+                    transparentCorners: false,
+                    cornerStyle: 'circle'
                 });
             });
             canvas.renderAll();
             canvas.calcOffset();
-            console.log("AI Design Loaded v4.9.8");
+            saveState(); // Allow undoing the entire AI design
+            console.log("AI Design Loaded v4.11.0");
         });
     } catch (e) {
         console.error("AI Load Error:", e);
