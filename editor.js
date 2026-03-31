@@ -244,6 +244,47 @@ function bindSidebarEvents() {
     });
 }
 
+// Element Addition Logic
+window.addText = () => {
+    if (!canvas) return;
+    const text = new fabric.IText('Double Click to Edit', {
+        left: 100, top: 100,
+        fontFamily: 'Outfit',
+        fill: '#000000',
+        fontSize: 32,
+        fontWeight: 'bold',
+        cornerColor: '#22d3ee',
+        cornerStyle: 'circle'
+    });
+    canvas.add(text).setActiveObject(text).renderAll();
+    saveState();
+};
+
+document.getElementById('imgUpload')?.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file || !canvas) return;
+    const reader = new FileReader();
+    reader.onload = (f) => {
+        const data = f.target.result;
+        fabric.Image.fromURL(data, (img) => {
+            // Scale down if too large
+            if (img.width > baseWidth / 2) {
+                img.scaleToWidth(baseWidth / 2);
+            }
+            img.set({
+                left: baseWidth/2 - (img.width*img.scaleX)/2,
+                top: baseHeight/2 - (img.height*img.scaleY)/2,
+                cornerColor: '#22d3ee',
+                cornerStyle: 'circle'
+            });
+            canvas.add(img).setActiveObject(img).renderAll();
+            saveState();
+        });
+    };
+    reader.readAsDataURL(file);
+    e.target.value = ''; // Reset input
+});
+
 // Drawing Logic
 window.startDrawingShape = (type) => {
     if (type === 'freehand') {
