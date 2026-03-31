@@ -682,59 +682,53 @@ window.exportCanvas = () => {
     link.click();
 };
 
-window.loadDesignFromCode = (rawCode) => {
+window.loadDesignFromCode = function(rawCode) {
+    console.log("Loader Starting v4.11.7 [Definitive]");
     if (!canvas) {
-        alert("کینوس (Canvas) ابھی تیار نہیں ہے۔ براہ کرم صفحہ ریفریش کریں۔");
+        alert("Fabric Canvas is not initialized. Please refresh.");
         return;
     }
     
-    // v4.11.6: Emergency State Reset
-    isStateChanging = false; 
-
+    isStateChanging = false; // Reset lock
     const codeBox = document.getElementById('aiDesignCodeInput');
     const code = rawCode || codeBox?.value?.trim();
     
-    if (!code || code.includes("انتظار کریں")) {
-        alert("براہ کرم پہلے کچھ ڈیزائن جنریٹ کریں۔ (Please generate a design first)");
+    if (!code || code.includes("انتظار")) {
+        alert("Please generate a design first (ڈیزائن جنریٹ کریں)!");
         return;
     }
 
-    console.log("Robust Loader v4.11.6 Started...");
-    
     try {
         let jsonText = code.trim();
-        // Remove common AI formatting debris
         jsonText = jsonText.replace(/```json/g, '').replace(/```/g, '').trim();
         
         const start = jsonText.indexOf('{');
         const end = jsonText.lastIndexOf('}');
         
         if (start === -1 || end === -1) {
-             // Fallback for array-only output
              const arrStart = jsonText.indexOf('[');
              const arrEnd = jsonText.lastIndexOf(']');
              if (arrStart !== -1 && arrEnd !== -1) {
                  jsonText = `{ "objects": ${jsonText.substring(arrStart, arrEnd + 1)} }`;
              } else {
-                 throw new Error("ڈیزائن کوڈ غلط فارمیٹ میں ہے۔ (Invalid JSON Format)");
+                 throw new Error("No valid JSON structure ({ or [) found in code.");
              }
         } else {
             jsonText = jsonText.substring(start, end + 1);
         }
         
         const designData = JSON.parse(jsonText);
-        
-        if (!designData.objects || !Array.isArray(designData.objects)) {
-            throw new Error("ڈیزائن میں کوئی آبجیکٹ نہیں ملا۔ (No objects found)");
-        }
+        const objs = designData.objects || designData;
+
+        if (!Array.isArray(objs)) throw new Error("JSON parsed but no objects array found.");
 
         isStateChanging = true;
         canvas.clear();
         canvas.backgroundColor = designData.background || designData.backgroundColor || '#ffffff';
         
-        console.log(`Loading ${designData.objects.length} objects...`);
+        console.log(`Loading objects:`, objs.length);
 
-        canvas.loadFromJSON(designData, () => {
+        canvas.loadFromJSON({ objects: objs, background: canvas.backgroundColor }, () => {
             try {
                 canvas.getObjects().forEach(obj => {
                     obj.set({
@@ -749,7 +743,7 @@ window.loadDesignFromCode = (rawCode) => {
                         cornerStyle: 'circle',
                         crossOrigin: 'anonymous'
                     });
-                    if (obj.type === 'i-text' || obj.type === 'text') {
+                    if (obj.type.includes('text')) {
                         obj.set({ originX: 'center', originY: 'center' });
                     }
                 });
@@ -761,7 +755,7 @@ window.loadDesignFromCode = (rawCode) => {
                     canvas.requestRenderAll();
                     isStateChanging = false;
                     saveState();
-                    alert(`کامیاب! ${designData.objects.length} ایلیمنٹس کینوس پر لوڈ کر دیے گئے ہیں۔`);
+                    alert(`✅ Successful! ${objs.length} design elements loaded!`);
                 }, 800);
             } catch (inner) {
                 console.error("Callback Error:", inner);
@@ -771,7 +765,7 @@ window.loadDesignFromCode = (rawCode) => {
 
     } catch (e) {
         isStateChanging = false;
-        console.error("AI Load Error:", e);
-        alert("ڈیزائن لوڈ کرنے میں مسئلہ ہوا: " + e.message);
+        console.error("AI Load Fatal Error:", e);
+        alert("Fatal Error: " + e.message + "\nCheck code format.");
     }
 };
