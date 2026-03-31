@@ -439,7 +439,7 @@ window.processRemoveBackground = async () => {
         }
 
         const resultBlob = await removeBackground(blob, {
-            publicPath: "https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.4.3/dist/"
+            publicPath: "https://unpkg.com/@imgly/background-removal@1.4.3/dist/"
         });
         const url = URL.createObjectURL(resultBlob);
         
