@@ -77,6 +77,7 @@ function initEditor() {
         
         populateFontList();
         bindSidebarEvents();
+        setupDrawingListeners();
 
         document.addEventListener('keydown', (e) => {
             if ((e.key === 'Delete' || e.key === 'Backspace') && canvas && canvas.getActiveObject()) {
@@ -115,22 +116,21 @@ function initEditor() {
 }
 
 function populateFontList() {
-    const list = document.getElementById('fontListContainer');
-    if (!list) return;
-    list.innerHTML = "";
+    const select = document.getElementById('topFontSelect');
+    if (!select) return;
+    select.innerHTML = "";
     
     PRO_FONTS.forEach(font => {
-        const btn = document.createElement('button');
-        btn.className = "font-item-btn";
-        btn.innerText = font;
-        btn.style.fontFamily = font;
-        btn.onclick = () => applyFontToActive(font);
-        list.appendChild(btn);
+        const option = document.createElement('option');
+        option.value = font;
+        option.innerText = font;
+        option.style.fontFamily = font;
+        select.appendChild(option);
     });
 }
 
 function bindSidebarEvents() {
-    document.getElementById('itemColorPicker')?.addEventListener('input', (e) => {
+    document.getElementById('topColorPicker')?.addEventListener('input', (e) => {
         const obj = canvas.getActiveObject();
         if (obj) {
             obj.set('fill', e.target.value);
@@ -139,33 +139,158 @@ function bindSidebarEvents() {
     });
 }
 
-function applyFontToActive(font) {
+window.applyFontToActive = (font) => {
     const obj = canvas.getActiveObject();
     if (obj && obj.type === 'i-text') {
         obj.set('fontFamily', font);
         canvas.renderAll();
-        document.querySelectorAll('.font-item-btn').forEach(b => {
-            b.classList.toggle('active', b.innerText === font);
-        });
     }
-}
+};
+
+window.toggleTextFormat = (format) => {
+    const obj = canvas.getActiveObject();
+    if (obj && obj.type === 'i-text') {
+        if (format === 'bold') {
+            obj.set('fontWeight', obj.fontWeight === 'bold' ? 'normal' : 'bold');
+            document.getElementById('boldBtn').classList.toggle('active', obj.fontWeight === 'bold');
+        } else if (format === 'italic') {
+            obj.set('fontStyle', obj.fontStyle === 'italic' ? 'normal' : 'italic');
+            document.getElementById('italicBtn').classList.toggle('active', obj.fontStyle === 'italic');
+        }
+        canvas.renderAll();
+    }
+};
 
 function syncProSidebar(obj) {
-    const colorPicker = document.getElementById('itemColorPicker');
-    if (colorPicker && obj.fill && typeof obj.fill === 'string' && obj.fill.startsWith('#')) {
-        colorPicker.value = obj.fill;
-    }
+    const toolbar = document.getElementById('contextToolbar');
+    const textGroup = document.getElementById('textToolsGroup');
+    const colorGroup = document.getElementById('colorToolsGroup');
+    const imgGroup = document.getElementById('imgToolsGroup');
+    
+    if (!toolbar) return;
+    
+    toolbar.classList.remove('hidden');
+    textGroup.classList.add('hidden');
+    colorGroup.classList.add('hidden');
+    imgGroup.classList.add('hidden');
+
+    const topColor = document.getElementById('topColorPicker');
+
     if (obj.type === 'i-text') {
-        const font = obj.fontFamily;
-        document.querySelectorAll('.font-item-btn').forEach(b => {
-            b.classList.toggle('active', b.innerText === font);
-        });
+        textGroup.classList.remove('hidden');
+        colorGroup.classList.remove('hidden');
+        
+        if (topColor && obj.fill && typeof obj.fill === 'string' && obj.fill.startsWith('#')) {
+            topColor.value = obj.fill;
+        }
+        
+        const topFont = document.getElementById('topFontSelect');
+        if (topFont) topFont.value = obj.fontFamily;
+        
+        document.getElementById('boldBtn')?.classList.toggle('active', obj.fontWeight === 'bold');
+        document.getElementById('italicBtn')?.classList.toggle('active', obj.fontStyle === 'italic');
+        
+    } else if (obj.type === 'rect' || obj.type === 'circle' || obj.type === 'triangle' || obj.type === 'path') {
+        colorGroup.classList.remove('hidden');
+        if (topColor && obj.fill && typeof obj.fill === 'string' && obj.fill.startsWith('#')) {
+            topColor.value = obj.fill;
+        }
+    } else if (obj.type === 'image') {
+        imgGroup.classList.remove('hidden');
     }
 }
 
 function clearSidebarSync() {
-    document.querySelectorAll('.font-item-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('contextToolbar')?.classList.add('hidden');
 }
+
+// ==== DRAWING MODE SYSTEM ==== //
+let isDrawingMode = false;
+let shapeToDraw = null;
+let startingPoint = null;
+let drawingObject = null;
+
+function setupDrawingListeners() {
+    canvas.on('mouse:down', function(o) {
+        if (!isDrawingMode || !shapeToDraw) return;
+        
+        const pointer = canvas.getPointer(o.e);
+        startingPoint = { x: pointer.x, y: pointer.y };
+
+        if (shapeToDraw === 'rect') {
+            drawingObject = new fabric.Rect({
+                left: startingPoint.x,
+                top: startingPoint.y,
+                originX: 'left',
+                originY: 'top',
+                width: 0,
+                height: 0,
+                fill: '#00e5ff',
+                rx: 10, ry: 10,
+                selectable: false,
+                evented: false
+            });
+            canvas.add(drawingObject);
+        } else if (shapeToDraw === 'circle') {
+            drawingObject = new fabric.Circle({
+                left: startingPoint.x,
+                top: startingPoint.y,
+                originX: 'center',
+                originY: 'center',
+                radius: 0,
+                fill: '#ff0070',
+                selectable: false,
+                evented: false
+            });
+            canvas.add(drawingObject);
+        }
+    });
+
+    canvas.on('mouse:move', function(o) {
+        if (!isDrawingMode || !drawingObject) return;
+        
+        const pointer = canvas.getPointer(o.e);
+
+        if (shapeToDraw === 'rect') {
+            const w = Math.abs(pointer.x - startingPoint.x);
+            const h = Math.abs(pointer.y - startingPoint.y);
+            
+            drawingObject.set({
+                width: w,
+                height: h,
+                left: Math.min(pointer.x, startingPoint.x),
+                top: Math.min(pointer.y, startingPoint.y)
+            });
+        } else if (shapeToDraw === 'circle') {
+            const radius = Math.max(Math.abs(pointer.x - startingPoint.x), Math.abs(pointer.y - startingPoint.y)) / 2;
+            drawingObject.set({ radius: radius });
+        }
+        canvas.renderAll();
+    });
+
+    canvas.on('mouse:up', function(o) {
+        if (!isDrawingMode || !drawingObject) return;
+
+        drawingObject.set({
+            selectable: true,
+            evented: true
+        });
+        drawingObject.setCoords();
+        
+        // Stop drawing mode
+        isDrawingMode = false;
+        shapeToDraw = null;
+        drawingObject = null;
+        document.querySelector('.canvas-card').classList.remove('drawing-mode');
+        canvas.defaultCursor = 'default';
+        canvas.hoverCursor = 'move';
+        
+        // Re-enable selection
+        canvas.selection = true;
+        canvas.getObjects().forEach(obj => obj.set('selectable', true));
+    });
+}
+
 
 function resizeCanvas() {
     const card = document.querySelector('.canvas-card');
@@ -212,23 +337,31 @@ window.addTextToCanvas = () => {
 
 window.addRectToCanvas = () => {
     if (!canvas) return;
-    const rect = new fabric.Rect({
-        left: 400, top: 300, originX: 'center', originY: 'center',
-        fill: '#00e5ff', width: 250, height: 200, rx: 20, ry: 20
-    });
-    canvas.add(rect);
-    canvas.setActiveObject(rect);
+    isDrawingMode = true;
+    shapeToDraw = 'rect';
+    
+    document.querySelector('.canvas-card').classList.add('drawing-mode');
+    canvas.defaultCursor = 'crosshair';
+    canvas.hoverCursor = 'crosshair';
+    
+    // Disable selection while drawing
+    canvas.selection = false;
+    canvas.discardActiveObject();
     canvas.renderAll();
 };
 
 window.addCircleToCanvas = () => {
     if (!canvas) return;
-    const circle = new fabric.Circle({
-        left: 400, top: 300, originX: 'center', originY: 'center',
-        fill: '#ff0070', radius: 120
-    });
-    canvas.add(circle);
-    canvas.setActiveObject(circle);
+    isDrawingMode = true;
+    shapeToDraw = 'circle';
+    
+    document.querySelector('.canvas-card').classList.add('drawing-mode');
+    canvas.defaultCursor = 'crosshair';
+    canvas.hoverCursor = 'crosshair';
+    
+    // Disable selection while drawing
+    canvas.selection = false;
+    canvas.discardActiveObject();
     canvas.renderAll();
 };
 

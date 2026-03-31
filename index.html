@@ -249,21 +249,7 @@
                     </div>
                 </div>
 
-                <!-- Formatting (Always Visible) -->
-                <div>
-                    <div class="result-label" style="font-size: 0.75rem; color: var(--neon-cyan); margin-bottom: 10px;"><i class="fa-solid fa-palette"></i> کلر اور اسٹائل (Style):</div>
-                    <div style="background: rgba(255,255,255,0.03); padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
-                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px;">
-                            <span style="font-size: 0.85rem;">کلر (Color):</span>
-                            <input type="color" id="itemColorPicker" class="color-swatch" style="padding: 0; width: 80px; height: 35px; border: none; background: transparent; cursor: pointer;">
-                        </div>
-                        
-                        <div style="font-size: 0.85rem; margin-bottom: 8px;">فونٹ تبدیل کریں (Select Font):</div>
-                        <div id="fontListContainer" class="font-scroll-list" style="max-height: 180px; overflow-y: auto; background: rgba(0,0,0,0.2); border-radius: 8px; padding: 5px; border: 1px solid rgba(255,255,255,0.05);">
-                            <!-- JS will populate 50+ fonts here -->
-                        </div>
-                    </div>
-                </div>
+                <!-- Formatting is now handled via Floating Context Toolbar -->
 
                 <!-- Global Actions -->
                 <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 5px;">
@@ -275,7 +261,28 @@
         </div>
 
         <!-- Professional Workspace -->
-        <div class="dash-card canvas-card" style="padding: 0 !important; background: #222 !important; min-height: 85vh; cursor: default;">
+        <div class="dash-card canvas-card" style="padding: 0 !important; background: #222 !important; min-height: 85vh; cursor: default; position: relative; overflow: hidden;">
+            
+            <!-- NEW: Contextual Floating Toolbar -->
+            <div id="contextToolbar" class="context-toolbar hidden">
+                <div class="toolbar-group text-tools hidden" id="textToolsGroup">
+                    <button class="tool-btn-small" id="boldBtn" onclick="toggleTextFormat('bold')" title="Bold"><i class="fa-solid fa-bold"></i></button>
+                    <button class="tool-btn-small" id="italicBtn" onclick="toggleTextFormat('italic')" title="Italic"><i class="fa-solid fa-italic"></i></button>
+                    <div class="font-dropdown-wrapper">
+                        <select id="topFontSelect" class="custom-select-small" onchange="applyFontToActive(this.value)">
+                            <option value="Outfit">Outfit</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="toolbar-group color-tools" id="colorToolsGroup">
+                    <input type="color" id="topColorPicker" class="color-swatch-small" title="Color">
+                </div>
+                
+                <div class="toolbar-group img-tools hidden" id="imgToolsGroup">
+                    <button class="tool-btn-small btn-magic" onclick="alert('یہ فیچر ابھی ٹیسٹنگ میں ہے۔ (Remove BG API)')" title="Remove Background"><i class="fa-solid fa-wand-magic-sparkles"></i> BG Remove</button>
+                </div>
+            </div>
             <div class="canvas-workspace-bg" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; overflow: auto; padding: 40px;">
                 <div class="canvas-container-wrapper" style="box-shadow: 0 10px 60px rgba(0,0,0,0.5); background: #fff;">
                     <canvas id="designCanvas"></canvas>
@@ -307,6 +314,20 @@
                         <i class="fa-solid fa-sparkles"></i> اے آئی ڈیزائنر (Describe your design):
                     </div>
                     <textarea id="aiDesignPrompt" class="custom-input design-textarea" style="margin-bottom: 0; min-height: 100px; font-size: 0.95rem;" placeholder="مثال کے طور پر: 'ایک پیزا شاپ کا فلائر بنائیں جس میں ریڈ کلر کا بیک گراؤنڈ ہو اور برگر کی تصویر ہو'"></textarea>
+                    
+                    <div class="ai-ref-container" style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 10px; border: 1px dashed var(--neon-cyan);">
+                        <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 8px;">مماثل ڈیزائن (Reference Image - Optional):</div>
+                        <button class="btn browse-btn" style="padding: 6px 15px; font-size: 0.8rem; width: 100%;" onclick="document.getElementById('aiRefInput').click()">
+                            <i class="fa-solid fa-upload"></i> تصویر اپ لوڈ کریں
+                        </button>
+                        <input type="file" id="aiRefInput" hidden accept="image/*">
+                        <div id="aiRefPreviewBox" class="hidden" style="margin-top: 10px; display: flex; align-items: center; justify-content: space-between;">
+                            <img id="aiRefThumb" src="" style="width: 40px; height: 40px; border-radius: 5px; object-fit: cover; border: 1px solid var(--success-green);">
+                            <span style="font-size: 0.7rem; color: var(--success-green); flex: 1; padding: 0 10px;">Select ہو گئی</span>
+                            <button class="btn danger-btn" style="padding: 4px 8px; font-size: 0.7rem;" onclick="clearAiRefImage()"><i class="fa-solid fa-times"></i></button>
+                        </div>
+                    </div>
+
                     <button class="btn primary-btn" id="generateAIDesignBtn" onclick="generateAIDesign()" style="width: 100%; padding: 15px; font-size: 1rem; border-radius: 15px;">
                         <i class="fa-solid fa-wand-magic-sparkles"></i> نیا ڈیزائن جنریٹ کریں (Generate)
                     </button>

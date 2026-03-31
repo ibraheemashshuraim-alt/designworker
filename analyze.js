@@ -292,6 +292,34 @@ console.log("DesignCheck v4.10.0 Final Pro Stability Loaded");
 // v4.9.6: Export Local Module State to Global Window (CRITICAL FIX)
 window.userState = userState;
 
+// ================ REFERENCE IMAGE UPLOAD ================
+let aiReferenceImageBase64 = null;
+
+const refInput = document.getElementById('aiRefInput');
+if (refInput) {
+    refInput.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = async (event) => {
+            const rawBase64 = event.target.result;
+            aiReferenceImageBase64 = await compressImage(rawBase64, 400, 400); // Compress small for AI
+            
+            document.getElementById('aiRefPreviewBox').classList.remove('hidden');
+            document.getElementById('aiRefThumb').src = aiReferenceImageBase64;
+            document.querySelector('.ai-ref-container .browse-btn').classList.add('hidden');
+        };
+        reader.readAsDataURL(file);
+    };
+}
+
+window.clearAiRefImage = () => {
+    aiReferenceImageBase64 = null;
+    document.getElementById('aiRefInput').value = '';
+    document.getElementById('aiRefPreviewBox').classList.add('hidden');
+    document.querySelector('.ai-ref-container .browse-btn').classList.remove('hidden');
+};
+
 // ================ PREMIUM AI DESIGNER ================
 window.generateAIDesign = async () => {
     const promptArea = document.getElementById('aiDesignPrompt');
@@ -352,24 +380,37 @@ window.generateAIDesign = async () => {
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelCandidate}:generateContent?key=${keyToUse}`;
                 
                 // v4.9.5: PROFESSIONAL CREATIVE PROMPT
-                const aiPrompt = `
-                    You are a Senior Creative Graphic Designer. 
-                    Generate a high-quality Fabric.js JSON for: "${prompt}"
-                    WORKSPACE: 800x600.
-                    CRITICAL RULES:
-                    1. NO PLAIN TEXT: Use SHAPES (Rect, Circle, Triangle) as backdrops, containers and ornaments. 
-                    2. LAYOUT: Center the main text. Add secondary ornaments around it.
-                    3. COLORS: Use professional palette (e.g., #001a33 background, #00e5ff accent).
-                    4. SCALE: Objects must fill the 800x600 space.
-                    RETURN ONLY RAW VALID JSON. 
-                    JSON Keys: "objects" (array).
+                let aiPrompt = `
+                    You are an Expert UI/UX & Graphic Designer.
+                    Your task is to create a Fabric.js JSON object for: "${prompt}"
+
+                    WORKSPACE: 800x600 size.
+                    
+                    CRITICAL INSTRUCTIONS:
+                    1. BE CREATIVE: Do not just output plain text. Create a full visual composition.
+                    2. SHAPES: Use Rectangles, Circles, or complex compositions to create a stunning background or header section.
+                    3. TYPOGRAPHY: Center the main text and use appropriate hierarchy (Headings, subtitles).
+                    4. COLOR PALETTE: Use modern, harmonious colors. No default neon/ugly colors unless requested.
+                    5. If a REFERENCE IMAGE is provided, extract its design style, layout aesthetics, and color palette, then apply them to this design.
+                    
+                    RETURN ONLY VALID JSON. MUST strictly contain an "objects" array with FabricJS entities.
                 `;
+
+                const partsArray = [{ text: aiPrompt }];
+                
+                if (aiReferenceImageBase64) {
+                    const mimeType = aiReferenceImageBase64.split(';')[0].split(':')[1];
+                    const baseData = aiReferenceImageBase64.split(',')[1];
+                    partsArray.push({
+                        inline_data: { mime_type: mimeType, data: baseData }
+                    });
+                }
 
                 const response = await fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
-                        contents: [{ parts: [{ text: aiPrompt }] }],
+                        contents: [{ parts: partsArray }],
                         generationConfig: { response_mime_type: "application/json" }
                     })
                 });

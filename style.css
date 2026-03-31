@@ -1072,3 +1072,133 @@ footer { margin-top: 40px; }
         color: #fff !important;
     }
 }
+
+/* ========================================= */
+/* NEW: Canva-Style Contextual Toolbar       */
+/* ========================================= */
+.context-toolbar {
+    position: absolute;
+    top: 15px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(2, 6, 12, 0.95);
+    border: 1px solid var(--neon-cyan);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8), 0 0 15px rgba(0, 229, 255, 0.2);
+    border-radius: 12px;
+    padding: 8px 15px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    z-index: 500;
+    backdrop-filter: blur(20px);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    opacity: 1;
+}
+
+.context-toolbar.hidden {
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(-50%, -20px);
+}
+
+.toolbar-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 10px;
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.toolbar-group:last-child {
+    border-right: none;
+}
+
+.tool-btn-small {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid transparent;
+    color: #fff;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: 0.2s;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1rem;
+}
+
+.tool-btn-small:hover {
+    background: rgba(0, 229, 255, 0.15);
+    color: var(--neon-cyan);
+}
+
+.tool-btn-small.active {
+    background: var(--neon-cyan);
+    color: #000;
+    box-shadow: 0 0 10px rgba(0, 229, 255, 0.4);
+}
+
+.font-dropdown-wrapper {
+    position: relative;
+}
+
+.custom-select-small {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #fff;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-family: 'Outfit', sans-serif;
+    outline: none;
+    cursor: pointer;
+    min-width: 120px;
+}
+
+.custom-select-small:focus {
+    border-color: var(--neon-cyan);
+}
+
+.color-swatch-small {
+    padding: 0;
+    width: 36px;
+    height: 36px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    background: transparent;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.color-swatch-small:hover {
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+    transform: scale(1.05);
+}
+
+.btn-magic {
+    width: auto;
+    padding: 0 15px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, rgba(157, 0, 255, 0.2), rgba(0, 229, 255, 0.2));
+    border: 1px solid var(--neon-purple);
+    color: #fff;
+}
+
+.btn-magic:hover {
+    background: linear-gradient(135deg, var(--neon-purple), var(--neon-cyan));
+    color: #000;
+}
+
+/* ========================================= */
+/* DRAWING MODE CLASSES                      */
+/* ========================================= */
+.canvas-card.drawing-mode {
+    cursor: crosshair !important;
+}
+
+.canvas-card.drawing-mode canvas {
+    cursor: crosshair !important;
+}
+
+
