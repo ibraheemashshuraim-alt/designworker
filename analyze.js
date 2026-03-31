@@ -286,8 +286,8 @@ window.deleteHistoryItem = async (docId) => {
 };
 
 // --- VERSION TAG ---
-window.DESIGN_VERSION = "4.18.2";
-console.log("DesignCheck v4.18.0 Gemini Architect Loaded");
+window.DESIGN_VERSION = "4.18.3";
+console.log("DesignCheck v4.18.3 Gemini Architect Loaded");
 
 // v4.9.6: Export Local Module State to Global Window (CRITICAL FIX)
 window.userState = userState;
@@ -327,8 +327,13 @@ window.generateAIDesign = async () => {
     const prompt = promptArea.value.trim();
     if (!prompt) return alert("براہ کرم بتائیں کہ آپ کیا بنانا چاہتے ہیں۔");
 
-    // v4.9.0: Expanded access logic (Admin, Approved License OR sufficient Credits)
-    const canAccess = window.userState.isAdmin || window.userState.licenseStatus === 'approved' || (window.userState.credits >= 5);
+    // v4.18.3: Robust Auth Check
+    if (!window.userState || !window.userState.uid) {
+        alert("براہ کرم پہلے لاگ ان کریں۔");
+        return;
+    }
+
+    const canAccess = window.userState.isAdmin || window.userState.licenseStatus === 'approved' || (Number(window.userState.credits || 0) >= 5);
     if (!canAccess) {
         alert("اس فیچر کے لیے کم از کم 5 کریڈٹس کی ضرورت ہے۔ براہ کرم پریمیم لائسنس خریدیں یا کریڈٹس لوڈ کریں۔");
         return toggleModal('profileDropdown', true);

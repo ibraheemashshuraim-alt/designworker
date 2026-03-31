@@ -1,4 +1,4 @@
-// ================ EDITOR LOGIC (v4.9.8 - EMERGENCY RECOVERY) ================
+// ================ EDITOR LOGIC (v4.18.3 - GEMINI ARCHITECT) ================
 
 // v4.9.8: GLOBAL NAVIGATION (MUST BE AT TOP)
 window.switchTab = (tab) => {
