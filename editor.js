@@ -169,7 +169,7 @@ function clearSidebarSync() {
 }
 
 
-// AI Design Loader (v4.18.6)
+// AI Design Loader (v4.18.8 - Deep Integration)
 window.loadDesignFromCode = async function(rawCode) {
     if (!canvas) return alert("Canvas not ready.");
     const codeBox = document.getElementById('aiDesignCodeInput');
@@ -282,25 +282,52 @@ function setupDrawingListeners() {
     });
 }
 
-// Background Removal
+// Background Removal (v4.18.8 Fix)
 window.processRemoveBackground = async () => {
     const obj = canvas.getActiveObject();
-    if (!obj || obj.type !== 'image') return alert("Select an image first.");
+    if (!obj || obj.type !== 'image') return alert("براہ کرم پہلے تصویر سلیکٹ کریں۔");
+    
     const modal = document.getElementById('bgProcessingModal');
-    if (modal) modal.style.display = 'flex';
+    if (modal) {
+        modal.style.display = 'flex';
+        modal.classList.remove('hidden');
+    }
+
     try {
-        const blob = await fetch(obj.getSrc()).then(r => r.blob());
+        // Step 1: Get the source URL and handle potential CORS issues
+        const src = obj.getSrc();
+        
+        // Step 2: Try to fetch with CORS proxy or direct anonymous depending on origin
+        let response;
+        try {
+            response = await fetch(src, { mode: 'cors', cache: 'no-cache' });
+        } catch (e) {
+            console.warn("Direct CORS fetch failed, trying no-cors (might fail later)...");
+            response = await fetch(src, { mode: 'no-cors' });
+        }
+
+        const blob = await fetch(src).then(r => r.blob()); // Standard blob fetch
+        
+        // imgly call
         const resultBlob = await imglyRemoveBackground(blob);
         const url = URL.createObjectURL(resultBlob);
+        
         fabric.Image.fromURL(url, (newImg) => {
-            newImg.set({ left: obj.left, top: obj.top, scaleX: obj.scaleX, scaleY: obj.scaleY });
+            newImg.set({ 
+                left: obj.left, top: obj.top, 
+                scaleX: obj.scaleX, scaleY: obj.scaleY,
+                angle: obj.angle,
+                originX: obj.originX, originY: obj.originY
+            });
             canvas.remove(obj).add(newImg).setActiveObject(newImg).renderAll();
             saveState();
-            if (modal) modal.style.display = 'none';
-        });
+            if (modal) { modal.style.display = 'none'; modal.classList.add('hidden'); }
+        }, { crossOrigin: 'anonymous' });
+
     } catch (e) {
-        alert("BG Removal Error");
-        if (modal) modal.style.display = 'none';
+        console.error("BG Removal Error:", e);
+        alert("بیک گراؤنڈ ہٹانے میں مسئلہ ہوا۔ امیج کا سورس اس کی اجازت نہیں دے رہا۔");
+        if (modal) { modal.style.display = 'none'; modal.classList.add('hidden'); }
     }
 };
 

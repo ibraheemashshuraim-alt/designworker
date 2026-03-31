@@ -248,11 +248,13 @@
                     <i class="fa-solid fa-hand"></i> Manual
                 </button>
                 <button id="aiTabBtn" class="sidebar-tab" onclick="switchSidebarTab('ai')">
-                    <i class="fa-solid fa-wand-magic-sparkles"></i> AI Assistant
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> AI Designer (Magic)
                 </button>
             </div>
             
             <div id="manualToolsSection" style="padding: 15px; display: flex; flex-direction: column; gap: 20px;">
+                <div class="result-label" style="font-size: 0.7rem; color: var(--text-muted); opacity:0.6; text-transform:uppercase; letter-spacing:1px; margin-bottom:-10px;">PRO DESIGN TOOLS</div>
+                
                 <!-- Undo/Redo Actions -->
                 <div style="display: flex; gap: 8px; margin-bottom: -10px;">
                     <button id="undoBtn" class="tool-btn disabled" onclick="undo()" style="flex: 1; padding: 10px;" title="Undo (Ctrl+Z)"><i class="fa-solid fa-rotate-left"></i></button>
@@ -287,37 +289,32 @@
                 </div>
             </div>
 
-            <!-- AI Assistant Section (v4.18.7 Integrated) -->
+            <!-- AI Assistant Section (v4.18.8 True Integration) -->
             <div id="aiAssistantSection" class="hidden" style="padding: 15px; display: flex; flex-direction: column; gap: 15px;">
-                <div style="font-size: 0.8rem; color: var(--neon-cyan); margin-bottom: 5px; display: flex; align-items: center; gap: 8px;">
-                    <i class="fa-solid fa-sparkles"></i> اے آئی ڈیزائنر (Describe design):
+                <div style="font-size: 0.75rem; color: var(--neon-cyan); margin-bottom: 5px; display: flex; align-items: center; gap: 8px; text-transform:uppercase; font-weight:800;">
+                    <i class="fa-solid fa-sparkles"></i> PREMIUM DESIGN ENGINE
                 </div>
-                <textarea id="aiDesignPrompt" class="custom-input design-textarea-small" style="height: 120px; font-size: 0.9rem;" placeholder="مثال: 'پیزا شاپ کا پوسٹر بنائیں...'"></textarea>
+                <textarea id="aiDesignPrompt" class="custom-input design-textarea-small" style="height: 120px; font-size: 0.95rem; line-height: 1.5; background: rgba(0,0,0,0.5);" placeholder="مثال: 'ایک جدید پیزا ریستوراں کا فلائر بنائیں، ڈارک تھیم اور نیون لائیٹس کے ساتھ'"></textarea>
                 
-                <div class="ai-ref-container-small" style="background: rgba(0,0,0,0.2); padding: 8px; border-radius: 10px; border: 1px dashed var(--border-glow);">
-                    <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 5px;">Reference Image (Optional):</div>
-                    <button class="btn browse-btn" style="padding: 6px; font-size: 0.75rem; width: 100%;" onclick="document.getElementById('aiRefInput').click()">
-                        <i class="fa-solid fa-upload"></i> Upload
+                <div class="ai-ref-container-small" style="background: rgba(0,229,255,0.05); padding: 12px; border-radius: 12px; border: 1px dashed var(--neon-cyan);">
+                    <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 8px;">Reference Concept (Optional):</div>
+                    <button class="btn browse-btn" style="padding: 8px; font-size: 0.8rem; width: 100%; border-radius: 8px;" onclick="document.getElementById('aiRefInput').click()">
+                        <i class="fa-solid fa-cloud-arrow-up"></i> Upload Sample
                     </button>
                     <input type="file" id="aiRefInput" hidden accept="image/*">
-                    <div id="aiRefPreviewBox" class="hidden" style="margin-top: 8px; display: flex; align-items: center; gap: 10px;">
-                        <img id="aiRefThumb" src="" style="width: 30px; height: 30px; border-radius: 5px; object-fit: cover; border: 1px solid var(--success-green);">
-                        <span style="font-size: 0.65rem; color: var(--success-green);">OK</span>
-                        <button class="btn danger-btn" style="padding: 2px 6px; font-size: 0.6rem;" onclick="clearAiRefImage()"><i class="fa-solid fa-times"></i></button>
+                    <div id="aiRefPreviewBox" class="hidden" style="margin-top: 10px; display: flex; align-items: center; gap: 10px; background: rgba(0,255,157,0.1); padding: 5px; border-radius: 8px;">
+                        <img id="aiRefThumb" src="" style="width: 35px; height: 35px; border-radius: 4px; object-fit: cover;">
+                        <span style="font-size: 0.65rem; color: var(--success-green); font-weight:700;">PHOTO ATTACHED</span>
+                        <button class="btn danger-btn" style="padding: 2px 6px; font-size: 0.6rem; margin-left:auto;" onclick="clearAiRefImage()"><i class="fa-solid fa-xmark"></i></button>
                     </div>
                 </div>
 
-                <button class="btn primary-btn" id="generateAIDesignBtn" onclick="generateAIDesign()" style="width: 100%; padding: 12px; font-size: 0.9rem; border-radius: 12px;">
-                    <i class="fa-solid fa-wand-magic-sparkles"></i> ڈیزائن بنائیں (Generate)
+                <button class="btn primary-btn" id="generateAIDesignBtn" onclick="generateAIDesign()" style="width: 100%; padding: 15px; font-size: 1rem; border-radius: 12px; margin-top:5px;">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> ڈیزائن جنریٹ کریں (Magic Build)
                 </button>
 
-                <div style="margin-top: 5px;">
-                    <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 8px;">AI Code (Generated):</div>
-                    <textarea id="aiDesignCodeInput" class="custom-input" placeholder="{ JSON }" style="height: 60px; font-size: 0.7rem; background: rgba(0,0,0,0.3); font-family: monospace;"></textarea>
-                    <button class="btn approve" onclick="loadDesignFromCode()" style="width: 100%; margin-top: 8px; padding: 10px; font-size: 0.85rem;">
-                        <i class="fa-solid fa-check"></i> ڈیزائن اپلائی کریں (Apply)
-                    </button>
-                </div>
+                <!-- Hidden technical field (can be opened in console if needed) -->
+                <textarea id="aiDesignCodeInput" class="hidden"></textarea> 
             </div>
         </div>
 

@@ -37,8 +37,8 @@ body {
 /* Nav Bar */
 .top-nav {
     display: flex; justify-content: space-between; align-items: center;
-    padding: 12px 40px; background: rgba(2, 6, 12, 0.85); backdrop-filter: blur(20px);
-    border-bottom: 1px solid var(--border-dim); font-size: 14px; z-index: 1000;
+    padding: 12px 40px; background: rgba(2, 6, 12, 0.85); backdrop-filter: blur(30px);
+    border-bottom: 1px solid var(--border-dim); font-size: 14px; z-index: 2000;
     height: 70px; position: sticky; top: 0;
 }
 
@@ -299,9 +299,10 @@ body {
 
 #designPreview { 
     max-width: 100%; 
-    max-height: 60vh; 
+    max-height: 55vh; 
     border-radius: 12px;
     box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    margin-top: 15px;
 }
 
 /* Modals */

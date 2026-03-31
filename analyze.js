@@ -286,8 +286,8 @@ window.deleteHistoryItem = async (docId) => {
 };
 
 // --- VERSION TAG ---
-window.DESIGN_VERSION = "4.18.7";
-console.log("DesignCheck Engine: v4.18.7 (Bulletproof Architect) Loaded");
+window.DESIGN_VERSION = "4.18.8";
+console.log("DesignCheck Engine: v4.18.8 (Bulletproof Architect) Loaded");
 
 // v4.9.6: Export Local Module State to Global Window (CRITICAL FIX)
 window.userState = userState;
@@ -444,17 +444,12 @@ window.generateAIDesign = async () => {
                     
                     if (scanModal) scanModal.classList.add('hidden');
                     
-                    // v4.11.8: AUTOMATIC TAB SWITCH & LOAD
-                    if (window.switchTab) {
-                        window.switchTab('editor');
-                    }
-                    
-                    // v4.14.0: INSTANT TAB SWITCH & LOAD
+                    // v4.18.8: INSTANT AUTO-LOAD (MAGIC)
                     setTimeout(() => {
                         if (window.loadDesignFromCode) {
                             window.loadDesignFromCode(cleanText);
                         }
-                    }, 50); // Reduced from 500ms for speed
+                    }, 50); 
                     
                     // v4.9.0: Credit Deduction for non-premium users
                     if (!window.userState.isAdmin && window.userState.licenseStatus !== 'approved') {
