@@ -755,7 +755,8 @@ window.loadDesignFromCode = function(rawCode) {
                     canvas.requestRenderAll();
                     isStateChanging = false;
                     saveState();
-                    alert(`✅ Successful! ${objs.length} design elements loaded!`);
+                    // alert(`✅ Successful! ${objs.length} design elements loaded!`);
+                    console.log(`✅ Successful! ${objs.length} elements loaded.`);
                 }, 800);
             } catch (inner) {
                 console.error("Callback Error:", inner);

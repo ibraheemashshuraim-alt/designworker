@@ -434,15 +434,19 @@ window.generateAIDesign = async () => {
                     if (codeInput) codeInput.value = cleanText;
                     success = true;
                     
-                    
                     if (scanModal) scanModal.classList.add('hidden');
                     
-                    // v4.11.5: SWITCH TO EDITOR TAB AUTOMATICALLY
+                    // v4.11.8: AUTOMATIC TAB SWITCH & LOAD
                     if (window.switchTab) {
                         window.switchTab('editor');
                     }
                     
-                    // alert("AI ڈیزائن تیار ہے! آپ اسے 'AI Editor' ٹیب میں اپنی مرضی سے تبدیل کر سکتے ہیں۔");
+                    // Small delay to ensure canvas is ready after tab switch
+                    setTimeout(() => {
+                        if (window.loadDesignFromCode) {
+                            window.loadDesignFromCode(cleanText);
+                        }
+                    }, 500);
                     
                     // v4.9.0: Credit Deduction for non-premium users
                     if (!window.userState.isAdmin && window.userState.licenseStatus !== 'approved') {
