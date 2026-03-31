@@ -379,23 +379,29 @@ window.generateAIDesign = async () => {
                 console.log(`AI Designer: Trying ${modelCandidate}...`);
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelCandidate}:generateContent?key=${keyToUse}`;
                 
-                // v4.10.0: PRO DESIGN QUALITY PROMPT
+                // v4.11.0: MEGA PRO DESIGN QUALITY PROMPT
                 let aiPrompt = `
-                    You are a World-Class UI/UX & Graphic Designer (like a Canva Pro expert).
-                    Your task is to create a stunning, professional Fabric.js JSON design for: "${prompt}"
+                    You are an Elite UI/UX & Graphic Designer (expert in Canva & Photoshop).
+                    Your task is to create a stunning, highly creative, and professionally structured Fabric.js JSON design for this request: "${prompt}"
 
-                    WORKSPACE BASE: 800x600 size.
+                    WORKSPACE BASE: 800x600 pixels.
                     
-                    CRITICAL DESIGN RULES (DO NOT IGNORE):
-                    1. VISUAL RICHNESS: Never output just plain text on a white canvas. ALWAYS start with a large background "Rect" (width: 800, height: 600, left:0, top:0) filled with a beautiful solid color or simulated gradient.
-                    2. SHAPES & LAYERS: Use decorative shapes (Circles, Triangles, Rects). Give them drop shadows (add "shadow": { "color": "rgba(0,0,0,0.4)", "blur": 15, "offsetX": 5, "offsetY": 5 }) to create professional depth and glassmorphic feel.
-                    3. TYPOGRAPHY: Use modern fonts ("Outfit", "Montserrat", or "Roboto"). Create a clear hierarchy: 
-                       - A large, bold, high-contrast Hero Heading.
-                       - A smaller, lighter sub-heading or paragraph.
-                    4. COMPOSITION: Center elements beautifully or align them cleanly. Ensure text is readable against the background.
-                    5. REFERENCE STYLE (IF IMAGE PROVIDED): Extract its mood, exact layout geometry, and exact HEX color palette. Reproduce that aesthetic exactly using FabricJS shapes and text.
+                    MANDATORY DESIGN THEORY & STRUCTURE (MUST FOLLOW STRICTLY):
+                    1. FOUNDATION (Background): You MUST start with a large background "Rect" (width: 800, height: 600, left:0, top:0). Fill it with a rich, modern, aesthetic hex color that fits the theme (e.g., deep blue, warm beige, sleek black). DO NOT USE plain white unless it is a minimalist theme.
+                    2. DECORATIVE ELEMENTS: You MUST add 3 to 5 background decorative shapes (e.g., large Circles or Triangles placed in corners or offset from the center). Give them interesting contrasting colors or partial opacity (e.g., opacity: 0.15) to make the background less boring.
+                    3. MAIN CONTENT CARD (Container): Create a central container "Rect" for the text (e.g., width: 500, height: 350, left: 150, top: 125, rx: 20, ry: 20). Fill it with a high-contrast color compared to the background (e.g., white if background is dark, or dark grey if background is light). 
+                       - You MUST add a heavy drop shadow to this card for depth: "shadow": { "color": "rgba(0,0,0,0.5)", "blur": 25, "offsetX": 0, "offsetY": 15 }.
+                    4. TYPOGRAPHY (Hierarchy & Alignment):
+                       - Add a Hero Heading (type: 'i-text'). Use a modern font like "Outfit" or "Montserrat". Make it large (fontSize: 50-70), bold (fontWeight: 'bold', fill: '#000' or '#fff' depending on card background), and visually striking.
+                       - Add a Subheading (type: 'i-text'). Make it smaller (fontSize: 20-25) and regular weight.
+                       - Ensure PERFECT ALIGNMENT (e.g., center text horizontally inside the main card at left: 400).
+                    5. ACCENT ELEMENTS: Add small accent shapes (e.g., a thin Solid Line under the heading, or small bright Circles near the text) to make it look like a real graphic design flyer/banner.
+                    6. REFERENCE SYNC: If you received a Reference Image, you MUST extract its exact mood, layout geometry, and its exact HEX color palette. Reproduce its aesthetic perfectly using FabricJS shapes and text.
                     
-                    Return ONLY VALID JSON containing an "objects" array with FabricJS entities. NO markdown formatting, just the raw JSON structure. Example: { "objects": [...] }
+                    DO NOT just output 3 floating circles or plain text. You MUST output a fully composed, highly stylized, magazine-quality flyer or poster using Fabric JS JSON.
+                    
+                    Return ONLY VALID JSON containing an "objects" array with FabricJS entities. NO markdown formatting, just the raw JSON structured as:
+                    { "objects": [ { ...background... }, { ...decorations... }, { ...shadow card... }, { ...accent elements... }, { ...heading & texts... } ] }
                 `;
 
                 const partsArray = [{ text: aiPrompt }];
