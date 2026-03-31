@@ -682,19 +682,35 @@ window.exportCanvas = () => {
     link.click();
 };
 
+// v4.12.0: UI LOGGER
+function uiLog(msg, type='info') {
+    const logArea = document.getElementById('debugLog');
+    if (logArea) {
+        logArea.innerHTML += `<div style="color: ${type==='error'?'#ff4d4d':'#00ff00'}">[${new Date().toLocaleTimeString()}] ${msg}</div>`;
+        logArea.scrollTop = logArea.scrollHeight;
+    }
+    console.log(`[UI LOG] ${msg}`);
+}
+
+window.onerror = function(msg, url, line) {
+    uiLog(`CRITICAL: ${msg} (at line ${line})`, 'error');
+    return false;
+};
+
 window.loadDesignFromCode = function(rawCode) {
-    console.log("Loader Starting v4.11.7 [Definitive]");
+    uiLog("🚀 Final Loader v4.12.0 Started...");
     if (!canvas) {
-        alert("Fabric Canvas is not initialized. Please refresh.");
+        uiLog("Canvas object missing!", 'error');
+        alert("Canvas error.");
         return;
     }
     
-    isStateChanging = false; // Reset lock
+    isStateChanging = false; // Emergency reset
     const codeBox = document.getElementById('aiDesignCodeInput');
     const code = rawCode || codeBox?.value?.trim();
     
-    if (!code || code.includes("انتظار")) {
-        alert("Please generate a design first (ڈیزائن جنریٹ کریں)!");
+    if (!code || code.includes("انتظر")) {
+        uiLog("Empty or waiting code - skipped.");
         return;
     }
 
@@ -705,68 +721,62 @@ window.loadDesignFromCode = function(rawCode) {
         const start = jsonText.indexOf('{');
         const end = jsonText.lastIndexOf('}');
         
-        if (start === -1 || end === -1) {
+        if (start === -1) {
              const arrStart = jsonText.indexOf('[');
              const arrEnd = jsonText.lastIndexOf(']');
              if (arrStart !== -1 && arrEnd !== -1) {
                  jsonText = `{ "objects": ${jsonText.substring(arrStart, arrEnd + 1)} }`;
              } else {
-                 throw new Error("No valid JSON structure ({ or [) found in code.");
+                 throw new Error("No JSON found.");
              }
         } else {
             jsonText = jsonText.substring(start, end + 1);
         }
         
-        const designData = JSON.parse(jsonText);
-        const objs = designData.objects || designData;
+        const data = JSON.parse(jsonText);
+        const objs = data.objects || data;
 
-        if (!Array.isArray(objs)) throw new Error("JSON parsed but no objects array found.");
+        if (!Array.isArray(objs)) throw new Error("Parsed successfully but no objects array found.");
 
+        uiLog(`Found ${objs.length} elements. Clearing canvas...`);
         isStateChanging = true;
         canvas.clear();
-        canvas.backgroundColor = designData.background || designData.backgroundColor || '#ffffff';
+        canvas.backgroundColor = data.background || data.backgroundColor || '#ffffff';
         
-        console.log(`Loading objects:`, objs.length);
-
-        canvas.loadFromJSON({ objects: objs, background: canvas.backgroundColor }, () => {
-            try {
-                canvas.getObjects().forEach(obj => {
-                    obj.set({
-                        selectable: true,
-                        evented: true,
-                        hasControls: true,
-                        hasBorders: true,
-                        cornerColor: 'var(--neon-cyan)',
-                        cornerStrokeColor: '#fff',
-                        borderColor: 'var(--neon-cyan)',
-                        transparentCorners: false,
-                        cornerStyle: 'circle',
-                        crossOrigin: 'anonymous'
-                    });
-                    if (obj.type.includes('text')) {
-                        obj.set({ originX: 'center', originY: 'center' });
-                    }
+        // Use enlivenObjects for max reliability
+        fabric.util.enlivenObjects(objs, function(enlivenedObjects) {
+            uiLog(`Rendering ${enlivenedObjects.length} objects...`);
+            enlivenedObjects.forEach(function(obj) {
+                obj.set({
+                    selectable: true,
+                    evented: true,
+                    hasControls: true,
+                    cornerColor: 'var(--neon-cyan)',
+                    transparentCorners: false,
+                    cornerStyle: 'circle',
+                    crossOrigin: 'anonymous'
                 });
-                
+                if (obj.type.includes('text')) {
+                    obj.set({ originX: 'center', originY: 'center' });
+                }
+                canvas.add(obj);
+            });
+            
+            canvas.renderAll();
+            canvas.calcOffset();
+            
+            setTimeout(() => {
                 canvas.renderAll();
-                canvas.calcOffset();
-                
-                setTimeout(() => {
-                    canvas.requestRenderAll();
-                    isStateChanging = false;
-                    saveState();
-                    // alert(`✅ Successful! ${objs.length} design elements loaded!`);
-                    console.log(`✅ Successful! ${objs.length} elements loaded.`);
-                }, 800);
-            } catch (inner) {
-                console.error("Callback Error:", inner);
                 isStateChanging = false;
-            }
+                saveState();
+                uiLog("✅ LOAD SUCCESSFUL");
+            }, 800);
         });
 
     } catch (e) {
         isStateChanging = false;
-        console.error("AI Load Fatal Error:", e);
-        alert("Fatal Error: " + e.message + "\nCheck code format.");
+        uiLog("LOAD ERROR: " + e.message, 'error');
+        alert("Load Error: " + e.message);
     }
+};
 };
