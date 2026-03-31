@@ -698,16 +698,16 @@ window.onerror = function(msg, url, line) {
 };
 
 window.loadDesignFromCode = function(rawCode) {
-    uiLog("🚀 Final Loader v4.12.0 Started...");
+    uiLog("🚀 Final Loader v4.12.2 Started...");
     if (!canvas) {
         uiLog("Canvas object missing!", 'error');
         alert("Canvas error.");
         return;
     }
     
-    isStateChanging = false; // Emergency reset
+    isStateChanging = false; 
     const codeBox = document.getElementById('aiDesignCodeInput');
-    const code = rawCode || codeBox?.value?.trim();
+    let code = rawCode || codeBox?.value?.trim();
     
     if (!code || code.includes("انتظر")) {
         uiLog("Empty or waiting code - skipped.");
@@ -738,39 +738,65 @@ window.loadDesignFromCode = function(rawCode) {
 
         if (!Array.isArray(objs)) throw new Error("Parsed successfully but no objects array found.");
 
-        uiLog(`Found ${objs.length} elements. Clearing canvas...`);
+        uiLog(`Found ${objs.length} elements. Sanitizing...`);
+        
+        // v4.12.2: Sanitize objects to prevent Fabric crashes
+        const sanitizedObjs = objs.map(o => {
+            if (o.left === undefined || isNaN(o.left)) o.left = 100;
+            if (o.top === undefined || isNaN(o.top)) o.top = 100;
+            if (o.width === undefined || isNaN(o.width)) o.width = 50;
+            if (o.height === undefined || isNaN(o.height)) o.height = 50;
+            o.crossOrigin = 'anonymous'; // Ensure CORS
+            return o;
+        });
+
         isStateChanging = true;
         canvas.clear();
         canvas.backgroundColor = data.background || data.backgroundColor || '#ffffff';
         
-        // Use enlivenObjects for max reliability
-        fabric.util.enlivenObjects(objs, function(enlivenedObjects) {
-            uiLog(`Rendering ${enlivenedObjects.length} objects...`);
-            enlivenedObjects.forEach(function(obj) {
-                obj.set({
-                    selectable: true,
-                    evented: true,
-                    hasControls: true,
-                    cornerColor: 'var(--neon-cyan)',
-                    transparentCorners: false,
-                    cornerStyle: 'circle',
-                    crossOrigin: 'anonymous'
-                });
-                if (obj.type.includes('text')) {
-                    obj.set({ originX: 'center', originY: 'center' });
-                }
-                canvas.add(obj);
-            });
-            
-            canvas.renderAll();
-            canvas.calcOffset();
-            
-            setTimeout(() => {
-                canvas.renderAll();
+        uiLog(`Calling fabric.enliven(${sanitizedObjs.length})...`);
+        
+        // Emergency timeout to reset if callback never fires
+        const enlivenTimeout = setTimeout(() => {
+            if (isStateChanging) {
+                uiLog("Enliven timed out! Forcing reset.", 'error');
                 isStateChanging = false;
-                saveState();
-                uiLog("✅ LOAD SUCCESSFUL");
-            }, 800);
+            }
+        }, 5000);
+
+        fabric.util.enlivenObjects(sanitizedObjs, function(enlivenedObjects) {
+            clearTimeout(enlivenTimeout);
+            uiLog(`Callback reached: ${enlivenedObjects.length} objects.`);
+            
+            try {
+                enlivenedObjects.forEach(function(obj, i) {
+                    obj.set({
+                        selectable: true,
+                        evented: true,
+                        hasControls: true,
+                        cornerColor: 'var(--neon-cyan)',
+                        transparentCorners: false,
+                        cornerStyle: 'circle'
+                    });
+                    if (obj.type && obj.type.includes('text')) {
+                        obj.set({ originX: 'center', originY: 'center' });
+                    }
+                    canvas.add(obj);
+                });
+                
+                canvas.renderAll();
+                canvas.calcOffset();
+                
+                setTimeout(() => {
+                    canvas.requestRenderAll();
+                    isStateChanging = false;
+                    saveState();
+                    uiLog("✅ LOAD SUCCESSFUL");
+                }, 500);
+            } catch (innerE) {
+                uiLog("Callback Inner Error: " + innerE.message, 'error');
+                isStateChanging = false;
+            }
         });
 
     } catch (e) {
