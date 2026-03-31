@@ -439,7 +439,11 @@ window.processRemoveBackground = async () => {
         }
 
         const resultBlob = await removeBackground(blob, {
-            publicPath: "https://staticimgly.com/@imgly/background-removal-data/1.4.3/dist/"
+            publicPath: "https://staticimgly.com/@imgly/background-removal-data/1.4.3/dist/",
+            model: "small",
+            progress: (key, current, total) => {
+                console.log(`BG Removal Loading: ${key} ${Math.round((current/total)*100)}%`);
+            }
         });
         const url = URL.createObjectURL(resultBlob);
         
