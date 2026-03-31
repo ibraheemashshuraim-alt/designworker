@@ -430,13 +430,16 @@ window.processRemoveBackground = async () => {
             }
         }
         
-        // imgly call (ensuring the library is loaded)
-        if (typeof imglyRemoveBackground === 'undefined') {
-            throw new Error("Background Removal Engine not loaded. Please refresh.");
+        // Import imgly library dynamically
+        const imgly = await import('https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.4.3/+esm');
+        const removeBackground = imgly.default || imgly.removeBackground;
+
+        if (!removeBackground) {
+             throw new Error("Background Removal Engine failed to initialize.");
         }
 
-        const resultBlob = await imglyRemoveBackground(blob, {
-            publicPath: "https://unpkg.com/@imgly/background-removal@1.4.3/dist/"
+        const resultBlob = await removeBackground(blob, {
+            publicPath: "https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.4.3/dist/"
         });
         const url = URL.createObjectURL(resultBlob);
         
