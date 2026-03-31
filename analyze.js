@@ -286,8 +286,8 @@ window.deleteHistoryItem = async (docId) => {
 };
 
 // --- VERSION TAG ---
-window.DESIGN_VERSION = "4.18.6";
-console.log("DesignCheck Engine: v4.18.6 (Bulletproof Architect) Loaded");
+window.DESIGN_VERSION = "4.18.7";
+console.log("DesignCheck Engine: v4.18.7 (Bulletproof Architect) Loaded");
 
 // v4.9.6: Export Local Module State to Global Window (CRITICAL FIX)
 window.userState = userState;

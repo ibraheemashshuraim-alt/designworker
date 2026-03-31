@@ -26,6 +26,27 @@ window.switchTab = (tab) => {
     }
 };
 
+// v4.18.7: SIDEBAR NAVIGATION
+window.switchSidebarTab = (tab) => {
+    const manualBtn = document.getElementById('manualTabBtn');
+    const aiBtn = document.getElementById('aiTabBtn');
+    const manualSec = document.getElementById('manualToolsSection');
+    const aiSec = document.getElementById('aiAssistantSection');
+
+    if (tab === 'ai') {
+        manualBtn?.classList.remove('active');
+        aiBtn?.classList.add('active');
+        manualSec?.classList.add('hidden');
+        aiSec?.classList.remove('hidden');
+    } else {
+        manualBtn?.classList.add('active');
+        aiBtn?.classList.remove('active');
+        manualSec?.classList.remove('hidden');
+        aiSec?.classList.add('hidden');
+        setTimeout(() => resizeCanvas(), 50); // Recalculate if needed
+    }
+};
+
 let canvas;
 const baseWidth = 800; 
 const baseHeight = 600; 

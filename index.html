@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DesignCheck - Premium AI Critique (v4.18.5)</title>
+    <title>DesignCheck - Premium AI Critique (v4.18.7)</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="style.css?v=4.18.6">
+    <link rel="stylesheet" href="style.css?v=4.18.7">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
@@ -242,12 +242,17 @@
     <!-- NEW: Editor View -->
     <main class="app-container hidden" id="editorView">
         <!-- Unified Professional Sidebar -->
-        <div class="dash-card editor-toolbar-card" style="height: auto;">
-            <div class="card-header-status" style="padding: 10px;">
-                <span class="status-indicator">PRO DESIGN TOOLS</span>
+        <div class="dash-card editor-toolbar-card" style="height: auto; min-height: 500px;">
+            <div class="sidebar-tabs" style="display: flex; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                <button id="manualTabBtn" class="sidebar-tab active" onclick="switchSidebarTab('manual')">
+                    <i class="fa-solid fa-hand"></i> Manual
+                </button>
+                <button id="aiTabBtn" class="sidebar-tab" onclick="switchSidebarTab('ai')">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> AI Assistant
+                </button>
             </div>
             
-            <div style="padding: 15px; display: flex; flex-direction: column; gap: 20px;">
+            <div id="manualToolsSection" style="padding: 15px; display: flex; flex-direction: column; gap: 20px;">
                 <!-- Undo/Redo Actions -->
                 <div style="display: flex; gap: 8px; margin-bottom: -10px;">
                     <button id="undoBtn" class="tool-btn disabled" onclick="undo()" style="flex: 1; padding: 10px;" title="Undo (Ctrl+Z)"><i class="fa-solid fa-rotate-left"></i></button>
@@ -279,10 +284,39 @@
                 <!-- Formatting is now handled via Floating Context Toolbar -->
 
                 <!-- Global Actions -->
-                <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 5px;">
-                    <button class="btn danger-btn" onclick="deleteActiveObject()" style="width: 100%;"><i class="fa-solid fa-trash"></i> یہ چیز مٹائیں (Delete)</button>
-                    <button class="btn primary-btn" onclick="exportCanvas()" style="width: 100%;"><i class="fa-solid fa-file-export"></i> ڈیزائن محفوظ کریں (Export)</button>
-                    <button class="btn" onclick="clearCanvas()" style="width: 100%; background: transparent; border-color: rgba(255,255,255,0.1); color: var(--text-muted);">صاف کریں (Clear All)</button>
+                </div>
+            </div>
+
+            <!-- AI Assistant Section (v4.18.7 Integrated) -->
+            <div id="aiAssistantSection" class="hidden" style="padding: 15px; display: flex; flex-direction: column; gap: 15px;">
+                <div style="font-size: 0.8rem; color: var(--neon-cyan); margin-bottom: 5px; display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-sparkles"></i> اے آئی ڈیزائنر (Describe design):
+                </div>
+                <textarea id="aiDesignPrompt" class="custom-input design-textarea-small" style="height: 120px; font-size: 0.9rem;" placeholder="مثال: 'پیزا شاپ کا پوسٹر بنائیں...'"></textarea>
+                
+                <div class="ai-ref-container-small" style="background: rgba(0,0,0,0.2); padding: 8px; border-radius: 10px; border: 1px dashed var(--border-glow);">
+                    <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 5px;">Reference Image (Optional):</div>
+                    <button class="btn browse-btn" style="padding: 6px; font-size: 0.75rem; width: 100%;" onclick="document.getElementById('aiRefInput').click()">
+                        <i class="fa-solid fa-upload"></i> Upload
+                    </button>
+                    <input type="file" id="aiRefInput" hidden accept="image/*">
+                    <div id="aiRefPreviewBox" class="hidden" style="margin-top: 8px; display: flex; align-items: center; gap: 10px;">
+                        <img id="aiRefThumb" src="" style="width: 30px; height: 30px; border-radius: 5px; object-fit: cover; border: 1px solid var(--success-green);">
+                        <span style="font-size: 0.65rem; color: var(--success-green);">OK</span>
+                        <button class="btn danger-btn" style="padding: 2px 6px; font-size: 0.6rem;" onclick="clearAiRefImage()"><i class="fa-solid fa-times"></i></button>
+                    </div>
+                </div>
+
+                <button class="btn primary-btn" id="generateAIDesignBtn" onclick="generateAIDesign()" style="width: 100%; padding: 12px; font-size: 0.9rem; border-radius: 12px;">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> ڈیزائن بنائیں (Generate)
+                </button>
+
+                <div style="margin-top: 5px;">
+                    <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 8px;">AI Code (Generated):</div>
+                    <textarea id="aiDesignCodeInput" class="custom-input" placeholder="{ JSON }" style="height: 60px; font-size: 0.7rem; background: rgba(0,0,0,0.3); font-family: monospace;"></textarea>
+                    <button class="btn approve" onclick="loadDesignFromCode()" style="width: 100%; margin-top: 8px; padding: 10px; font-size: 0.85rem;">
+                        <i class="fa-solid fa-check"></i> ڈیزائن اپلائی کریں (Apply)
+                    </button>
                 </div>
             </div>
         </div>
@@ -362,47 +396,6 @@
             </div>
         </div>
 
-        <!-- AI Designer Section (Full Width below) -->
-        <div class="dash-card ai-designer-card" style="grid-column: 1 / -1; min-height: auto;">
-             <div class="card-header-status">
-                <span class="status-indicator">AI DESIGNER - TEXT TO DESIGN</span>
-            </div>
-            <div class="ai-designer-box" style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 30px; padding: 25px; align-items: start;">
-                <!-- Column 1: Generate via AI -->
-                <div class="ai-input-group" style="display: flex; flex-direction: column; gap: 12px; height: 100%;">
-                    <div style="font-size: 0.85rem; color: var(--neon-cyan); margin-bottom: -5px; display: flex; align-items: center; gap: 8px;">
-                        <i class="fa-solid fa-sparkles"></i> اے آئی ڈیزائنر (Describe your design):
-                    </div>
-                    <textarea id="aiDesignPrompt" class="custom-input design-textarea" style="margin-bottom: 0; min-height: 100px; font-size: 0.95rem;" placeholder="مثال کے طور پر: 'ایک پیزا شاپ کا فلائر بنائیں جس میں ریڈ کلر کا بیک گراؤنڈ ہو اور برگر کی تصویر ہو'"></textarea>
-                    
-                    <div class="ai-ref-container" style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 10px; border: 1px dashed var(--neon-cyan);">
-                        <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 8px;">مماثل ڈیزائن (Reference Image - Optional):</div>
-                        <button class="btn browse-btn" style="padding: 6px 15px; font-size: 0.8rem; width: 100%;" onclick="document.getElementById('aiRefInput').click()">
-                            <i class="fa-solid fa-upload"></i> تصویر اپ لوڈ کریں
-                        </button>
-                        <input type="file" id="aiRefInput" hidden accept="image/*">
-                        <div id="aiRefPreviewBox" class="hidden" style="margin-top: 10px; display: flex; align-items: center; justify-content: space-between;">
-                            <img id="aiRefThumb" src="" style="width: 40px; height: 40px; border-radius: 5px; object-fit: cover; border: 1px solid var(--success-green);">
-                            <span style="font-size: 0.7rem; color: var(--success-green); flex: 1; padding: 0 10px;">Select ہو گئی</span>
-                            <button class="btn danger-btn" style="padding: 4px 8px; font-size: 0.7rem;" onclick="clearAiRefImage()"><i class="fa-solid fa-times"></i></button>
-                        </div>
-                    </div>
-
-                    <button class="btn primary-btn" id="generateAIDesignBtn" onclick="generateAIDesign()" style="width: 100%; padding: 15px; font-size: 1rem; border-radius: 15px;">
-                        <i class="fa-solid fa-wand-magic-sparkles"></i> نیا ڈیزائن جنریٹ کریں (Generate)
-                    </button>
-                </div>
-
-                <!-- Column 2: Paste Code -->
-                <div class="ai-code-group" style="display: flex; flex-direction: column; gap: 12px; background: rgba(255,255,255,0.03); padding: 20px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.05);">
-                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0;">AI کا دیا گیا کوڈ یہاں پیسٹ کریں:</div>
-                    <textarea id="aiDesignCodeInput" class="custom-input" placeholder="{ 'objects': [...] }" style="height: 100px; margin-bottom: 0; background: rgba(0,0,0,0.3); font-family: monospace; font-size: 0.8rem; resize: none; padding: 10px;"></textarea>
-                    <button class="btn approve" onclick="loadDesignFromCode()" style="width: 100%; padding: 12px; font-size: 0.9rem; border-radius: 12px;">
-                        <i class="fa-solid fa-check"></i> ڈیزائن کینوس پر لائیں (Apply)
-                    </button>
-                </div>
-            </div>
-        </div>
     </main>
 
     <!-- Admin Dashboard View -->
@@ -445,13 +438,13 @@
     </div>
 
 
-        <div>Powered by <strong>Gemini AI</strong> | <span id="uiVersion" style="color: var(--neon-cyan);">v4.18.6</span></div>
+        <div>Powered by <strong>Gemini AI</strong> | <span id="uiVersion" style="color: var(--neon-cyan);">v4.18.7</span></div>
     </footer>
 
-    <script type="module" src="analyze.js?v=4.18.6"></script>
-    <script src="editor.js?v=4.18.6"></script>
+    <script type="module" src="analyze.js?v=4.18.7"></script>
+    <script src="editor.js?v=4.18.7"></script>
     <script>
-        // v4.18.6: Programmatic Cache Clear
+        // v4.18.7: Programmatic Cache Clear
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.getRegistrations().then(function(registrations) {
                 for(let registration of registrations) {
