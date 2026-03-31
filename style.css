@@ -26,6 +26,57 @@ body {
     direction: rtl; /* Force RTL for Urdu */
 }
 
+/* v4.18.10: Premium Sidebar Architecture */
+.sidebar-tabs {
+    display: flex;
+    padding: 8px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 18px 18px 0 0;
+}
+
+.sidebar-tab {
+    flex: 1;
+    background: transparent;
+    border: none;
+    padding: 18px 12px;
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border-bottom: 3px solid transparent;
+    opacity: 0.6;
+}
+
+.sidebar-tab i { font-size: 1.2rem; }
+
+.sidebar-tab:hover {
+    color: #fff;
+    opacity: 1;
+    background: rgba(255,255,255,0.02);
+}
+
+.sidebar-tab.active {
+    color: var(--neon-cyan);
+    border-bottom-color: var(--neon-cyan);
+    background: rgba(0, 229, 255, 0.08);
+    opacity: 1;
+    box-shadow: inset 0 -10px 20px rgba(0, 229, 255, 0.05);
+}
+
+.manual-tool-group {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 15px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
 .background-backdrop {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
     background: 
@@ -99,17 +150,20 @@ body {
     width: 100%;
 }
 
-/* v4.9.8: Fixed Grid for Editor View */
+/* v4.18.10: Ultimate Grid Enforcement */
 #editorView:not(.hidden) {
     display: grid !important;
-    grid-template-columns: 320px 1fr;
-    gap: 30px;
-    align-items: start;
+    grid-template-columns: 320px 1fr !important;
+    gap: 30px !important;
+    align-items: start !important;
+    max-width: 1400px !important;
+    margin: 0 auto !important;
+    padding: 0 20px 40px !important;
 }
 
-@media (max-width: 1100px) {
+@media (max-width: 1150px) {
     #editorView:not(.hidden) {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr !important;
     }
 }
 

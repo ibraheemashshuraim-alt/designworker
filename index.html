@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DesignCheck - Premium AI Critique (v4.18.9)</title>
+    <title>DesignCheck - Gemini Architect (v4.18.10)</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="style.css?v=4.18.7">
+    <link rel="stylesheet" href="style.css?v=4.18.10">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
@@ -251,44 +251,38 @@
                     <i class="fa-solid fa-hand"></i> Manual
                 </button>
                 <button id="aiTabBtn" class="sidebar-tab" onclick="switchSidebarTab('ai')">
-                    <i class="fa-solid fa-wand-magic-sparkles"></i> AI Designer (Magic)
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    <span>AI Designer</span>
                 </button>
             </div>
             
-            <div id="manualToolsSection" style="padding: 15px; display: flex; flex-direction: column; gap: 20px;">
-                <div class="result-label" style="font-size: 0.7rem; color: var(--text-muted); opacity:0.6; text-transform:uppercase; letter-spacing:1px; margin-bottom:-10px;">PRO DESIGN TOOLS</div>
+            <div id="manualToolsSection" style="padding: 20px; display: flex; flex-direction: column; gap: 0;">
                 
-                <!-- Undo/Redo Actions -->
-                <div style="display: flex; gap: 8px; margin-bottom: -10px;">
-                    <button id="undoBtn" class="tool-btn disabled" onclick="undo()" style="flex: 1; padding: 10px;" title="Undo (Ctrl+Z)"><i class="fa-solid fa-rotate-left"></i></button>
-                    <button id="redoBtn" class="tool-btn disabled" onclick="redo()" style="flex: 1; padding: 10px;" title="Redo (Ctrl+Y)"><i class="fa-solid fa-rotate-right"></i></button>
-                </div>
-
-                <!-- Add Items -->
-                <div>
-                    <div class="result-label" style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 10px;"><i class="fa-solid fa-plus"></i> نئی چیز شامل کریں (Add Items):</div>
-                    <div class="editor-tools-grid" style="grid-template-columns: 1fr 1fr; gap: 8px;">
-                        <button class="tool-btn" onclick="addTextToCanvas()"><i class="fa-solid fa-font"></i> <span>ٹیکسٹ</span></button>
-                        
-                        <!-- NEW: Expandable Shapes Menu -->
-                        <div style="position: relative;">
-                            <button class="tool-btn" style="width: 100%;" onclick="toggleShapesMenu(event)"><i class="fa-solid fa-shapes"></i> <span>شکلیں</span></button>
-                            <div id="shapesDropdownMenu" class="custom-dropdown-menu hidden" style="width: 130px; top: 110%;">
-                                <div class="dropdown-item" onclick="startDrawingShape('rect')"><i class="fa-regular fa-square" style="width:15px; text-align:center;"></i> باکس</div>
-                                <div class="dropdown-item" onclick="startDrawingShape('circle')"><i class="fa-regular fa-circle" style="width:15px; text-align:center;"></i> دائرہ</div>
-                                <div class="dropdown-item" onclick="startDrawingShape('triangle')"><i class="fa-solid fa-caret-up" style="width:15px; text-align:center;"></i> تکون</div>
-                                <div class="dropdown-item" onclick="startDrawingShape('line')"><i class="fa-solid fa-minus" style="width:15px; text-align:center;"></i> لکیر</div>
-                            </div>
-                        </div>
-
-                        <button class="tool-btn" onclick="document.getElementById('editorFileInput').click()" style="grid-column: 1 / -1;"><i class="fa-solid fa-image"></i> <span>تصویر اپ لوڈ کریں</span></button>
-                        <input type="file" id="editorFileInput" hidden accept="image/*">
+                <!-- Group 1: Core History -->
+                <div class="manual-tool-group">
+                    <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 12px; font-weight:700;">HISTORY & STATE</div>
+                    <div style="display: flex; gap: 10px;">
+                        <button id="undoBtn" class="tool-btn disabled" onclick="undo()" style="flex: 1; padding: 12px;" title="Undo (Ctrl+Z)"><i class="fa-solid fa-rotate-left"></i> Undo</button>
+                        <button id="redoBtn" class="tool-btn disabled" onclick="redo()" style="flex: 1; padding: 12px;" title="Redo (Ctrl+Y)"><i class="fa-solid fa-rotate-right"></i> Redo</button>
                     </div>
                 </div>
 
-                <!-- Formatting is now handled via Floating Context Toolbar -->
+                <!-- Group 2: Elements -->
+                <div class="manual-tool-group">
+                    <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 12px; font-weight:700;">ADD ELEMENTS</div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                        <button class="tool-btn" onclick="addText()"><i class="fa-solid fa-t"></i> Text</button>
+                        <button class="tool-btn" onclick="document.getElementById('imgUpload').click()"><i class="fa-solid fa-image"></i> Image</button>
+                        <button class="tool-btn" onclick="startDrawingShape('rect')"><i class="fa-solid fa-square"></i> Rect</button>
+                        <button class="tool-btn" onclick="startDrawingShape('circle')"><i class="fa-solid fa-circle"></i> Circle</button>
+                    </div>
+                    <input type="file" id="imgUpload" hidden accept="image/*">
+                </div>
 
-                <!-- Global Actions -->
+                <!-- Group 3: Export -->
+                <div style="margin-top: 10px;">
+                    <button class="btn primary-btn" onclick="exportCanvas()" style="width: 100%; padding: 15px; border-radius: 12px;"><i class="fa-solid fa-file-export"></i> SAVE DESIGN</button>
+                    <button class="btn" onclick="clearCanvas()" style="width: 100%; margin-top: 10px; background: transparent; border: 1px solid rgba(255,255,255,0.05); color: var(--text-muted); font-size: 0.8rem;">Clear All</button>
                 </div>
             </div>
 
@@ -438,11 +432,11 @@
     </div>
 
 
-        <div>Powered by <strong>Gemini AI</strong> | <span id="uiVersion" style="color: var(--neon-cyan);">v4.18.9</span></div>
+        <div>Powered by <strong>Gemini AI</strong> | <span id="uiVersion" style="color: var(--neon-cyan);">v4.18.10</span></div>
     </footer>
 
-    <script type="module" src="analyze.js?v=4.18.9"></script>
-    <script src="editor.js?v=4.18.9"></script>
+    <script type="module" src="analyze.js?v=4.18.10"></script>
+    <script src="editor.js?v=4.18.10"></script>
     <script>
         // v4.18.9: Nuclear Cache Clear
         window.hardResetApp = async function() {
