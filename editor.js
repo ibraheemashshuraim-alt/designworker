@@ -426,7 +426,9 @@ window.processRemoveBackground = async () => {
             throw new Error("Background Removal Engine not loaded. Please refresh.");
         }
 
-        const resultBlob = await imglyRemoveBackground(blob);
+        const resultBlob = await imglyRemoveBackground(blob, {
+            publicPath: "https://unpkg.com/@imgly/background-removal@1.4.3/dist/"
+        });
         const url = URL.createObjectURL(resultBlob);
         
         fabric.Image.fromURL(url, (newImg) => {
@@ -474,6 +476,18 @@ function saveState() {
     if (historyUndo.length > 50) historyUndo.shift();
     historyRedo = [];
 }
+
+window.clearCanvas = () => {
+    if (!canvas) return;
+    if (confirm("کیا آپ واقعی سب کچھ مٹانا چاہتے ہیں؟")) {
+        isStateChanging = true;
+        canvas.clear();
+        canvas.backgroundColor = '#ffffff';
+        canvas.renderAll();
+        isStateChanging = false;
+        saveState();
+    }
+};
 
 window.undo = () => {
     if (historyUndo.length <= 1) return;
