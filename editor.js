@@ -681,67 +681,75 @@ window.exportCanvas = () => {
 };
 
 window.loadDesignFromCode = (rawCode) => {
-    if (!canvas) return;
+    if (!canvas) {
+        console.error("Canvas not initialized.");
+        return;
+    }
     const codeBox = document.getElementById('aiDesignCodeInput');
     const code = rawCode || codeBox?.value?.trim();
-    if (!code) {
+    
+    if (!code || code === "AI ڈیزائن کر رہا ہے انتظار کریں...") {
         alert("براہ کرم پہلے کچھ کوڈ جنریٹ کریں یا پیسٹ کریں۔");
         return;
     }
 
+    console.log("Loading design from code...");
+    
     try {
-        // v4.11.4: More Robust JSON Cleaning
+        isStateChanging = true;
+        
         let jsonText = code.trim();
-        // Remove markdown wrappers if present
+        // Remove markdown tags
         jsonText = jsonText.replace(/```json/g, '').replace(/```/g, '').trim();
         
-        // Find the first '{' and last '}' to strip any extra text Gemini might have added
         const start = jsonText.indexOf('{');
         const end = jsonText.lastIndexOf('}');
-        if (start !== -1 && end !== -1) {
-            jsonText = jsonText.substring(start, end + 1);
-        }
-
+        if (start === -1 || end === -1) throw new Error("درست JSON فارمیٹ نہیں ملا۔");
+        
+        jsonText = jsonText.substring(start, end + 1);
         const designData = JSON.parse(jsonText);
         
-        // v4.11.3: Robust Loader logic
-        isStateChanging = true;
         canvas.clear();
+        canvas.backgroundColor = '#ffffff'; // Default reset
         
         canvas.loadFromJSON(designData, () => {
-            canvas.getObjects().forEach(obj => {
-                obj.set({
-                    selectable: true,
-                    evented: true,
-                    lockMovementX: false, lockMovementY: false,
-                    lockScalingX: false, lockScalingY: false,
-                    lockRotation: false, hasControls: true, hasBorders: true,
-                    cornerColor: 'var(--neon-cyan)',
-                    cornerStrokeColor: '#fff',
-                    borderColor: 'var(--neon-cyan)',
-                    transparentCorners: false,
-                    cornerStyle: 'circle'
+            try {
+                canvas.getObjects().forEach(obj => {
+                    obj.set({
+                        selectable: true,
+                        evented: true,
+                        hasControls: true,
+                        hasBorders: true,
+                        cornerColor: 'var(--neon-cyan)',
+                        cornerStrokeColor: '#fff',
+                        borderColor: 'var(--neon-cyan)',
+                        transparentCorners: false,
+                        cornerStyle: 'circle',
+                        crossOrigin: 'anonymous'
+                    });
+                    if (obj.type === 'i-text') {
+                        obj.set({ originX: 'center', originY: 'center' });
+                    }
                 });
-                if(obj.type === 'i-text') {
-                    obj.set({ originX: 'center' });
-                    if(obj.left < 50) obj.left = 400;
-                }
-            });
-            
-            canvas.renderAll();
-            canvas.calcOffset();
-            
-            setTimeout(() => {
-                canvas.requestRenderAll();
+                
+                canvas.renderAll();
+                canvas.calcOffset();
+                
+                // Final render loop
+                setTimeout(() => {
+                    canvas.requestRenderAll();
+                    isStateChanging = false;
+                    saveState();
+                    alert("ڈیزائن کامیابی سے لوڈ ہو گیا ہے!");
+                }, 800);
+            } catch (err) {
+                console.error("Callback error:", err);
                 isStateChanging = false;
-                saveState();
-                alert("ڈیزائن کامیابی سے کینوس پر لوڈ کر دیا گیا ہے!");
-            }, 500);
-            
-            console.log("AI Design Loaded v4.11.3");
+            }
         });
     } catch (e) {
+        isStateChanging = false;
         console.error("AI Load Error:", e);
-        alert("کوڈ لوڈ کرنے میں مسئلہ ہوا۔ براہ کرم چیک کریں کہ کیا کوڈ درست فارمیٹ میں ہے۔ (Error: " + e.message + ")");
+        alert("کوڈ لوڈ کرنے میں مسئلہ ہوا۔ (Error: " + e.message + ")");
     }
 };

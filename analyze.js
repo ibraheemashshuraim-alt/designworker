@@ -437,10 +437,10 @@ window.generateAIDesign = async () => {
                     
                     if (scanModal) scanModal.classList.add('hidden');
                     
-                    // v4.11.3: AUTOMATIC LOAD REMOVED BY USER REQUEST
-                    // if (window.loadDesignFromCode) {
-                    //     window.loadDesignFromCode(cleanText);
-                    // }
+                    // v4.11.5: SWITCH TO EDITOR TAB AUTOMATICALLY
+                    if (window.switchTab) {
+                        window.switchTab('editor');
+                    }
                     
                     // alert("AI ڈیزائن تیار ہے! آپ اسے 'AI Editor' ٹیب میں اپنی مرضی سے تبدیل کر سکتے ہیں۔");
                     
