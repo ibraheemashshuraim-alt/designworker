@@ -286,8 +286,39 @@ window.deleteHistoryItem = async (docId) => {
 };
 
 // --- VERSION TAG ---
-window.DESIGN_VERSION = "4.18.10";
-console.log("DesignCheck Engine: v4.18.10 (Bulletproof Architect) Loaded");
+window.DESIGN_VERSION = "4.18.12";
+console.log("DesignCheck Engine: v4.18.12 (Bulletproof Architect) Loaded");
+
+// v4.18.12: Gemini API Diagnostic Manager
+window.showAiDiagnosticModal = (message, errorRaw) => {
+    const modal = document.getElementById('diagnosticModal');
+    const title = document.getElementById('diagTitle');
+    const body = document.getElementById('diagBody');
+    const fixBtn = document.getElementById('diagFixBtn');
+    
+    if (!modal) return;
+
+    // Detect technical details
+    let projectID = "YOUR_PROJECT_ID";
+    const projectMatch = errorRaw?.match(/project ([0-9]+)/i);
+    if (projectMatch) projectID = projectMatch[1];
+    
+    const isQuota = errorRaw?.includes("429") || errorRaw?.toLowerCase().includes("quota");
+    const fixLink = isQuota ? "https://aistudio.google.com/app/apikey" : `https://console.developers.google.com/apis/api/generativelanguage.googleapis.com/overview?project=${projectID}`;
+    
+    title.innerText = isQuota ? "Gemini Quota ختم ہو گیا ہے" : "Gemini API ایکٹیویشن ضروری ہے";
+    body.innerHTML = `
+        <p style="margin-bottom:10px;"><b>وجہ:</b> ${isQuota ? "آپ کا فری ٹائر کوٹہ ختم ہو گیا ہے۔" : "گوگل پراجیکٹ میں ابھی Gemini API فعال نہیں کی گئی ہے۔"}</p>
+        <p><b>حل:</b> ${isQuota ? "اپنی ذاتی Google AI Studio API Key استعمال کریں یا تھوڑی دیر انتظار کریں۔" : "نیچے دیے گئے بٹن پر کلک کریں اور API کو 'Enable' کریں۔"}</p>
+        <div class="diag-error-box">ERROR: ${message}</div>
+    `;
+    
+    fixBtn.href = fixLink;
+    fixBtn.innerHTML = isQuota ? "<i class='fa-solid fa-key'></i> Get Personal API Key" : "<i class='fa-solid fa-bolt'></i> Enable API Now (Fix)";
+    
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+};
 
 // v4.9.6: Export Local Module State to Global Window (CRITICAL FIX)
 window.userState = userState;
@@ -473,7 +504,14 @@ window.generateAIDesign = async () => {
         }
     } catch (e) {
         console.error("AI Designer Error:", e);
-        
+        if (scanModal) scanModal.classList.add('hidden');
+
+        // v4.18.11: Diagnostic Handling
+        if (e.message.includes("Generative Language API has not been used") || e.message.includes("disabled")) {
+            window.showAiDiagnosticModal(e.message, e.message);
+            return;
+        }
+
         let msg = "ڈیزائن بنانے میں مسئلہ ہوا۔: " + e.message;
         if (e.message.includes("403")) {
             msg = "آپ کی API Key درست نہیں ہے یا Gemini API ڈس ایبل ہے۔ براہ کرم سیٹنگز میں اپنی ذاتی API Key استعمال کریں۔";

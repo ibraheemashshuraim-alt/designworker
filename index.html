@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DesignCheck - Gemini Architect (v4.18.10)</title>
+    <title>DesignCheck - Gemini Architect (v4.18.12)</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="style.css?v=4.18.10">
+    <link rel="stylesheet" href="style.css?v=4.18.12">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
@@ -96,6 +96,13 @@
                             <input type="text" readonly value="https://ibraheemashshuraim-alt.github.io/designworker/" id="shareLinkInput" style="background: rgba(0,0,0,0.3); border: none; font-size: 0.7rem; color: var(--neon-cyan); padding: 5px; border-radius: 5px; width: 70%;">
                             <button onclick="copyShareLink()" class="btn approve" style="padding: 5px 10px; font-size: 0.6rem;">Copy</button>
                         </div>
+                    </div>
+
+                    <div class="modal-section" style="border-top: 1px solid var(--border-dim); padding-top: 15px;">
+                        <button onclick="hardResetApp()" class="repair-btn">
+                            <i class="fa-solid fa-screwdriver-wrench"></i> سسٹم ریپیئر (Repair System)
+                        </button>
+                        <p style="font-size: 0.6rem; color: var(--text-muted); margin-top: 5px; text-align: center;">اگر ایپ لوڈ نہ ہو رہی ہو تو اسے استعمال کریں۔</p>
                     </div>
 
                     <button onclick="logout()" class="btn logout-btn">
@@ -422,6 +429,28 @@
         </div>
     </div>
 
+    <!-- v4.18.11: Gemini Diagnostic Modal -->
+    <div id="diagnosticModal" class="modal hidden">
+        <div class="modal-content" style="max-width: 500px; border-color: var(--warning-orange);">
+            <span class="close-btn" onclick="toggleModal('diagnosticModal', false)">&times;</span>
+            <div style="text-align: center; margin-bottom: 20px;">
+                <i class="fa-solid fa-triangle-exclamation" style="font-size: 3rem; color: var(--warning-orange);"></i>
+            </div>
+            <h3 id="diagTitle" style="color: var(--warning-orange); text-align: center; margin-bottom: 15px;">API ایکٹیویشن ضروری ہے</h3>
+            <div id="diagBody" style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.6; margin-bottom: 20px;">
+                <!-- JS populates content here -->
+            </div>
+            <div id="diagAction" style="display: flex; flex-direction: column; gap: 10px;">
+                <a id="diagFixBtn" href="#" target="_blank" class="btn warning-btn" style="text-decoration: none; text-align: center; padding: 15px; font-weight:800;">
+                    <i class="fa-solid fa-bolt"></i> Enable API Now (Fix)
+                </a>
+                <button onclick="toggleModal('diagnosticModal', false)" class="btn" style="background: transparent; border: 1px solid rgba(255,255,255,0.1); color: var(--text-muted);">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- History Modal -->
     <div id="historyModal" class="modal hidden">
         <div class="modal-content history-modal-content">
@@ -432,11 +461,16 @@
     </div>
 
 
-        <div>Powered by <strong>Gemini AI</strong> | <span id="uiVersion" style="color: var(--neon-cyan);">v4.18.10</span></div>
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <div id="apiStatus" style="font-size: 0.75rem;">
+                <span class="status-dot status-online"></span> Gemini API: Online
+            </div>
+            <div>Powered by <strong>Gemini AI</strong> | <span id="uiVersion" style="color: var(--neon-cyan);">v4.18.12</span></div>
+        </div>
     </footer>
 
-    <script type="module" src="analyze.js?v=4.18.10"></script>
-    <script src="editor.js?v=4.18.10"></script>
+    <script type="module" src="analyze.js?v=4.18.12"></script>
+    <script src="editor.js?v=4.18.12"></script>
     <script>
         // v4.18.9: Nuclear Cache Clear
         window.hardResetApp = async function() {

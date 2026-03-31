@@ -282,7 +282,7 @@ function setupDrawingListeners() {
     });
 }
 
-// Background Removal (v4.18.8 Fix)
+// Background Removal (v4.18.12 Bulletproof CORS Fix)
 window.processRemoveBackground = async () => {
     const obj = canvas.getActiveObject();
     if (!obj || obj.type !== 'image') return alert("براہ کرم پہلے تصویر سلیکٹ کریں۔");
@@ -294,21 +294,37 @@ window.processRemoveBackground = async () => {
     }
 
     try {
-        // Step 1: Get the source URL and handle potential CORS issues
+        console.log("BG removal started for:", obj.getSrc());
         const src = obj.getSrc();
         
-        // Step 2: Try to fetch with CORS proxy or direct anonymous depending on origin
-        let response;
+        // v4.18.12: Nuclear CORS Handling
+        let blob;
         try {
-            response = await fetch(src, { mode: 'cors', cache: 'no-cache' });
-        } catch (e) {
-            console.warn("Direct CORS fetch failed, trying no-cors (might fail later)...");
-            response = await fetch(src, { mode: 'no-cors' });
+            const resp = await fetch(src, { mode: 'cors' });
+            blob = await resp.blob();
+        } catch (corsErr) {
+            console.warn("CORS fetch failed, attempting Canvas bridge fallback...", corsErr);
+            // Fallback: If image is already on canvas, try to extract its data
+            try {
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = obj.width;
+                tempCanvas.height = obj.height;
+                const ctx = tempCanvas.getContext('2d');
+                // Note: This might still fail if canvas is tainted, but it's worth a shot
+                ctx.drawImage(obj._element, 0, 0);
+                const dataURL = tempCanvas.toDataURL('image/png');
+                const resp = await fetch(dataURL);
+                blob = await resp.blob();
+            } catch (bridgeErr) {
+                throw new Error("CORS Access Denied: This image's host does not allow direct processing. Try uploading from your computer.");
+            }
+        }
+        
+        // imgly call (ensuring the library is loaded)
+        if (typeof imglyRemoveBackground === 'undefined') {
+            throw new Error("Background Removal Engine not loaded. Please refresh.");
         }
 
-        const blob = await fetch(src).then(r => r.blob()); // Standard blob fetch
-        
-        // imgly call
         const resultBlob = await imglyRemoveBackground(blob);
         const url = URL.createObjectURL(resultBlob);
         
@@ -317,7 +333,10 @@ window.processRemoveBackground = async () => {
                 left: obj.left, top: obj.top, 
                 scaleX: obj.scaleX, scaleY: obj.scaleY,
                 angle: obj.angle,
-                originX: obj.originX, originY: obj.originY
+                originX: obj.originX, originY: obj.originY,
+                cornerColor: '#22d3ee',
+                cornerStyle: 'circle',
+                transparentCorners: false
             });
             canvas.remove(obj).add(newImg).setActiveObject(newImg).renderAll();
             saveState();
@@ -326,7 +345,7 @@ window.processRemoveBackground = async () => {
 
     } catch (e) {
         console.error("BG Removal Error:", e);
-        alert("بیک گراؤنڈ ہٹانے میں مسئلہ ہوا۔ امیج کا سورس اس کی اجازت نہیں دے رہا۔");
+        alert("بیک گراؤنڈ ہٹانے میں مسئلہ ہوا۔ " + (e.message || "امیج کا سورس اس کی اجازت نہیں دے رہا۔"));
         if (modal) { modal.style.display = 'none'; modal.classList.add('hidden'); }
     }
 };

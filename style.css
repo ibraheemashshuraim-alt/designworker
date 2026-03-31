@@ -1101,6 +1101,72 @@ footer { margin-top: 40px; }
     border-bottom: 2px solid #000;
 }
 
+/* v4.18.11: Diagnostic UI & Repair System */
+.warning-btn {
+    background: linear-gradient(135deg, var(--warning-orange), #ff6d00);
+    color: #000;
+    border: none;
+    transition: 0.3s;
+    cursor: pointer;
+    border-radius: 12px;
+}
+
+.warning-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 20px rgba(255, 179, 0, 0.4);
+    background: var(--warning-orange);
+}
+
+.diag-error-box {
+    background: rgba(255, 179, 0, 0.05);
+    border: 1px solid rgba(255, 179, 0, 0.1);
+    padding: 15px;
+    border-radius: 10px;
+    font-family: monospace;
+    font-size: 0.8rem;
+    margin-top: 15px;
+    color: #ffcc80;
+    word-break: break-all;
+}
+
+/* Repair System Styles */
+.repair-btn {
+    background: rgba(157, 0, 255, 0.05);
+    border: 1px solid rgba(157, 0, 255, 0.2);
+    color: var(--neon-purple);
+    width: 100%;
+    margin-top: 10px;
+    font-size: 0.8rem;
+    padding: 10px;
+    border-radius: 10px;
+    transition: 0.3s;
+}
+
+.repair-btn:hover {
+    background: rgba(157, 0, 255, 0.1);
+    border-color: var(--neon-purple);
+    box-shadow: 0 0 15px rgba(157, 0, 255, 0.2);
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 5px;
+}
+.status-online { background: var(--success-green); box-shadow: 0 0 10px var(--success-green); }
+
+@keyframes neon-pulse-cyan {
+    0% { box-shadow: 0 0 5px rgba(0, 229, 255, 0.2); border-color: rgba(0, 229, 255, 0.2); }
+    50% { box-shadow: 0 0 20px rgba(0, 229, 255, 0.5); border-color: rgba(0, 229, 255, 0.8); }
+    100% { box-shadow: 0 0 5px rgba(0, 229, 255, 0.2); border-color: rgba(0, 229, 255, 0.2); }
+}
+
+.ai-tab-active-neon {
+    animation: neon-pulse-cyan 2s infinite ease-in-out;
+}
+
 @media print {
     /* Hide everything by default */
     body * {
