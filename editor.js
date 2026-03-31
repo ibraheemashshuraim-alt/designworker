@@ -779,4 +779,3 @@ window.loadDesignFromCode = function(rawCode) {
         alert("Load Error: " + e.message);
     }
 };
-};
