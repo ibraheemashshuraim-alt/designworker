@@ -379,15 +379,28 @@ window.generateAIDesign = async () => {
                 console.log(`AI Designer: Trying ${modelCandidate}...`);
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelCandidate}:generateContent?key=${keyToUse}`;
                 
-                // v4.11.2: ELITE CANVA-STYLE DESIGN PROMPT
+                // v4.11.3: ELITE CANVA-STYLE DESIGN PROMPT
                 let aiPrompt = `
-                    1. FOUNDATION (Background): You MUST start with a large background "Rect" (width: 800, height: 600, left:0, top:0). Fill it with a rich, modern, aesthetic hex color that fits the theme (e.g., deep blue, warm beige, sleek black). DO NOT USE plain white unless it is a minimalist theme.
-                    2. DECORATIVE ELEMENTS: You MUST add 3 to 5 background decorative shapes (e.g., large Circles or Triangles placed in corners or offset from the center). Give them interesting contrasting colors or partial opacity (e.g., opacity: 0.15) to make the background less boring.
-                    3. MAIN CONTENT CARD (Container): Create a central container "Rect" for the text (e.g., width: 500, height: 350, left: 150, top: 125, rx: 20, ry: 20). Fill it with a high-contrast color compared to the background (e.g., white if background is dark, or dark grey if background is light). 
-                    DO NOT just output 3 floating circles or plain text. You MUST output a fully composed, highly stylized, magazine-quality flyer or poster using Fabric JS JSON.
-                    
-                    Return ONLY VALID JSON containing an "objects" array with FabricJS entities. NO markdown formatting, just the raw JSON structured as:
-                    { "objects": [ { ...background... }, { ...decorations... }, { ...shadow card... }, { ...images (if any)... }, { ...heading & texts... } ] }
+                    You are an Elite Graphics Designer (expert in Canva & Photoshop aesthetics).
+                    Your task is to generate a highly sophisticated Fabric.js JSON design for: "${prompt}"
+
+                    ### WORKSPACE SPECS:
+                    - Resolution: 800x600 pixels.
+                    - Background: MUST be a full-size Rect (800x600, left:0, top:0) with a professional, aesthetic color (e.g., Deep Ocean #0f172a, Warm Beige #f5f5dc, or Modern Slate #334155).
+
+                    ### DESIGN RULES (CANVA STYLE):
+                    1. LAYERING: Background -> 2-3 Decorative semi-transparent shapes (Circles/Rects) in corners for texture (opacity: 0.1) -> Central Main Content Card.
+                    2. MAIN CONTENT CARD: A central container Rect (width: 550, height: 400, left: 125, top: 100, rx: 25, ry: 25).
+                       - Shadow: { "color": "rgba(0,0,0,0.2)", "blur": 35, "offsetX": 0, "offsetY": 15 }.
+                    3. TYPOGRAPHY: 
+                       - Heading: Large (64pt+), Bold ("fontWeight": "bold"), centered vertically/horizontally on the card.
+                       - Subheading: Medium (24pt), regular weight, perfectly aligned below.
+                    4. IMAGES: Use "https://image.pollinations.ai/prompt/[ENGLISH_KEYWORDS]?width=800&height=800&nologo=true" for any visual elements.
+                       - Always add "crossOrigin": "anonymous".
+
+                    ### OUTPUT:
+                    - Return ONLY the JSON object { "objects": [...] }.
+                    - NO markdown formatting.
                 `;
 
                 const partsArray = [{ text: aiPrompt }];
@@ -421,13 +434,15 @@ window.generateAIDesign = async () => {
                     if (codeInput) codeInput.value = cleanText;
                     success = true;
                     
+                    
                     if (scanModal) scanModal.classList.add('hidden');
                     
-                    if (window.loadDesignFromCode) {
-                        window.loadDesignFromCode(cleanText);
-                    }
+                    // v4.11.3: AUTOMATIC LOAD REMOVED BY USER REQUEST
+                    // if (window.loadDesignFromCode) {
+                    //     window.loadDesignFromCode(cleanText);
+                    // }
                     
-                    alert("AI ڈیزائن تیار ہے! آپ اسے 'AI Editor' ٹیب میں اپنی مرضی سے تبدیل کر سکتے ہیں۔");
+                    // alert("AI ڈیزائن تیار ہے! آپ اسے 'AI Editor' ٹیب میں اپنی مرضی سے تبدیل کر سکتے ہیں۔");
                     
                     // v4.9.0: Credit Deduction for non-premium users
                     if (!window.userState.isAdmin && window.userState.licenseStatus !== 'approved') {

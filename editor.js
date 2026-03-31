@@ -689,6 +689,9 @@ window.loadDesignFromCode = (rawCode) => {
         const jsonText = code.replace(/```json|```/g, '').trim();
         const designData = JSON.parse(jsonText);
         
+        // v4.11.3: Robust Loader
+        isStateChanging = true; // Disable history capture during load
+        canvas.clear();
         canvas.loadFromJSON(designData, () => {
             canvas.getObjects().forEach(obj => {
                 obj.set({
@@ -703,11 +706,23 @@ window.loadDesignFromCode = (rawCode) => {
                     transparentCorners: false,
                     cornerStyle: 'circle'
                 });
+                // Ensure proper origin for AI layouts
+                if(obj.type === 'i-text') {
+                    obj.set({ originX: 'center' });
+                    if(obj.left < 50) obj.left = 400; // Force center if malformed
+                }
             });
+            
             canvas.renderAll();
             canvas.calcOffset();
-            saveState(); // Allow undoing the entire AI design
-            console.log("AI Design Loaded v4.11.0");
+            
+            setTimeout(() => {
+                canvas.requestRenderAll();
+                isStateChanging = false; // Re-enable history
+                saveState(); // Now capture the final loaded state
+            }, 500); // Give fonts/images a split second
+            
+            console.log("AI Design Loaded v4.11.3");
         });
     } catch (e) {
         console.error("AI Load Error:", e);
