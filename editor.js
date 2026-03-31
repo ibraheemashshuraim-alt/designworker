@@ -698,7 +698,7 @@ window.onerror = function(msg, url, line) {
 };
 
 window.loadDesignFromCode = function(rawCode) {
-    uiLog("🚀 Final Loader v4.12.2 Started...");
+    uiLog("🚀 Direct Loader v4.12.3 Started...");
     if (!canvas) {
         uiLog("Canvas object missing!", 'error');
         alert("Canvas error.");
@@ -738,70 +738,84 @@ window.loadDesignFromCode = function(rawCode) {
 
         if (!Array.isArray(objs)) throw new Error("Parsed successfully but no objects array found.");
 
-        uiLog(`Found ${objs.length} elements. Sanitizing...`);
+        uiLog(`Found ${objs.length} elements. Loading objects...`);
         
-        // v4.12.2: Sanitize objects to prevent Fabric crashes
-        const sanitizedObjs = objs.map(o => {
-            if (o.left === undefined || isNaN(o.left)) o.left = 100;
-            if (o.top === undefined || isNaN(o.top)) o.top = 100;
-            if (o.width === undefined || isNaN(o.width)) o.width = 50;
-            if (o.height === undefined || isNaN(o.height)) o.height = 50;
-            o.crossOrigin = 'anonymous'; // Ensure CORS
-            return o;
-        });
-
         isStateChanging = true;
         canvas.clear();
         canvas.backgroundColor = data.background || data.backgroundColor || '#ffffff';
         
-        uiLog(`Calling fabric.enliven(${sanitizedObjs.length})...`);
-        
-        // Emergency timeout to reset if callback never fires
-        const enlivenTimeout = setTimeout(() => {
-            if (isStateChanging) {
-                uiLog("Enliven timed out! Forcing reset.", 'error');
-                isStateChanging = false;
-            }
-        }, 5000);
+        let loadedCount = 0;
+        let errorCount = 0;
 
-        fabric.util.enlivenObjects(sanitizedObjs, function(enlivenedObjects) {
-            clearTimeout(enlivenTimeout);
-            uiLog(`Callback reached: ${enlivenedObjects.length} objects.`);
-            
+        // Custom Fault-Tolerant Factory
+        objs.forEach((o, index) => {
             try {
-                enlivenedObjects.forEach(function(obj, i) {
-                    obj.set({
+                // Sanitize common issues
+                if (typeof o.left !== 'number') o.left = 100 + (index * 10);
+                if (typeof o.top !== 'number') o.top = 100 + (index * 10);
+                
+                let fabObj = null;
+                const type = (o.type || 'rect').toLowerCase();
+
+                if (type.includes('text')) {
+                    fabObj = new fabric.IText(o.text || 'Text', o);
+                } else if (type === 'rect') {
+                    fabObj = new fabric.Rect(o);
+                } else if (type === 'circle') {
+                    fabObj = new fabric.Circle(o);
+                } else if (type === 'triangle') {
+                    fabObj = new fabric.Triangle(o);
+                } else if (type === 'ellipse') {
+                    fabObj = new fabric.Ellipse(o);
+                } else if (type === 'image') {
+                    fabric.Image.fromURL(o.src, function(img) {
+                        img.set(o);
+                        canvas.add(img);
+                        loadedCount++;
+                        checkFinished();
+                    }, { crossOrigin: 'anonymous' });
+                    return; // Async handled
+                } else {
+                    // Generic fallback for unknown types
+                    uiLog(`Unknown type: ${type}, trying generic...`, 'warn');
+                    const Klass = fabric.util.getKlass(type);
+                    if (Klass) fabObj = new Klass(o);
+                }
+
+                if (fabObj) {
+                    fabObj.set({
                         selectable: true,
                         evented: true,
-                        hasControls: true,
                         cornerColor: 'var(--neon-cyan)',
                         transparentCorners: false,
                         cornerStyle: 'circle'
                     });
-                    if (obj.type && obj.type.includes('text')) {
-                        obj.set({ originX: 'center', originY: 'center' });
-                    }
-                    canvas.add(obj);
-                });
-                
-                canvas.renderAll();
-                canvas.calcOffset();
-                
-                setTimeout(() => {
-                    canvas.requestRenderAll();
-                    isStateChanging = false;
-                    saveState();
-                    uiLog("✅ LOAD SUCCESSFUL");
-                }, 500);
-            } catch (innerE) {
-                uiLog("Callback Inner Error: " + innerE.message, 'error');
-                isStateChanging = false;
+                    canvas.add(fabObj);
+                    loadedCount++;
+                }
+
+            } catch (objE) {
+                errorCount++;
+                uiLog(`Obj ${index} fail: ${objE.message}`, 'error');
             }
         });
 
+        function checkFinished() {
+            canvas.renderAll();
+            canvas.calcOffset();
+            if (loadedCount + errorCount >= objs.length) {
+                isStateChanging = false;
+                saveState();
+                uiLog(`✅ LOAD COMPLETE: ${loadedCount} OK, ${errorCount} Fail`);
+            }
+        }
+
+        // Final sync check
+        setTimeout(checkFinished, 1000);
+
     } catch (e) {
         isStateChanging = false;
-        uiLog("LOAD ERROR: " + e.message, 'error');
-        alert("Load Error: " + e.message);
+        uiLog("LOAD FATAL: " + e.message, 'error');
+        alert("Fatal Error: " + e.message);
     }
 };
