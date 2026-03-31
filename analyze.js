@@ -286,7 +286,7 @@ window.deleteHistoryItem = async (docId) => {
 };
 
 // --- VERSION TAG ---
-window.DESIGN_VERSION = "4.10.0";
+window.DESIGN_VERSION = "4.16.0";
 console.log("DesignCheck v4.10.0 Final Pro Stability Loaded");
 
 // v4.9.6: Export Local Module State to Global Window (CRITICAL FIX)

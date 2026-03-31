@@ -694,13 +694,6 @@ window.loadDesignFromCode = async function(rawCode) {
     
     if (!code || code.includes("انتظر")) return;
 
-    // Show processing modal for Magic BG removal
-    const bgModal = document.getElementById('bgProcessingModal');
-    if (bgModal) {
-        bgModal.classList.remove('hidden');
-        bgModal.style.display = 'flex';
-    }
-
     try {
         let jsonText = code.trim();
         jsonText = jsonText.replace(/```json/g, '').replace(/```/g, '').trim();
@@ -729,14 +722,14 @@ window.loadDesignFromCode = async function(rawCode) {
         canvas.clear();
         canvas.backgroundColor = data.background || data.backgroundColor || '#ffffff';
         
+        // v4.16.0: BACK TO SNAPPY LOADER (NO AUTO-BG)
         let totalItems = objs.length;
         let processedItems = 0;
 
-        for (let i = 0; i < objs.length; i++) {
-            const o = objs[i];
+        objs.forEach((o, index) => {
             try {
-                if (typeof o.left !== 'number') o.left = 100 + (i * 20);
-                if (typeof o.top !== 'number') o.top = 100 + (i * 20);
+                if (typeof o.left !== 'number') o.left = 100 + (index * 20);
+                if (typeof o.top !== 'number') o.top = 100 + (index * 20);
                 
                 const type = (o.type || 'rect').toLowerCase();
 
@@ -755,37 +748,18 @@ window.loadDesignFromCode = async function(rawCode) {
                     processedItems++;
                 } 
                 else if (type === 'image' && o.src) {
-                    // MAGIC: Auto Background Removal for AI Images
-                    try {
-                        const blob = await imglyRemoveBackground(o.src);
-                        const reader = new FileReader();
-                        await new Promise((resolve) => {
-                            reader.onload = async (e) => {
-                                fabric.Image.fromURL(e.target.result, (img) => {
-                                    img.set(o);
-                                    applyDefaultStyles(img);
-                                    canvas.add(img);
-                                    // Move to Front if it's a logo style keyword
-                                    if (o.src.toLowerCase().includes('logo') || o.src.toLowerCase().includes('burger')) {
-                                        canvas.bringToFront(img);
-                                    }
-                                    resolve();
-                                }, { crossOrigin: 'anonymous' });
-                            };
-                            reader.readAsDataURL(blob);
-                        });
-                    } catch (bgE) {
-                        console.warn("Auto BG Removal failed, loading as-is:", bgE);
-                        await new Promise((resolve) => {
-                            fabric.Image.fromURL(o.src, (img) => {
-                                img.set(o);
-                                applyDefaultStyles(img);
-                                canvas.add(img);
-                                resolve();
-                            }, { crossOrigin: 'anonymous' });
-                        });
-                    }
-                    processedItems++;
+                    fabric.Image.fromURL(o.src, (img) => {
+                        img.set(o);
+                        applyDefaultStyles(img);
+                        canvas.add(img);
+                        // Ensure images are behind text but on top of background
+                        if (o.src.toLowerCase().includes('logo') || o.src.toLowerCase().includes('burger')) {
+                            canvas.bringToFront(img);
+                        }
+                        processedItems++;
+                        if (processedItems >= totalItems) finalizeLoad();
+                        canvas.renderAll();
+                    }, { crossOrigin: 'anonymous' });
                 } else {
                     const Klass = fabric.util.getKlass(type);
                     if (Klass) {
@@ -796,13 +770,12 @@ window.loadDesignFromCode = async function(rawCode) {
                     processedItems++;
                 }
                 
-                canvas.renderAll();
                 if (processedItems >= totalItems) finalizeLoad();
             } catch (e) {
                 console.error("Obj load fail:", e);
                 processedItems++;
             }
-        }
+        });
 
         function applyDefaultStyles(obj) {
             obj.set({
@@ -818,24 +791,15 @@ window.loadDesignFromCode = async function(rawCode) {
         }
 
         function finalizeLoad() {
-            if (bgModal) {
-                bgModal.classList.add('hidden');
-                bgModal.style.display = 'none';
-            }
             canvas.renderAll();
             canvas.calcOffset();
             isStateChanging = false;
             saveState();
         }
 
-        // Safety timeout
-        setTimeout(finalizeLoad, 10000);
+        setTimeout(finalizeLoad, 3000);
 
     } catch (e) {
-        if (bgModal) {
-            bgModal.classList.add('hidden');
-            bgModal.style.display = 'none';
-        }
         isStateChanging = false;
         console.error("LOAD FATAL:", e);
     }
