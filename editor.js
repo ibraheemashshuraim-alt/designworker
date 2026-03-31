@@ -682,16 +682,32 @@ window.exportCanvas = () => {
 
 window.loadDesignFromCode = (rawCode) => {
     if (!canvas) return;
-    const code = rawCode || document.getElementById('aiDesignCodeInput')?.value?.trim();
-    if (!code) return;
+    const codeBox = document.getElementById('aiDesignCodeInput');
+    const code = rawCode || codeBox?.value?.trim();
+    if (!code) {
+        alert("براہ کرم پہلے کچھ کوڈ جنریٹ کریں یا پیسٹ کریں۔");
+        return;
+    }
 
     try {
-        const jsonText = code.replace(/```json|```/g, '').trim();
+        // v4.11.4: More Robust JSON Cleaning
+        let jsonText = code.trim();
+        // Remove markdown wrappers if present
+        jsonText = jsonText.replace(/```json/g, '').replace(/```/g, '').trim();
+        
+        // Find the first '{' and last '}' to strip any extra text Gemini might have added
+        const start = jsonText.indexOf('{');
+        const end = jsonText.lastIndexOf('}');
+        if (start !== -1 && end !== -1) {
+            jsonText = jsonText.substring(start, end + 1);
+        }
+
         const designData = JSON.parse(jsonText);
         
-        // v4.11.3: Robust Loader
-        isStateChanging = true; // Disable history capture during load
+        // v4.11.3: Robust Loader logic
+        isStateChanging = true;
         canvas.clear();
+        
         canvas.loadFromJSON(designData, () => {
             canvas.getObjects().forEach(obj => {
                 obj.set({
@@ -706,10 +722,9 @@ window.loadDesignFromCode = (rawCode) => {
                     transparentCorners: false,
                     cornerStyle: 'circle'
                 });
-                // Ensure proper origin for AI layouts
                 if(obj.type === 'i-text') {
                     obj.set({ originX: 'center' });
-                    if(obj.left < 50) obj.left = 400; // Force center if malformed
+                    if(obj.left < 50) obj.left = 400;
                 }
             });
             
@@ -718,13 +733,15 @@ window.loadDesignFromCode = (rawCode) => {
             
             setTimeout(() => {
                 canvas.requestRenderAll();
-                isStateChanging = false; // Re-enable history
-                saveState(); // Now capture the final loaded state
-            }, 500); // Give fonts/images a split second
+                isStateChanging = false;
+                saveState();
+                alert("ڈیزائن کامیابی سے کینوس پر لوڈ کر دیا گیا ہے!");
+            }, 500);
             
             console.log("AI Design Loaded v4.11.3");
         });
     } catch (e) {
         console.error("AI Load Error:", e);
+        alert("کوڈ لوڈ کرنے میں مسئلہ ہوا۔ براہ کرم چیک کریں کہ کیا کوڈ درست فارمیٹ میں ہے۔ (Error: " + e.message + ")");
     }
 };
