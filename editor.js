@@ -1,4 +1,4 @@
-// ================ EDITOR LOGIC (v4.18.10 - EXTREME ARCHITECT) ================
+// ================ EDITOR LOGIC (v4.18.13 - EXTREME ARCHITECT) ================
 
 // v4.9.8: GLOBAL NAVIGATION
 window.switchTab = (tab) => {

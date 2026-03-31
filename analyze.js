@@ -286,8 +286,8 @@ window.deleteHistoryItem = async (docId) => {
 };
 
 // --- VERSION TAG ---
-window.DESIGN_VERSION = "4.18.12";
-console.log("DesignCheck Engine: v4.18.12 (Bulletproof Architect) Loaded");
+window.DESIGN_VERSION = "4.18.13";
+console.log("DesignCheck Engine: v4.18.13 (Bulletproof Auth Architect) Loaded");
 
 // v4.18.12: Gemini API Diagnostic Manager
 window.showAiDiagnosticModal = (message, errorRaw) => {
@@ -855,6 +855,51 @@ window.saveApiKey = () => {
         setTimeout(() => {
             elements.saveStatusMsg.style.display = 'none';
         }, 3000);
+        
+        // v4.18.13: Instant verification upon saving
+        verifyApiKey();
+    }
+};
+
+window.verifyApiKey = async () => {
+    const key = elements.apiKeyInput?.value.trim() || getApiKey();
+    const statusEl = document.getElementById('apiVerifyStatus');
+    if (!statusEl) return;
+    
+    if (!key) {
+        statusEl.innerHTML = "<span style='color:var(--warning-orange);'>براہ کرم پہلے API Key درج کریں۔</span>";
+        statusEl.style.display = 'block';
+        return;
+    }
+
+    statusEl.innerHTML = "<span style='color:var(--warning-orange);'><i class='fa-solid fa-spinner fa-spin'></i> کنکشن ٹیسٹ ہو رہا ہے...</span>";
+    statusEl.style.display = 'block';
+
+    try {
+        const listUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${key}`;
+        const res = await fetch(listUrl);
+        const data = await res.json();
+
+        if (res.ok && data.models && data.models.length > 0) {
+            statusEl.innerHTML = "<span style='color:var(--success-green);'><i class='fa-solid fa-check-circle'></i> کنکشن کامیاب! API ایکٹیو ہے۔</span>";
+        } else {
+            throw new Error(data.error?.message || "Unknown Error");
+        }
+    } catch (e) {
+        console.error("API Verifier Error:", e);
+        const errLower = e.message.toLowerCase();
+        
+        if (errLower.includes("blocked") || errLower.includes("api restrict")) {
+            statusEl.innerHTML = "<span style='color:#ff5252;'><i class='fa-solid fa-ban'></i> <strong style='color:#fff;'>BLOCKED:</strong> آپ کی API Key پر پابندی (Restrictions) لگی ہے۔ گوگل کنسول دیکھیں۔</span>";
+            window.showAiDiagnosticModal(e.message, e.message); // Show the guided modal immediately
+        } else if (errLower.includes("403") || errLower.includes("key not valid")) {
+            statusEl.innerHTML = "<span style='color:#ff5252;'><i class='fa-solid fa-xmark'></i> <strong style='color:#fff;'>INVALID:</strong> یہ API Key غلط ہے۔</span>";
+        } else if (errLower.includes("429") || errLower.includes("quota")) {
+            statusEl.innerHTML = "<span style='color:#ff5252;'><i class='fa-solid fa-battery-empty'></i> <strong style='color:#fff;'>QUOTA EXCEEDED:</strong> آپ کی فری لمیٹ ختم ہو چکی ہے۔</span>";
+        } else {
+            statusEl.innerHTML = `<span style='color:#ff5252;'><i class='fa-solid fa-triangle-exclamation'></i> مسلہ: API کام نہیں کر رہی۔</span>`;
+            window.showAiDiagnosticModal(e.message, e.message);
+        }
     }
 };
 

@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DesignCheck - Gemini Architect (v4.18.12)</title>
+    <title>DesignCheck - Gemini Architect (v4.18.13)</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="style.css?v=4.18.12">
+    <link rel="stylesheet" href="style.css?v=4.18.13">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
@@ -73,8 +73,14 @@
                     <div class="modal-section">
                         <h4><i class="fa-solid fa-key" style="color:var(--neon-cyan);"></i> API Key سیٹنگز</h4>
                         <input type="password" id="apiKeyInput" class="custom-input" placeholder="AIzaSy...">
-                        <button onclick="saveApiKey()" class="btn secondary-btn" style="width: 100%; margin-top:5px;">سیو کریں</button>
+                        <div style="display: flex; gap: 5px; margin-top:5px;">
+                            <button onclick="saveApiKey()" class="btn secondary-btn" style="flex: 1; padding: 10px;">سیو کریں</button>
+                            <button onclick="verifyApiKey()" class="btn warning-btn" style="flex: 1; padding: 10px; font-size: 0.8rem; background: rgba(0,229,255,0.1); border: 1px solid var(--neon-cyan); color: var(--neon-cyan);">
+                                <i class="fa-solid fa-satellite-dish"></i> ٹیسٹ کریں
+                            </button>
+                        </div>
                         <p id="saveStatusMsg" style="color: var(--success-green); font-size: 0.7rem; margin-top: 5px; display: none;">محفوظ کر لی گئی!</p>
+                        <p id="apiVerifyStatus" style="font-size: 0.7rem; margin-top: 5px; display: none;"></p>
                     </div>
 
                     <div class="modal-section">
@@ -465,12 +471,12 @@
             <div id="apiStatus" style="font-size: 0.75rem;">
                 <span class="status-dot status-online"></span> Gemini API: Online
             </div>
-            <div>Powered by <strong>Gemini AI</strong> | <span id="uiVersion" style="color: var(--neon-cyan);">v4.18.12</span></div>
+            <div>Powered by <strong>Gemini AI</strong> | <span id="uiVersion" style="color: var(--neon-cyan);">v4.18.13</span></div>
         </div>
     </footer>
 
-    <script type="module" src="analyze.js?v=4.18.12"></script>
-    <script src="editor.js?v=4.18.12"></script>
+    <script type="module" src="analyze.js?v=4.18.13"></script>
+    <script src="editor.js?v=4.18.13"></script>
     <script>
         // v4.18.9: Nuclear Cache Clear
         window.hardResetApp = async function() {
