@@ -379,36 +379,33 @@ window.generateAIDesign = async () => {
                 console.log(`AI Designer: Trying ${modelCandidate}...`);
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelCandidate}:generateContent?key=${keyToUse}`;
                 
-                // v4.13.0: ELITE CANVA-STYLE DESIGN PROMPT (ULTIMATE UPGRADE)
+                // v4.14.0: ELITE CREATIVE ADVISOR PROMPT (PREMIUM BRANDING)
                 let aiPrompt = `
-                    You are a World-Class Graphics Designer (Senior Creative Director at a top agency).
-                    Goal: Generate a stunning, premium, high-converting Fabric.js JSON design for: "${prompt}"
+                    You are a High-End Creative Director (Expert in Figma, Canva & Brand Identity).
+                    Objective: Generate a stunning, world-class Fabric.js JSON design for: "${prompt}"
 
-                    ### WORKSPACE SPECS:
-                    - 800x600 pixels (Landscape).
-                    - ALL objects must stay within coordinates [0,0] to [800,600].
-
-                    ### VISUAL DESIGN RULES:
-                    1. BACKGROUND: Use a lush, deep background. DON'T just use #ffffff. Use #0f172a (Navy), #1e1b4b (Indigo), or #450a0a (Deep Wine).
-                    2. DECORATIVE ELEMENTS: Add 3-5 subtle decorative shapes (circles/polygons) with low opacity (0.05 - 0.15) to create depth.
-                    3. MAIN CONTENT: Everything must be perfectly centered or follow the Golden Ratio / Rule of Thirds.
-                    4. CONTENT CARD: A large, rounded-corner Rect (width: 500-600, height: 400-500, rx: 30, ry: 30) that acts as the glassmorphism container.
-                       - Fill: "rgba(255, 255, 255, 0.05)"
-                       - Stroke: "rgba(255, 255, 255, 0.1)"
-                       - Shadow: { "color": "rgba(0,0,0,0.5)", "blur": 40, "offsetX": 0, "offsetY": 20 }
-                    5. TYPOGRAPHY (CRITICAL):
-                       - HEADING: Max 80pt, "fontWeight": "bold", "fill": "#ffffff", "fontFamily": "Outfit".
-                       - SUBHEADING: 20-30pt, "fill": "#cbd5e1" (Muted Slate), spaced perfectly below.
-                       - Use Urdu (Noto Nastaliq Urdu) if the user asks in Urdu.
-                    6. IMAGES: Search keywords should be professional (e.g. 'high-end coffee logo', 'minimalist fitness vector').
-                       - Use: https://image.pollinations.ai/prompt/[KEYWORDS]?width=512&height=512&nologo=true
+                    ### BRANDING & COMPOSITION RULES:
+                    1. PALETTE: Use a cohesive, modern palette. 
+                       - Dark Premium: Navy #0f172a / Gold #fbbf24 / White #f8fafc.
+                       - Vibrant Tech: Indigo #4f46e5 / Cyan #06b6d4 / White #ffffff.
+                       - Earthy Minimal: Charcoal #334155 / Sage #d1d5db / Cream #f5f5dc.
+                    2. LAYERING (THE DEPTH RULE):
+                       - BASE: Large Rect (800x600, top:0, left:0) for background.
+                       - TEXTURE: 2-4 semi-transparent "faded" circles/rects (opacity 0.05-0.1) in corners to create visual interest.
+                       - FOCUS CARD: A large, rounded Rect (rx/ry: 40) centered, serving as the main content area (e.g., glassmorphism style with stroke).
+                    3. TYPOGRAPHY:
+                       - HEADING: Large (72pt+), Extra Bold, centered.
+                       - BODY/TAGLINE: 22-26pt, Light weight, placed with generous spacing below the heading.
+                       - Support Urdu (Noto Nastaliq Urdu) if context allows.
+                    4. VISUALS:
+                       - Keywords should be specific: "High resolution minimalist logo of [object]", "Abstract vector background pattern".
+                       - Image URL: https://image.pollinations.ai/prompt/[KEYWORDS]?width=512&height=512&nologo=true
                        - MUST have "crossOrigin": "anonymous".
-                    7. GROUPING: Logical separation of objects.
+                    5. PROPERTIES: Use "shadow" (blur: 30, color: "rgba(0,0,0,0.3)"), "stroke", and "strokeWidth".
 
-                    ### OUTPUT FORMAT:
-                    - Return ONLY a valid JSON { "objects": [...] }.
-                    - NO markdown, NO text before/after.
-                    - Objects must be flat in the array.
+                    ### JSON OUTPUT:
+                    - Return ONLY { "objects": [...] }.
+                    - No preamble, no markdown.
                 `;
 
                 const partsArray = [{ text: aiPrompt }];
@@ -449,12 +446,12 @@ window.generateAIDesign = async () => {
                         window.switchTab('editor');
                     }
                     
-                    // Small delay to ensure canvas is ready after tab switch
+                    // v4.14.0: INSTANT TAB SWITCH & LOAD
                     setTimeout(() => {
                         if (window.loadDesignFromCode) {
                             window.loadDesignFromCode(cleanText);
                         }
-                    }, 500);
+                    }, 50); // Reduced from 500ms for speed
                     
                     // v4.9.0: Credit Deduction for non-premium users
                     if (!window.userState.isAdmin && window.userState.licenseStatus !== 'approved') {

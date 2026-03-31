@@ -722,46 +722,65 @@ window.loadDesignFromCode = async function(rawCode) {
         canvas.clear();
         canvas.backgroundColor = data.background || data.backgroundColor || '#ffffff';
         
-        // v4.13.0: Async Pre-loading Factory
-        const loadPromises = objs.map((o, index) => {
-            return new Promise((resolve) => {
-                try {
-                    if (typeof o.left !== 'number') o.left = 100 + (index * 10);
-                    if (typeof o.top !== 'number') o.top = 100 + (index * 10);
-                    
-                    const type = (o.type || 'rect').toLowerCase();
+        // v4.14.0: SNAPPY HYBRID LOADER (TEXT/SHAPES INSTANT, IMAGES LAZY)
+        let totalItems = objs.length;
+        let loadedItems = 0;
 
+        objs.forEach((o, index) => {
+            try {
+                if (typeof o.left !== 'number') o.left = 100 + (index * 10);
+                if (typeof o.top !== 'number') o.top = 100 + (index * 10);
+                
+                const type = (o.type || 'rect').toLowerCase();
+
+                // 1. Shapes & Text (Sychronous Add)
+                if (type.includes('text') || type === 'rect' || type === 'circle' || type === 'triangle' || type === 'ellipse') {
+                    let fabObj = null;
                     if (type.includes('text')) {
-                        const t = new fabric.IText(o.text || 'Text', o);
-                        resolve(t);
+                        fabObj = new fabric.IText(o.text || 'Text', o);
                     } else if (type === 'rect') {
-                        resolve(new fabric.Rect(o));
+                        fabObj = new fabric.Rect(o);
                     } else if (type === 'circle') {
-                        resolve(new fabric.Circle(o));
+                        fabObj = new fabric.Circle(o);
                     } else if (type === 'triangle') {
-                        resolve(new fabric.Triangle(o));
+                        fabObj = new fabric.Triangle(o);
                     } else if (type === 'ellipse') {
-                        resolve(new fabric.Ellipse(o));
-                    } else if (type === 'image' && o.src) {
-                        fabric.Image.fromURL(o.src, (img) => {
-                            img.set(o);
-                            resolve(img);
-                        }, { crossOrigin: 'anonymous' });
-                    } else {
-                        const Klass = fabric.util.getKlass(type);
-                        resolve(Klass ? new Klass(o) : null);
+                        fabObj = new fabric.Ellipse(o);
                     }
-                } catch (e) {
-                    console.error("Obj load fail:", e);
-                    resolve(null);
+                    
+                    if (fabObj) {
+                        applyDefaultStyles(fabObj);
+                        canvas.add(fabObj);
+                        canvas.renderAll();
+                        loadedItems++;
+                    }
+                } 
+                // 2. Images (Asynchronous Add)
+                else if (type === 'image' && o.src) {
+                    fabric.Image.fromURL(o.src, (img) => {
+                        img.set(o);
+                        applyDefaultStyles(img);
+                        canvas.add(img);
+                        canvas.renderAll();
+                        loadedItems++;
+                        if (loadedItems >= totalItems) finalizeLoad();
+                    }, { crossOrigin: 'anonymous' });
+                } else {
+                    const Klass = fabric.util.getKlass(type);
+                    if (Klass) {
+                        const generic = new Klass(o);
+                        applyDefaultStyles(generic);
+                        canvas.add(generic);
+                        loadedItems++;
+                    }
                 }
-            });
+            } catch (e) {
+                console.error("Obj load fail:", e);
+                loadedItems++;
+            }
         });
 
-        const results = await Promise.all(loadPromises);
-        const validObjs = results.filter(obj => obj !== null);
-
-        validObjs.forEach(obj => {
+        function applyDefaultStyles(obj) {
             obj.set({
                 selectable: true,
                 evented: true,
@@ -772,27 +791,18 @@ window.loadDesignFromCode = async function(rawCode) {
             if (obj.type && obj.type.includes('text')) {
                 obj.set({ originX: 'center', originY: 'center' });
             }
-            canvas.add(obj);
-        });
-
-        // v4.13.0: Optional Auto-grouping for complex designs
-        if (validObjs.length > 3) {
-            const activeGroup = new fabric.ActiveSelection(canvas.getObjects(), {
-                canvas: canvas
-            });
-            canvas.setActiveObject(activeGroup);
-            // We don't permanently group yet, just select them
         }
 
-        canvas.renderAll();
-        canvas.calcOffset();
-        
-        setTimeout(() => {
+        function finalizeLoad() {
             canvas.renderAll();
+            canvas.calcOffset();
             isStateChanging = false;
             saveState();
-            console.log(`✅ LOAD SUCCESSFUL: ${validObjs.length} elements.`);
-        }, 500);
+            console.log(`✅ ALL ELEMENTS LOADED (${loadedItems}/${totalItems})`);
+        }
+
+        // Failsafe if images take too long
+        setTimeout(finalizeLoad, 3000);
 
     } catch (e) {
         isStateChanging = false;
