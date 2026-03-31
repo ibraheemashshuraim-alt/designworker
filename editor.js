@@ -86,7 +86,9 @@ function initEditor() {
             canvas.on('path:created', () => saveState());
             
             // Initial state
-            saveState();
+            const initialState = JSON.stringify(canvas.toDatalessJSON());
+            historyUndo = [initialState];
+            updateUndoRedoUI();
         }
         
         populateFontList();
@@ -682,36 +684,56 @@ window.exportCanvas = () => {
 
 window.loadDesignFromCode = (rawCode) => {
     if (!canvas) {
-        console.error("Canvas not initialized.");
+        alert("کینوس (Canvas) ابھی تیار نہیں ہے۔ براہ کرم صفحہ ریفریش کریں۔");
         return;
     }
+    
+    // v4.11.6: Emergency State Reset
+    isStateChanging = false; 
+
     const codeBox = document.getElementById('aiDesignCodeInput');
     const code = rawCode || codeBox?.value?.trim();
     
-    if (!code || code === "AI ڈیزائن کر رہا ہے انتظار کریں...") {
-        alert("براہ کرم پہلے کچھ کوڈ جنریٹ کریں یا پیسٹ کریں۔");
+    if (!code || code.includes("انتظار کریں")) {
+        alert("براہ کرم پہلے کچھ ڈیزائن جنریٹ کریں۔ (Please generate a design first)");
         return;
     }
 
-    console.log("Loading design from code...");
+    console.log("Robust Loader v4.11.6 Started...");
     
     try {
-        isStateChanging = true;
-        
         let jsonText = code.trim();
-        // Remove markdown tags
+        // Remove common AI formatting debris
         jsonText = jsonText.replace(/```json/g, '').replace(/```/g, '').trim();
         
         const start = jsonText.indexOf('{');
         const end = jsonText.lastIndexOf('}');
-        if (start === -1 || end === -1) throw new Error("درست JSON فارمیٹ نہیں ملا۔");
         
-        jsonText = jsonText.substring(start, end + 1);
+        if (start === -1 || end === -1) {
+             // Fallback for array-only output
+             const arrStart = jsonText.indexOf('[');
+             const arrEnd = jsonText.lastIndexOf(']');
+             if (arrStart !== -1 && arrEnd !== -1) {
+                 jsonText = `{ "objects": ${jsonText.substring(arrStart, arrEnd + 1)} }`;
+             } else {
+                 throw new Error("ڈیزائن کوڈ غلط فارمیٹ میں ہے۔ (Invalid JSON Format)");
+             }
+        } else {
+            jsonText = jsonText.substring(start, end + 1);
+        }
+        
         const designData = JSON.parse(jsonText);
         
+        if (!designData.objects || !Array.isArray(designData.objects)) {
+            throw new Error("ڈیزائن میں کوئی آبجیکٹ نہیں ملا۔ (No objects found)");
+        }
+
+        isStateChanging = true;
         canvas.clear();
-        canvas.backgroundColor = '#ffffff'; // Default reset
+        canvas.backgroundColor = designData.background || designData.backgroundColor || '#ffffff';
         
+        console.log(`Loading ${designData.objects.length} objects...`);
+
         canvas.loadFromJSON(designData, () => {
             try {
                 canvas.getObjects().forEach(obj => {
@@ -727,7 +749,7 @@ window.loadDesignFromCode = (rawCode) => {
                         cornerStyle: 'circle',
                         crossOrigin: 'anonymous'
                     });
-                    if (obj.type === 'i-text') {
+                    if (obj.type === 'i-text' || obj.type === 'text') {
                         obj.set({ originX: 'center', originY: 'center' });
                     }
                 });
@@ -735,21 +757,21 @@ window.loadDesignFromCode = (rawCode) => {
                 canvas.renderAll();
                 canvas.calcOffset();
                 
-                // Final render loop
                 setTimeout(() => {
                     canvas.requestRenderAll();
                     isStateChanging = false;
                     saveState();
-                    alert("ڈیزائن کامیابی سے لوڈ ہو گیا ہے!");
+                    alert(`کامیاب! ${designData.objects.length} ایلیمنٹس کینوس پر لوڈ کر دیے گئے ہیں۔`);
                 }, 800);
-            } catch (err) {
-                console.error("Callback error:", err);
+            } catch (inner) {
+                console.error("Callback Error:", inner);
                 isStateChanging = false;
             }
         });
+
     } catch (e) {
         isStateChanging = false;
         console.error("AI Load Error:", e);
-        alert("کوڈ لوڈ کرنے میں مسئلہ ہوا۔ (Error: " + e.message + ")");
+        alert("ڈیزائن لوڈ کرنے میں مسئلہ ہوا: " + e.message);
     }
 };
