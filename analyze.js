@@ -286,8 +286,8 @@ window.deleteHistoryItem = async (docId) => {
 };
 
 // --- VERSION TAG ---
-window.DESIGN_VERSION = "4.18.14";
-console.log("DesignCheck Engine: v4.18.14 (Bug Fix Build) Loaded");
+window.DESIGN_VERSION = "4.18.15";
+console.log("DesignCheck Engine: v4.18.15 (Dual Provider Analysis) Loaded");
 
 // v4.18.12: Gemini API Diagnostic Manager
 window.showAiDiagnosticModal = (message, errorRaw) => {
@@ -1105,10 +1105,10 @@ async function compressImage(base64Str, maxWidth = 500, maxHeight = 500) {
     });
 }
 
-// ================ AI ANALYSIS (v3.7) ================
+// ================ AI ANALYSIS (v4.18.15 - Dual Provider) ================
 window.runAnalysis = async () => {
     console.time("AnalysisPhase");
-    console.log("v4.1.0: Analysis started...");
+    console.log("v4.18.15: Analysis started (Dual Provider)...");
 
     if (!currentImageBase64) {
         alert("پہلے ڈیزائن اپلوڈ کریں۔");
@@ -1131,7 +1131,7 @@ window.runAnalysis = async () => {
         if (runBtn) runBtn.disabled = false;
         console.warn("Safety Kill: Analysis forced closed due to timeout.");
         alert("تجزیہ بہت دیر لے رہا ہے۔ براہ کرم انٹرنیٹ چیک کریں اور دوبارہ کوشش کریں۔");
-    }, 15000);
+    }, 30000);
 
     try {
         const typedKey = elements.apiKeyInput ? elements.apiKeyInput.value.trim() : "";
@@ -1142,7 +1142,7 @@ window.runAnalysis = async () => {
             isDefaultKey = true;
         }
 
-        console.log("v4.1.0: Processing (Key: " + (typedKey ? "Typed" : (isDefaultKey ? "Default" : "Saved")) + ")");
+        console.log("v4.18.15: Processing (Key: " + (typedKey ? "Typed" : (isDefaultKey ? "Default" : "Saved")) + ")");
         const compressedBase64 = await compressImage(currentImageBase64);
         const mimeType = "image/jpeg";
         const base64Data = compressedBase64.split(',')[1];
@@ -1178,6 +1178,59 @@ window.runAnalysis = async () => {
             "pricing" میں روپوں (PKR) کا ذکر کریں (اگر ضرورت ہو تو USD بھی لکھ سکتے ہیں)۔
         `;
 
+        // ===== v4.18.15: CHECK SELECTED PROVIDER =====
+        const selectedProvider = window.getSelectedProvider?.() || 'gemini';
+        const grokKey = getGrokApiKey();
+
+        // ===== GROK (xAI) VISION PATH =====
+        if (selectedProvider === 'grok') {
+            if (!grokKey) {
+                if (scanModal) scanModal.classList.add('hidden');
+                if (runBtn) runBtn.disabled = false;
+                clearTimeout(killSwitch);
+                return alert("آپ نے Grok provider select کیا ہے لیکن Grok API Key سیو نہیں کی ہے۔\nبراہ کرم پروفائل > Grok Key درج کر کے سیو کریں۔");
+            }
+
+            console.log("v4.18.15: Using Grok Vision for analysis...");
+            if (scanStatusText) scanStatusText.innerText = "Grok AI ڈیزائن کا جائزہ لے رہا ہے...";
+
+            const grokRes = await fetch('https://api.x.ai/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${grokKey}`
+                },
+                body: JSON.stringify({
+                    model: 'grok-2-vision-latest',
+                    messages: [{
+                        role: 'user',
+                        content: [
+                            { type: 'image_url', image_url: { url: compressedBase64, detail: 'high' } },
+                            { type: 'text', text: prompt }
+                        ]
+                    }],
+                    response_format: { type: 'json_object' },
+                    temperature: 0.3
+                })
+            });
+
+            const grokData = await grokRes.json();
+            if (grokData.error) throw new Error(`Grok Error: ${grokData.error.message}`);
+            const grokText = grokData.choices?.[0]?.message?.content;
+            if (!grokText) throw new Error("Grok نے کوئی جواب نہیں دیا۔");
+            const resultData = JSON.parse(grokText.replace(/```json|```/g, '').trim());
+
+            if (scanStatusText) scanStatusText.innerText = "نتائج دکھائے جا رہے ہیں...";
+            displayResults(resultData);
+            if (userState.loggedIn) saveAnalysisToHistory(resultData, compressedBase64);
+            if (userState.loggedIn && !userState.isAdmin && userState.licenseStatus !== 'approved') {
+                deductCredit().catch(e => console.log("Credit bg deduction."));
+            }
+            console.log("v4.18.15: Grok Analysis SUCCESS.");
+            return;
+        }
+
+        // ===== GEMINI PATH (default) =====
         const safetySettings = [
             { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
             { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
@@ -1250,9 +1303,18 @@ window.runAnalysis = async () => {
         }
 
         if (!response?.ok) {
+            const errLower = (lastErrorMsg || "").toLowerCase();
+            // v4.18.15: Diagnostic Modal for blocked errors
+            if (errLower.includes("blocked") || errLower.includes("not been used") || errLower.includes("disabled") || errLower.includes("generativeservice")) {
+                if (scanModal) scanModal.classList.add('hidden');
+                if (runBtn) runBtn.disabled = false;
+                clearTimeout(killSwitch);
+                window.showAiDiagnosticModal(lastErrorMsg, lastErrorMsg);
+                return;
+            }
             if (quotaHit || (lastErrorMsg && (lastErrorMsg.includes("quota") || lastErrorMsg.includes("429")))) {
                 const source = isDefaultKey ? "سسٹم کی لمیٹ ختم ہے" : `آپ کی Key (${keyToUse.substring(0, 6)}...${keyToUse.substring(keyToUse.length - 4)}) کی لمیٹ ختم ہے`;
-                throw new Error(`فری لمیٹ مکمل ہے (${source})۔\n\n[Google Error: ${lastErrorMsg}]\n\n(حل: موبائل ڈیٹا یا VPN ٹرائی کریں)`);
+                throw new Error(`فری لمیٹ مکمل ہے (${source})۔\n\n[Google Error: ${lastErrorMsg}]\n\n💡 حل: Grok provider switch کریں یا VPN ٹرائی کریں`);
             }
             throw new Error(`ٹیکنیکل ایرر (${modelToUse}): ${lastErrorMsg || "رابطہ سست ہے"}`);
         }
@@ -1276,7 +1338,13 @@ window.runAnalysis = async () => {
 
     } catch (err) {
         console.error("ANALYSIS ERROR:", err);
-        alert("مسلہ: " + err.message);
+        // v4.18.15: Diagnostic modal for blocked errors
+        const errLower = (err.message || "").toLowerCase();
+        if (errLower.includes("blocked") || errLower.includes("generativeservice")) {
+            window.showAiDiagnosticModal(err.message, err.message);
+        } else {
+            alert("مسلہ: " + err.message);
+        }
     } finally {
         clearTimeout(killSwitch);
         if (scanModal) scanModal.classList.add('hidden');
