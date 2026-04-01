@@ -421,7 +421,10 @@ Canvas is 800x600. Use originX: "center", originY: "center" for positioning.`;
             });
 
             const grokData = await grokRes.json();
-            if (grokData.error) throw new Error(grokData.error.message);
+            if (!grokRes.ok || grokData.error) {
+                const errMsg = grokData.error?.message || grokData.error?.code || grokData.message || JSON.stringify(grokData.error || grokData);
+                throw new Error(`Grok API خطا: ${errMsg}`);
+            }
             const grokText = grokData.choices?.[0]?.message?.content;
             if (!grokText) throw new Error('Grok نے کوئی جواب نہیں دیا۔');
             
@@ -1215,10 +1218,18 @@ window.runAnalysis = async () => {
             });
 
             const grokData = await grokRes.json();
-            if (grokData.error) throw new Error(`Grok Error: ${grokData.error.message}`);
+            if (!grokRes.ok || grokData.error) {
+                const errMsg = grokData.error?.message || grokData.error?.code || grokData.message || JSON.stringify(grokData.error || grokData);
+                throw new Error(`Grok API خطا (${grokRes.status}): ${errMsg}`);
+            }
             const grokText = grokData.choices?.[0]?.message?.content;
             if (!grokText) throw new Error("Grok نے کوئی جواب نہیں دیا۔");
-            const resultData = JSON.parse(grokText.replace(/```json|```/g, '').trim());
+            let resultData;
+            try {
+                resultData = JSON.parse(grokText.replace(/```json|```/g, '').trim());
+            } catch(parseErr) {
+                throw new Error("Grok نے JSON فارمیٹ میں جواب نہیں دیا۔ دوبارہ کوشش کریں۔");
+            }
 
             if (scanStatusText) scanStatusText.innerText = "نتائج دکھائے جا رہے ہیں...";
             displayResults(resultData);
