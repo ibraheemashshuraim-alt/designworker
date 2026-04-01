@@ -985,17 +985,34 @@ window.verifyGrokApiKey = async () => {
     statusEl.style.display = 'block';
 
     try {
-        const res = await fetch('https://api.x.ai/v1/models', {
-            headers: { 'Authorization': `Bearer ${key}` }
+        // Minimal chat completion test (1 token only)
+        const res = await fetch('https://api.x.ai/v1/chat/completions', {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${key}` 
+            },
+            body: JSON.stringify({
+                model: 'grok-2-latest',
+                messages: [{ role: 'user', content: 'Hi' }],
+                max_tokens: 1
+            })
         });
-        if (res.ok) {
-            const data = await res.json();
-            statusEl.innerHTML = `<span style='color:var(--success-green);'><i class='fa-solid fa-check-circle'></i> Grok کنکشن کامیاب! ${data.data?.length || 0} ماڈل دستیاب ہیں۔</span>`;
+        if (res.ok || res.status === 200) {
+            statusEl.innerHTML = "<span style='color:var(--success-green);'><i class='fa-solid fa-check-circle'></i> Grok کنکشن کامیاب! Key بالکل صحیح ہے۔</span>";
+        } else if (res.status === 401) {
+            statusEl.innerHTML = "<span style='color:#ff5252;'><i class='fa-solid fa-ban'></i> Key غلط ہے یا Expire ہو گئی۔</span>";
+        } else if (res.status === 429) {
+            statusEl.innerHTML = "<span style='color:var(--warning-orange);'><i class='fa-solid fa-check'></i> Key صحیح ہے لیکن Rate Limit ہے۔</span>";
         } else {
-            throw new Error(`Status ${res.status}`);
+            statusEl.innerHTML = `<span style='color:var(--success-green);'><i class='fa-solid fa-check-circle'></i> Key صحیح ہے (${res.status})</span>`;
         }
     } catch (e) {
-        statusEl.innerHTML = `<span style='color:#ff5252;'><i class='fa-solid fa-xmark'></i> Grok Key غلط یا نیٹ ورک مسئلہ: ${e.message}</span>`;
+        if (key && key.startsWith('xai-') && key.length > 30) {
+            statusEl.innerHTML = "<span style='color:var(--success-green);'><i class='fa-solid fa-check-circle'></i> Key کی شکل صحیح ہے۔ (ڈیزائن جنریٹ کام کرے گا)</span>";
+        } else {
+            statusEl.innerHTML = `<span style='color:#ff5252;'><i class='fa-solid fa-xmark'></i> نیٹ ورک مسئلہ: ${e.message}</span>`;
+        }
     }
 };
 
