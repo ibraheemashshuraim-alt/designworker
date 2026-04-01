@@ -68,16 +68,44 @@
                     </div>
 
                     <div class="modal-section">
-                        <h4><i class="fa-solid fa-key" style="color:var(--neon-cyan);"></i> API Key سیٹنگز</h4>
-                        <input type="password" id="apiKeyInput" class="custom-input" placeholder="AIzaSy...">
-                        <div style="display: flex; gap: 5px; margin-top:5px;">
-                            <button onclick="saveApiKey()" class="btn secondary-btn" style="flex: 1; padding: 10px;">سیو کریں</button>
-                            <button onclick="verifyApiKey()" class="btn warning-btn" style="flex: 1; padding: 10px; font-size: 0.8rem; background: rgba(0,229,255,0.1); border: 1px solid var(--neon-cyan); color: var(--neon-cyan);">
-                                <i class="fa-solid fa-satellite-dish"></i> ٹیسٹ کریں
+                        <h4><i class="fa-solid fa-robot" style="color:var(--neon-cyan);"></i> AI Provider سلیکٹ کریں</h4>
+                        <!-- Provider Tabs -->
+                        <div style="display: flex; gap: 8px; margin-bottom: 14px;">
+                            <button id="tab-gemini" class="provider-tab active-tab" onclick="setProvider('gemini')" style="flex:1; padding: 8px; border-radius: 8px; border: 1px solid var(--neon-cyan); background: rgba(0,229,255,0.1); color: var(--neon-cyan); font-size: 0.8rem; cursor: pointer; font-weight: 700;">
+                                <i class="fa-solid fa-gem"></i> Gemini
+                            </button>
+                            <button id="tab-grok" class="provider-tab" onclick="setProvider('grok')" style="flex:1; padding: 8px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.03); color: var(--text-muted); font-size: 0.8rem; cursor: pointer; font-weight: 700;">
+                                <i class="fa-solid fa-x"></i> Grok (xAI)
                             </button>
                         </div>
-                        <p id="saveStatusMsg" style="color: var(--success-green); font-size: 0.7rem; margin-top: 5px; display: none;">محفوظ کر لی گئی!</p>
-                        <p id="apiVerifyStatus" style="font-size: 0.7rem; margin-top: 5px; display: none;"></p>
+
+                        <!-- Gemini API Key -->
+                        <div id="gemini-section">
+                            <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 6px;">Google Gemini API Key:</div>
+                            <input type="password" id="apiKeyInput" class="custom-input" placeholder="AIzaSy...">
+                            <div style="display: flex; gap: 5px; margin-top:5px;">
+                                <button onclick="saveApiKey()" class="btn secondary-btn" style="flex: 1; padding: 10px;">سیو کریں</button>
+                                <button onclick="verifyApiKey()" class="btn warning-btn" style="flex: 1; padding: 10px; font-size: 0.8rem; background: rgba(0,229,255,0.1); border: 1px solid var(--neon-cyan); color: var(--neon-cyan);">
+                                    <i class="fa-solid fa-satellite-dish"></i> ٹیسٹ
+                                </button>
+                            </div>
+                            <p id="saveStatusMsg" style="color: var(--success-green); font-size: 0.7rem; margin-top: 5px; display: none;">محفوظ کر لی گئی!</p>
+                            <p id="apiVerifyStatus" style="font-size: 0.7rem; margin-top: 5px; display: none;"></p>
+                        </div>
+
+                        <!-- Grok API Key -->
+                        <div id="grok-section" style="margin-top: 14px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.06);">
+                            <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 6px;">xAI Grok API Key (<a href="https://console.x.ai" target="_blank" style="color:var(--neon-cyan);">console.x.ai</a> سے حاصل کریں):</div>
+                            <input type="password" id="grokKeyInput" class="custom-input" placeholder="xai-...">
+                            <div style="display: flex; gap: 5px; margin-top:5px;">
+                                <button onclick="saveGrokApiKey()" class="btn secondary-btn" style="flex: 1; padding: 10px;">Grok Key سیو کریں</button>
+                                <button onclick="verifyGrokApiKey()" class="btn warning-btn" style="flex: 1; padding: 10px; font-size: 0.8rem; background: rgba(255,165,0,0.1); border: 1px solid orange; color: orange;">
+                                    <i class="fa-solid fa-satellite-dish"></i> ٹیسٹ
+                                </button>
+                            </div>
+                            <p id="grokSaveStatusMsg" style="color: var(--success-green); font-size: 0.7rem; margin-top: 5px; display: none;">Grok Key محفوظ!</p>
+                            <p id="grokVerifyStatus" style="font-size: 0.7rem; margin-top: 5px; display: none;"></p>
+                        </div>
                     </div>
 
                     <div class="modal-section">

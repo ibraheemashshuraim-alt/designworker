@@ -387,6 +387,55 @@ window.generateAIDesign = async () => {
     }
 
     try {
+        const selectedProvider = window.getSelectedProvider?.() || 'gemini';
+        
+        // ===== GROK (xAI) PATH =====
+        if (selectedProvider === 'grok') {
+            const grokKey = getGrokApiKey();
+            if (!grokKey) {
+                if (scanModal) scanModal.classList.add('hidden');
+                if (genBtn) { genBtn.disabled = false; genBtn.innerHTML = "<i class='fa-solid fa-wand-magic-sparkles'></i> ڈیزائن جنریٹ کریں"; }
+                return alert("براہ کرم پہلے سیٹنگز میں Grok API Key سیو کریں۔");
+            }
+
+            const grokPrompt = `You are a World-Class Creative Director. Architect a premium graphic design for: "${prompt}"
+
+Return ONLY valid JSON: { "objects": [...] } — NO markdown, NO extra text.
+Each object must be a valid Fabric.js object with these properties:
+- Rectangles: { "type": "rect", "left": N, "top": N, "width": N, "height": N, "fill": "#color", "rx": 20, "ry": 20 }
+- Circles: { "type": "circle", "left": N, "top": N, "radius": N, "fill": "#color" }
+- Text: { "type": "textbox", "text": "...", "left": N, "top": N, "fontSize": N, "fill": "#color", "fontFamily": "Outfit", "fontWeight": "bold" }
+Canvas is 800x600. Use originX: "center", originY: "center" for positioning.`;
+
+            const grokRes = await fetch('https://api.x.ai/v1/chat/completions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${grokKey}` },
+                body: JSON.stringify({
+                    model: 'grok-2-latest',
+                    messages: [{ role: 'user', content: grokPrompt }],
+                    temperature: 0.7,
+                    response_format: { type: 'json_object' }
+                })
+            });
+
+            const grokData = await grokRes.json();
+            if (grokData.error) throw new Error(grokData.error.message);
+            const grokText = grokData.choices?.[0]?.message?.content;
+            if (!grokText) throw new Error('Grok نے کوئی جواب نہیں دیا۔');
+            
+            const cleanGrok = grokText.replace(/```json|```/g, '').trim();
+            if (codeInput) codeInput.value = cleanGrok;
+            if (scanModal) scanModal.classList.add('hidden');
+            setTimeout(() => { if (window.loadDesignFromCode) window.loadDesignFromCode(cleanGrok); }, 50);
+
+            if (!window.userState.isAdmin && window.userState.licenseStatus !== 'approved') {
+                const userRef = doc(db, "users", window.userState.uid);
+                await updateDoc(userRef, { credits: increment(-5), usedCredits: increment(5) });
+            }
+            return; // Done with Grok
+        }
+
+        // ===== GEMINI PATH =====
         const keyToUse = getApiKey() || "AIzaSyC7f4QH6CSRN6dAhGNm7P4kMHTv12mtdEo";
         
         let modelCandidates = ["gemini-1.5-flash", "gemini-1.5-flash-latest"];
@@ -906,6 +955,61 @@ window.verifyApiKey = async () => {
 function getApiKey() {
     return localStorage.getItem('gemini_api_key');
 }
+
+// ================ GROK (xAI) API MANAGEMENT ================
+function getGrokApiKey() {
+    return localStorage.getItem('grok_api_key');
+}
+
+window.saveGrokApiKey = () => {
+    const key = document.getElementById('grokKeyInput')?.value.trim();
+    if (!key) return;
+    localStorage.setItem('grok_api_key', key);
+    const msg = document.getElementById('grokSaveStatusMsg');
+    if (msg) { msg.style.display = 'block'; setTimeout(() => msg.style.display = 'none', 3000); }
+    verifyGrokApiKey();
+};
+
+window.verifyGrokApiKey = async () => {
+    const key = document.getElementById('grokKeyInput')?.value.trim() || getGrokApiKey();
+    const statusEl = document.getElementById('grokVerifyStatus');
+    if (!statusEl) return;
+
+    if (!key) {
+        statusEl.innerHTML = "<span style='color:var(--warning-orange);'>براہ کرم Grok API Key درج کریں۔</span>";
+        statusEl.style.display = 'block';
+        return;
+    }
+
+    statusEl.innerHTML = "<span style='color:var(--warning-orange);'><i class='fa-solid fa-spinner fa-spin'></i> Grok کنکشن ٹیسٹ ہو رہا ہے...</span>";
+    statusEl.style.display = 'block';
+
+    try {
+        const res = await fetch('https://api.x.ai/v1/models', {
+            headers: { 'Authorization': `Bearer ${key}` }
+        });
+        if (res.ok) {
+            const data = await res.json();
+            statusEl.innerHTML = `<span style='color:var(--success-green);'><i class='fa-solid fa-check-circle'></i> Grok کنکشن کامیاب! ${data.data?.length || 0} ماڈل دستیاب ہیں۔</span>`;
+        } else {
+            throw new Error(`Status ${res.status}`);
+        }
+    } catch (e) {
+        statusEl.innerHTML = `<span style='color:#ff5252;'><i class='fa-solid fa-xmark'></i> Grok Key غلط یا نیٹ ورک مسئلہ: ${e.message}</span>`;
+    }
+};
+
+window.getSelectedProvider = () => {
+    return localStorage.getItem('ai_provider') || 'gemini';
+};
+
+window.setProvider = (p) => {
+    localStorage.setItem('ai_provider', p);
+    document.querySelectorAll('.provider-tab').forEach(t => t.classList.remove('active-tab'));
+    const tab = document.getElementById(`tab-${p}`);
+    if (tab) tab.classList.add('active-tab');
+    console.log('AI Provider set to:', p);
+};
 
 // IMAGE COMPRESSION (v4.2.0 Optimized)
 async function compressImage(base64Str, maxWidth = 500, maxHeight = 500) {

@@ -13,6 +13,24 @@
     --warning-orange: #ffb300;
 }
 
+/* Provider Tab Styles */
+.provider-tab {
+    transition: all 0.3s ease;
+    font-family: 'Outfit', sans-serif;
+}
+.provider-tab.active-tab {
+    background: rgba(0, 229, 255, 0.15) !important;
+    border-color: var(--neon-cyan) !important;
+    color: var(--neon-cyan) !important;
+    box-shadow: 0 0 12px rgba(0, 229, 255, 0.2);
+}
+#tab-grok.active-tab {
+    background: rgba(255, 165, 0, 0.15) !important;
+    border-color: orange !important;
+    color: orange !important;
+    box-shadow: 0 0 12px rgba(255,165,0, 0.2);
+}
+
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
