@@ -286,8 +286,8 @@ window.deleteHistoryItem = async (docId) => {
 };
 
 // --- VERSION TAG ---
-window.DESIGN_VERSION = "4.18.13";
-console.log("DesignCheck Engine: v4.18.13 (Bulletproof Auth Architect) Loaded");
+window.DESIGN_VERSION = "4.18.14";
+console.log("DesignCheck Engine: v4.18.14 (Bug Fix Build) Loaded");
 
 // v4.18.12: Gemini API Diagnostic Manager
 window.showAiDiagnosticModal = (message, errorRaw) => {
@@ -339,7 +339,8 @@ if (refInput) {
             
             document.getElementById('aiRefPreviewBox').classList.remove('hidden');
             document.getElementById('aiRefThumb').src = aiReferenceImageBase64;
-            document.querySelector('.ai-ref-container .browse-btn').classList.add('hidden');
+            const browseBtn = document.querySelector('.ai-ref-container-small .browse-btn');
+            if (browseBtn) browseBtn.classList.add('hidden');
         };
         reader.readAsDataURL(file);
     };
@@ -349,7 +350,8 @@ window.clearAiRefImage = () => {
     aiReferenceImageBase64 = null;
     document.getElementById('aiRefInput').value = '';
     document.getElementById('aiRefPreviewBox').classList.add('hidden');
-    document.querySelector('.ai-ref-container .browse-btn').classList.remove('hidden');
+    const browseBtn = document.querySelector('.ai-ref-container-small .browse-btn');
+    if (browseBtn) browseBtn.classList.remove('hidden');
 };
 
 // ================ PREMIUM AI DESIGNER ================
@@ -1020,13 +1022,47 @@ window.getSelectedProvider = () => {
     return localStorage.getItem('ai_provider') || 'gemini';
 };
 
+function updateProviderBadge(p) {
+    const badge = document.getElementById('activeProviderBadge');
+    const label = document.getElementById('activeProviderLabel');
+    if (!label) return;
+
+    if (p === 'grok') {
+        label.innerHTML = "<i class='fa-solid fa-x'></i> Grok (xAI)";
+        label.style.color = 'orange';
+        if (badge) {
+            badge.style.background = 'rgba(255,165,0,0.08)';
+            badge.style.borderColor = 'rgba(255,165,0,0.3)';
+        }
+    } else {
+        label.innerHTML = "<i class='fa-solid fa-gem'></i> Gemini";
+        label.style.color = 'var(--neon-cyan)';
+        if (badge) {
+            badge.style.background = 'rgba(0,229,255,0.08)';
+            badge.style.borderColor = 'rgba(0,229,255,0.2)';
+        }
+    }
+}
+
 window.setProvider = (p) => {
     localStorage.setItem('ai_provider', p);
     document.querySelectorAll('.provider-tab').forEach(t => t.classList.remove('active-tab'));
     const tab = document.getElementById(`tab-${p}`);
     if (tab) tab.classList.add('active-tab');
+    updateProviderBadge(p);
     console.log('AI Provider set to:', p);
 };
+
+// Restore badge on page load
+document.addEventListener('DOMContentLoaded', () => {
+    const saved = localStorage.getItem('ai_provider') || 'gemini';
+    updateProviderBadge(saved);
+    const tab = document.getElementById(`tab-${saved}`);
+    if (tab) {
+        document.querySelectorAll('.provider-tab').forEach(t => t.classList.remove('active-tab'));
+        tab.classList.add('active-tab');
+    }
+});
 
 // IMAGE COMPRESSION (v4.2.0 Optimized)
 async function compressImage(base64Str, maxWidth = 500, maxHeight = 500) {

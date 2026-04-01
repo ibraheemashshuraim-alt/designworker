@@ -1,4 +1,4 @@
-// ================ EDITOR LOGIC (v4.18.13 - EXTREME ARCHITECT) ================
+// ================ EDITOR LOGIC (v4.18.14 - Bug Fix Build) ================
 
 // v4.9.8: GLOBAL NAVIGATION
 window.switchTab = (tab) => {
@@ -141,7 +141,7 @@ function syncProSidebar(obj) {
 
     Object.values(groups).forEach(g => g?.classList.add('hidden'));
 
-    if (obj.type === 'i-text') {
+    if (obj.type === 'i-text' || obj.type === 'textbox') {
         groups.text?.classList.remove('hidden');
         const fDisp = document.getElementById('selectedFontDisplay');
         if (fDisp) fDisp.value = obj.fontFamily;
@@ -477,7 +477,7 @@ function applyFontToActive(font) {
 
 window.toggleTextFormat = (format) => {
     const obj = canvas.getActiveObject();
-    if (!obj || obj.type !== 'i-text') return;
+    if (!obj || (obj.type !== 'i-text' && obj.type !== 'textbox')) return;
     if (format === 'bold') obj.set('fontWeight', obj.fontWeight === 'bold' ? 'normal' : 'bold');
     else if (format === 'italic') obj.set('fontStyle', obj.fontStyle === 'italic' ? 'normal' : 'italic');
     canvas.renderAll();
@@ -522,6 +522,27 @@ function deleteActiveObject() {
     const obj = canvas.getActiveObject();
     if (obj) { canvas.remove(obj); canvas.discardActiveObject().renderAll(); saveState(); }
 }
+window.deleteActiveObject = deleteActiveObject;
+
+window.duplicateObject = () => {
+    const obj = canvas.getActiveObject();
+    if (!obj) return;
+    obj.clone((cloned) => {
+        cloned.set({ left: obj.left + 20, top: obj.top + 20 });
+        canvas.add(cloned).setActiveObject(cloned).renderAll();
+        saveState();
+    });
+};
+
+window.bringForward = () => {
+    const obj = canvas.getActiveObject();
+    if (obj) { canvas.bringForward(obj); canvas.renderAll(); saveState(); }
+};
+
+window.sendBackward = () => {
+    const obj = canvas.getActiveObject();
+    if (obj) { canvas.sendBackwards(obj); canvas.renderAll(); saveState(); }
+};
 
 function resizeCanvas() {
     const card = document.querySelector('.canvas-card');
