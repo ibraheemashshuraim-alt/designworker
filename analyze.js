@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
 import { 
-    getFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot, collection, query, where, getDocs, deleteDoc, increment, serverTimestamp, addDoc, orderBy 
+    getFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot, collection, query, where, getDocs, deleteDoc, increment, serverTimestamp, addDoc, orderBy, limit 
 } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
 import { getAnalytics, isSupported } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-analytics.js";
 // import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai"; // Removed unused
@@ -145,7 +145,6 @@ const elements = {
     reportGoodOut: document.getElementById('reportGoodOut'),
     reportBadOut: document.getElementById('reportBadOut'),
     analysisResults: document.getElementById('analysisResults'),
-    apiSettingsModal: document.getElementById('apiSettingsModal'),
     apiKeyInput: document.getElementById('apiKeyInput'),
     profileEmail: document.getElementById('profileEmail'),
     profileEmailVal: document.getElementById('profileEmailVal'),
@@ -156,7 +155,6 @@ const elements = {
     modalAvatar: document.getElementById('modalAvatar'),
     modalIcon: document.getElementById('modalIcon'),
     adminPanelSection: document.getElementById('adminPanelSection'),
-    buyCreditsSection: document.getElementById('buyCreditsSection'),
     profileDropdown: document.getElementById('profileDropdown'),
     adminUsersList: document.getElementById('adminUsersList'),
     colorPaletteOut: document.getElementById('colorPaletteOut'),
@@ -363,6 +361,10 @@ async function setupUserPersistence(user) {
 }
 
 window.login = async () => {
+    if (window.location.protocol === 'file:') {
+        alert("گوگل لاگ ان کے لیے سرور (http/https) ضروری ہے۔ براہ کرم اسے لوکل ہوسٹ یا گٹ ہب پیجز پر چلائیں۔");
+        return;
+    }
     const provider = new GoogleAuthProvider();
     // Force account selection so user can switch accounts
     provider.setCustomParameters({ prompt: 'select_account' });
@@ -370,7 +372,17 @@ window.login = async () => {
         await signInWithPopup(auth, provider);
     } catch (e) {
         console.error("Login Error:", e);
-        alert("لاگ ان میں مسئلہ پیش آیا۔");
+        let msg = "لاگ ان میں مسئلہ پیش آیا۔";
+        if (e.code === 'auth/popup-blocked') {
+            msg = "پاپ اپ بلاک کر دیا گیا ہے۔ براہ کرم براؤزر کی سیٹنگز میں پاپ اپ کی اجازت دیں۔";
+        } else if (e.code === 'auth/unauthorized-domain') {
+            msg = "یہ ڈومین (Domain) فائر بیس میں رجسٹرڈ نہیں ہے۔ ایڈمن سے رابطہ کریں یا authorized domains میں اپنا ڈومین شامل کریں۔";
+        } else if (e.code === 'auth/cancelled-popup-request') {
+            msg = "پاپ اپ بند کر دیا گیا۔ دوبارہ کوشش کریں۔";
+        } else if (e.code === 'auth/popup-closed-by-user') {
+            msg = "پاپ اپ ونڈو بند کر دی گئی تھی۔";
+        }
+        alert(msg + "\n\nError: " + e.code);
     }
 };
 
@@ -1742,7 +1754,7 @@ window.printAnalysis = () => {
 };
 
 window.shareAnalysis = () => {
-    const text = `DesignCheck Analysis Result\nOverall Score: ${document.getElementById('overallScoreText').innerText}/100\nCheck it out here: ${window.location.href}`;
+    const text = `DesignCheck Analysis Result\nOverall Score: ${document.getElementById('overallScoreText').innerText}/100\nCheck it out here: `;
     if (navigator.share) {
         navigator.share({
             title: 'DesignCheck Analysis',
@@ -1750,7 +1762,7 @@ window.shareAnalysis = () => {
             url: window.location.href
         }).catch(err => console.error("Share failed:", err));
     } else {
-        const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+        const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(text + window.location.href)}`;
         window.open(whatsappUrl, '_blank');
     }
 };
@@ -1813,7 +1825,7 @@ window.exportAnalysis = async (format) => {
         }
     } catch (err) {
         console.error("Export Error:", err);
-        alert("ایکسپورٹ کے دوران مسئلہ پیش آیا۔");
+        alert("???????? ?? ????? ????? ??? ????");
     }
 };
 
@@ -1864,31 +1876,31 @@ function renderFontPicker() {
     const picker = document.getElementById('fontPickerGrid');
     if (!picker) return;
     
-    picker.innerHTML = FONT_LIST.map(f => 
-        <div class="font-card " 
-             style="font-family: "
-             onmouseover="previewFont('')"
+    picker.innerHTML = FONT_LIST.map(f => `
+        <div class="font-card" 
+             style="font-family: ${f.family}"
+             onmouseover="previewFont('${f.name}')"
              onmouseout="revertFont()"
-             onclick="applyFont('')">
-            
+             onclick="applyFont('${f.name}')">
+            ${f.name}
         </div>
-    ).join('');
+    `).join('');
 }
 
 window.updateLanguageState = function() {
     userSettings.language = document.getElementById('languageSelect').value;
     saveSettings();
-    showToast(Language: , 'info');
+    showToast(`Language: ${userSettings.language}`, 'info');
 };
 
 window.updateFontSize = function(val, save = true) {
     const size = parseInt(val);
     userSettings.fontSize = size;
     const wrapper = document.getElementById('results-typography-wrapper');
-    if (wrapper) wrapper.style.fontSize = ${size}px;
+    if (wrapper) wrapper.style.fontSize = `${size}px`;
     
     const valDisplay = document.getElementById('fontSizeVal');
-    if (valDisplay) valDisplay.innerText = ${size}px;
+    if (valDisplay) valDisplay.innerText = `${size}px`;
     
     const slider = document.getElementById('fontSizeSlider');
     if (slider) slider.value = size;
@@ -1924,18 +1936,18 @@ window.applyFont = function(name, save = true) {
     renderFontPicker();
     if (save) {
         saveSettings();
-        showToast(Font:  Applied, 'success');
+        showToast(`Font: ${name} Applied`, 'success');
     }
 };
 
 function loadGoogleFont(name) {
     if (name === 'Outfit' || name === 'Jameel Noori') return;
-    const linkId = ont-link-;
+    const linkId = `font-link-${name.replace(/\s+/g, '-')}`;
     if (!document.getElementById(linkId)) {
         const link = document.createElement('link');
         link.id = linkId;
         link.rel = 'stylesheet';
-        link.href = https://fonts.googleapis.com/css2?family=:wght@400;700&display=swap;
+        link.href = `https://fonts.googleapis.com/css2?family=${name.replace(/\s+/g, '+')}:wght@400;700&display=swap`;
         document.head.appendChild(link);
     }
 }
@@ -1958,4 +1970,3 @@ function saveSettings() {
 
 document.addEventListener('DOMContentLoaded', initPersonalization);
 setTimeout(initPersonalization, 1500);
-
