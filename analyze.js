@@ -1913,6 +1913,10 @@ window.updateFontSize = function(val, save = true) {
     const slider = document.getElementById('fontSizeSlider');
     if (slider) slider.value = size;
 
+    // v4.22.3: Live preview in personalization modal
+    const preview = document.getElementById('fontSizePreview');
+    if (preview) preview.style.fontSize = `${size}px`;
+
     if (save) saveSettings();
 };
 
