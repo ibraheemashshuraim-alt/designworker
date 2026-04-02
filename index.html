@@ -165,7 +165,15 @@
                                     <option value="Arabic">Arabic (العربية)</option>
                                     <option value="Pashto">Pashto (پښتو)</option>
                                     <option value="Punjabi">Punjabi (شاہ مکھی)</option>
+                                    <option value="Punjabi-Normal">Punjabi (عام / نارمل)</option>
                                 </select>
+                            </div>
+
+                            <!-- Theme Toggle -->
+                            <div style="margin-bottom: 15px;">
+                                <button onclick="toggleTheme()" class="btn secondary-btn" style="width: 100%; font-size: 0.8rem; border-color: var(--neon-cyan); color: var(--neon-cyan); background: rgba(0, 229, 255, 0.05);">
+                                    <i class="fa-solid fa-circle-half-stroke"></i> تھیم تبدیل کریں (Light/Dark)
+                                </button>
                             </div>
 
                             <!-- Open Settings Modal Button -->
@@ -287,7 +295,7 @@
                 </div>
 
                 <div id="analysisResults" class="hidden">
-                    <div id="results-typography-wrapper" style="width: 100%;">
+                    <div id="results-typography-wrapper" style="width: 100%; transition: font-size 0.2s ease;">
                     <div class="score-orb">
                         <div class="score-inner">
                             <div id="expertBadge" class="hidden" style="position: absolute; top: -10px; right: -10px; background: #ffd700; color: #000; padding: 4px 8px; border-radius: 20px; font-size: 0.6rem; font-weight: 800; box-shadow: 0 4px 10px rgba(255,215,0,0.3); border: 2px solid #fff;">
@@ -354,7 +362,7 @@
                         </div>
                         <img id="expertExampleImg" src="" style="width: 100%; border-radius: 10px; margin-bottom: 10px; border: 1px solid rgba(255,215,0,0.3);">
                         <div id="expertExampleStrengths" style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.5;"></div>
-                        <p style="font-size: 0.65rem; color: #ffd700; margin-top: 8px; font-style: italic;">آپ اس ڈیزائن سے تحریک لے کر اپنے ڈیزائن کو بہتر بنا سکتے ہیں۔</p>
+                        <p style="font-size: 0.65rem; color: #ffd700; margin-top: 8px; font-style: italic;">آپ اس ڈیزائن سے تحریک لے کر اپنے ڈیزائن کو بہتر بنا سکتے ہیں.</p>
                     </div>
 
                     </div> <!-- End results-typography-wrapper -->
@@ -461,7 +469,6 @@
                     <button class="tool-btn-small danger-text" style="color: #ff4d4d;" onclick="deleteActiveObject()" title="مٹائیں (Delete)"><i class="fa-solid fa-trash-can"></i></button>
                 </div>
 
-                <!-- Text Tools Group -->
                 <!-- Text Tools Group -->
                 <div class="toolbar-group text-tools hidden" id="textToolsGroup">
                     <button class="tool-btn-small" id="boldBtn" onclick="toggleTextFormat('bold')" title="Bold"><i class="fa-solid fa-bold"></i></button>
@@ -603,7 +610,15 @@
                 <p style="font-size: 0.75rem; opacity: 0.7;">اپنی پسند کے مطابق رزلٹ کو تبدیل کریں</p>
             </div>
 
-            <div class="modal-section">
+            <div class="modal-section" style="border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 20px;">
+                <!-- Theme Toggle -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <div style="font-size: 0.8rem; color: #fff; font-weight: 700;">تھیم سلیکٹ کریں (Theme):</div>
+                    <button id="themeToggleBtn" onclick="toggleTheme()" class="btn secondary-btn" style="padding: 8px 15px; border-radius: 20px; font-size: 0.75rem;">
+                        <i id="themeIcon" class="fa-solid fa-moon"></i> <span id="themeText">Dark Mode</span>
+                    </button>
+                </div>
+
                 <!-- Font Size Slider -->
                 <div style="margin-bottom: 20px;">
                     <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: #fff; margin-bottom: 10px; font-weight: 700;">
