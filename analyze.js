@@ -176,7 +176,7 @@ window.saveEmailSettings = async () => {
 };
 
 async function checkAndSaveBestDesign(results, image64) {
-    if (!results || results.score < 90) return;
+    if (!results || results.score < 80) return;
     try {
         const bestDesignsRef = collection(db, "best_designs");
         await addDoc(bestDesignsRef, {
@@ -1592,7 +1592,7 @@ function displayResults(data) {
     
     const expertBadge = document.getElementById('expertBadge');
     if (expertBadge) {
-        if (data.score >= 90) expertBadge.classList.remove('hidden');
+        if (data.score >= 80) expertBadge.classList.remove('hidden');
         else expertBadge.classList.add('hidden');
     }
     elements.overallScoreText.innerText = data.score;
