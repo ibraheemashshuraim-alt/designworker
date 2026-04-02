@@ -137,6 +137,64 @@ onAuthStateChanged(auth, async (user) => {
     }
 });
 
+// v4.19.0: 'Best Designs' & Email Notifications Logic
+async function checkAndSaveBestDesign(results, image64) {
+    if (!results || results.score < 90) return;
+    try {
+        const bestDesignsRef = collection(db, "best_designs");
+        await addDoc(bestDesignsRef, {
+            score: results.score,
+            category: results.category || "General",
+            strengths: results.strengths,
+            imageUrl: image64, // Base64 storage (Small designs/thumbnails recommended)
+            userName: userState.email.split('@')[0],
+            userEmail: userState.email,
+            timestamp: serverTimestamp()
+        });
+        console.log("System: Expert Design saved to Cloud!");
+        sendSuccessEmail(userState.email, results.category, results.score);
+    } catch (e) { console.error("Best Design Save Error:", e); }
+}
+
+async function sendSuccessEmail(email, category, score) {
+    if (typeof emailjs === 'undefined') return;
+    const params = {
+        to_email: email,
+        category: category,
+        score: score,
+        message: "مبارک ہو! آپ کا ڈیزائن 'Premium Example' کے طور پر منتخب ہو گیا ہے۔"
+    };
+    // Note: User needs to set their Service/Template ID in EmailJS Dashboard
+    emailjs.send("YOUR_SERVICE_ID", "YOUR_TEMPLATE_ID", params)
+        .then(() => console.log("Success Email Sent!"))
+        .catch(err => console.warn("Email offset: Service/Template IDs not set yet."));
+}
+
+async function handleExpertSuggestion(results) {
+    // Only for Premium/Paid users (Credits > 0 or Approved License)
+    const isPremium = userState.credits > 0 || userState.licenseStatus === 'approved';
+    if (!isPremium || results.score >= 75) return;
+
+    try {
+        const category = results.category || "General";
+        const q = query(collection(db, "best_designs"), where("category", "==", category), orderBy("score", "desc"), limit(1));
+        const snap = await getDocs(q);
+        
+        if (!snap.empty) {
+            const best = snap.docs[0].data();
+            const section = document.getElementById('expertSuggestionSection');
+            const img = document.getElementById('expertExampleImg');
+            const strengths = document.getElementById('expertExampleStrengths');
+            
+            if (section && img && strengths) {
+                img.src = best.imageUrl;
+                strengths.innerText = "اس ڈیزائن کی خوبیاں: " + (best.strengths ? best.strengths.join(", ") : "");
+                section.classList.remove('hidden');
+            }
+        }
+    } catch (e) { console.warn("Suggestion query failed (Check Firestore Indexes):", e); }
+}
+
 async function setupUserPersistence(user) {
     if (!user) return;
     const userRef = doc(db, "users", user.uid);
@@ -1203,6 +1261,7 @@ window.runAnalysis = async () => {
 
             {
                 "score": Number (0-100),
+                "category": "ڈیزائن کی قسم (e.g. Logo, Business Card)",
                 "accessibility": "ایکسیسبلٹی اور پڑھائی (اردو تفصیل)",
                 "contrast": "کلر تضاد اور توازن (اردو تفصیل)",
                 "strengths": ["خوبی 1 (تفصیلی)", "خوبی 2", "خوبی 3", "خوبی 4", "خوبی 5"],
@@ -1303,7 +1362,13 @@ window.runAnalysis = async () => {
 
             if (scanStatusText) scanStatusText.innerText = "نتائج دکھائے جا رہے ہیں...";
             displayResults(resultData);
-            if (userState.loggedIn) saveAnalysisToHistory(resultData, compressedBase64);
+            
+            // v4.19.0: Best Designs Logic
+            if (userState.loggedIn) {
+                saveAnalysisToHistory(resultData, compressedBase64);
+                checkAndSaveBestDesign(resultData, compressedBase64);
+                handleExpertSuggestion(resultData);
+            }
             if (userState.loggedIn && !userState.isAdmin && userState.licenseStatus !== 'approved') {
                 deductCredit().catch(e => console.log("Credit bg deduction."));
             }
@@ -1408,7 +1473,12 @@ window.runAnalysis = async () => {
 
         // v4.7.0: Auto-Save to History
         if (userState.loggedIn) {
-            saveAnalysisToHistory(JSON.parse(text), compressedBase64);
+            const resData = JSON.parse(text);
+            saveAnalysisToHistory(resData, compressedBase64);
+            
+            // v4.19.0: Best Designs Logic
+            checkAndSaveBestDesign(resData, compressedBase64);
+            handleExpertSuggestion(resData);
         }
 
         // v4.5.1: Credit system restored

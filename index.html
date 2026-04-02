@@ -11,6 +11,12 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
     <script src="https://unpkg.com/@imgly/background-removal@1.4.3/dist/browser/imgly-background-removal.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+    <script type="text/javascript">
+       (function(){
+          emailjs.init("YOUR_PUBLIC_KEY"); // User will replace this
+       })();
+    </script>
     
     <!-- v4.18.5: Aggressive Cache Control -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -280,6 +286,16 @@
                     <div style="margin-top: 25px;">
                         <div style="font-weight: 700; font-size: 0.85rem; margin-bottom: 10px; color: var(--neon-purple);"><i class="fa-solid fa-font"></i> استعمال شدہ فونٹس:</div>
                         <div id="fontsUsedOut" class="font-list"></div>
+                    </div>
+
+                    <!-- NEW: Expert Suggestion (Premium) -->
+                    <div id="expertSuggestionSection" class="hidden" style="margin-top: 30px; padding: 15px; border-radius: 15px; background: rgba(255,215,0,0.05); border: 1px solid rgba(255,215,0,0.2);">
+                        <div style="font-weight: 700; font-size: 0.85rem; margin-bottom: 12px; color: #ffd700;">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> اسی طرح کا ایک بہترین ڈیزائن (Expert Example):
+                        </div>
+                        <img id="expertExampleImg" src="" style="width: 100%; border-radius: 10px; margin-bottom: 10px; border: 1px solid rgba(255,215,0,0.3);">
+                        <div id="expertExampleStrengths" style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.5;"></div>
+                        <p style="font-size: 0.65rem; color: #ffd700; margin-top: 8px; font-style: italic;">آپ اس ڈیزائن سے تحریک لے کر اپنے ڈیزائن کو بہتر بنا سکتے ہیں۔</p>
                     </div>
 
                     <button class="btn primary-btn" style="width: 100%; margin-top: 15px;" onclick="location.reload()">
