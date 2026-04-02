@@ -409,11 +409,24 @@ Each object must be a valid Fabric.js object with these properties:
 - Text: { "type": "textbox", "text": "...", "left": N, "top": N, "fontSize": N, "fill": "#color", "fontFamily": "Outfit", "fontWeight": "bold" }
 Canvas is 800x600. Use originX: "center", originY: "center" for positioning.`;
 
+            let grokModelToUse = 'grok-beta';
+            try {
+                const listRes = await fetch('https://api.x.ai/v1/models', { headers: { 'Authorization': `Bearer ${grokKey}` } });
+                if (listRes.ok) {
+                    const listData = await listRes.json();
+                    if (listData.data && listData.data.length > 0) {
+                        const models = listData.data.map(m => m.id);
+                        const bestModel = models.find(m => m.includes('grok-4') || m.includes('grok-3')) || models.find(m => m.includes('grok-2') || m.includes('latest')) || models[0];
+                        if (bestModel) grokModelToUse = bestModel;
+                    }
+                }
+            } catch (e) { console.warn("List Grok Models failed", e); }
+
             const grokRes = await fetch('https://api.x.ai/v1/chat/completions', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${grokKey}` },
                 body: JSON.stringify({
-                    model: 'grok-2-latest',
+                    model: grokModelToUse,
                     messages: [{ role: 'user', content: grokPrompt }],
                     temperature: 0.7,
                     response_format: { type: 'json_object' }
@@ -1194,8 +1207,22 @@ window.runAnalysis = async () => {
                 return alert("آپ نے Grok provider select کیا ہے لیکن Grok API Key سیو نہیں کی ہے۔\nبراہ کرم پروفائل > Grok Key درج کر کے سیو کریں۔");
             }
 
-            console.log("v4.18.15: Using Grok Vision for analysis...");
-            if (scanStatusText) scanStatusText.innerText = "Grok AI ڈیزائن کا جائزہ لے رہا ہے...";
+            console.log("v4.18.15: Using Grok AI for analysis...");
+            if (scanStatusText) scanStatusText.innerText = "AI ڈیزائن کا جائزہ لے رہا ہے...";
+
+            let grokModelToUse = 'grok-beta';
+            try {
+                const listRes = await fetch('https://api.x.ai/v1/models', { headers: { 'Authorization': `Bearer ${grokKey}` } });
+                if (listRes.ok) {
+                    const listData = await listRes.json();
+                    if (listData.data && listData.data.length > 0) {
+                        const models = listData.data.map(m => m.id);
+                        const visionModel = models.find(m => m.includes('vision'));
+                        const bestModel = models.find(m => m.includes('grok-4') || m.includes('grok-3')) || models.find(m => m.includes('grok-2') || m.includes('latest')) || models[0];
+                        grokModelToUse = visionModel || bestModel || grokModelToUse;
+                    }
+                }
+            } catch (e) { console.warn("List Grok Models failed", e); }
 
             const grokRes = await fetch('https://api.x.ai/v1/chat/completions', {
                 method: 'POST',
@@ -1204,7 +1231,7 @@ window.runAnalysis = async () => {
                     'Authorization': `Bearer ${grokKey}`
                 },
                 body: JSON.stringify({
-                    model: 'grok-2-latest',
+                    model: grokModelToUse,
                     messages: [{
                         role: 'user',
                         content: [
