@@ -163,17 +163,39 @@ function updateUI() {
     if (userState.loggedIn) {
         elements.loginBtn.classList.add('hidden');
         elements.authContainer.classList.remove('hidden');
+        
+        // Update top-right chip
         elements.profileEmail.innerText = userState.email.split('@')[0];
         if (userState.photoURL) {
             elements.profileAvatar.src = userState.photoURL;
             elements.profileAvatar.classList.remove('hidden');
             elements.profileIcon.classList.add('hidden');
         }
+
+        // Update Unified Dropdown Header
+        if (elements.profileEmailVal) elements.profileEmailVal.innerText = userState.email;
+        if (userState.photoURL && elements.modalAvatar) {
+            elements.modalAvatar.src = userState.photoURL;
+            elements.modalAvatar.classList.remove('hidden');
+            if (elements.modalIcon) elements.modalIcon.classList.add('hidden');
+        }
+
+        // --- CRITICAL FIX: Update Credits ---
+        if (elements.profileCreditsModal) {
+            elements.profileCreditsModal.innerText = userState.credits;
+            // v4.21.1: Visual feedback if credits are zero
+            if (userState.credits <= 0) elements.profileCreditsModal.style.color = "#ff5252";
+            else elements.profileCreditsModal.style.color = "var(--neon-purple)";
+        }
+
+        if (userState.isAdmin) {
+            if (elements.adminPanelSection) elements.adminPanelSection.classList.remove('hidden');
+        }
     } else {
         elements.loginBtn.classList.remove('hidden');
         elements.authContainer.classList.add('hidden');
+        if (elements.adminPanelSection) elements.adminPanelSection.classList.add('hidden');
     }
-    if (userState.isAdmin) elements.adminPanelSection.classList.remove('hidden');
 }
 
 // ================ FILE HANDLING ================
