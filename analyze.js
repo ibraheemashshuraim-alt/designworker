@@ -391,16 +391,16 @@ window.generateAIDesign = async () => {
     try {
         const selectedProvider = window.getSelectedProvider?.() || 'gemini';
         
-        // ===== GROK (xAI) PATH =====
-        if (selectedProvider === 'grok') {
-            const grokKey = getGrokApiKey();
-            if (!grokKey) {
+        // ===== GROQ (Free) PATH =====
+        if (selectedProvider === 'groq') {
+            const groqKey = getGroqApiKey();
+            if (!groqKey) {
                 if (scanModal) scanModal.classList.add('hidden');
                 if (genBtn) { genBtn.disabled = false; genBtn.innerHTML = "<i class='fa-solid fa-wand-magic-sparkles'></i> ڈیزائن جنریٹ کریں"; }
-                return alert("براہ کرم پہلے سیٹنگز میں Grok API Key سیو کریں۔");
+                return alert("براہ کرم پہلے سیٹنگز میں Groq API Key سیو کریں۔");
             }
 
-            const grokPrompt = `You are a World-Class Creative Director. Architect a premium graphic design for: "${prompt}"
+            const groqPrompt = `You are a World-Class Creative Director. Architect a premium graphic design for: "${prompt}"
 
 Return ONLY valid JSON: { "objects": [...] } — NO markdown, NO extra text.
 Each object must be a valid Fabric.js object with these properties:
@@ -409,48 +409,35 @@ Each object must be a valid Fabric.js object with these properties:
 - Text: { "type": "textbox", "text": "...", "left": N, "top": N, "fontSize": N, "fill": "#color", "fontFamily": "Outfit", "fontWeight": "bold" }
 Canvas is 800x600. Use originX: "center", originY: "center" for positioning.`;
 
-            let grokModelToUse = 'grok-3';
-            try {
-                const listRes = await fetch('https://api.x.ai/v1/models', { headers: { 'Authorization': `Bearer ${grokKey}` } });
-                if (listRes.ok) {
-                    const listData = await listRes.json();
-                    if (listData.data && listData.data.length > 0) {
-                        const models = listData.data.map(m => m.id);
-                        const bestModel = models.find(m => m.includes('grok-4') || m.includes('grok-3')) || models.find(m => m.includes('grok-2') || m.includes('latest')) || models[0];
-                        if (bestModel) grokModelToUse = bestModel;
-                    }
-                }
-            } catch (e) { console.warn("List Grok Models failed", e); }
-
-            const grokRes = await fetch('https://api.x.ai/v1/chat/completions', {
+            const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${grokKey}` },
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${groqKey}` },
                 body: JSON.stringify({
-                    model: grokModelToUse,
-                    messages: [{ role: 'user', content: grokPrompt }],
+                    model: 'llama-3.3-70b-versatile',
+                    messages: [{ role: 'user', content: groqPrompt }],
                     temperature: 0.7,
                     response_format: { type: 'json_object' }
                 })
             });
 
-            const grokData = await grokRes.json();
-            if (!grokRes.ok || grokData.error) {
-                const errMsg = grokData.error?.message || grokData.error?.code || grokData.message || JSON.stringify(grokData.error || grokData);
-                throw new Error(`Grok API خطا: ${errMsg}`);
+            const groqData = await groqRes.json();
+            if (!groqRes.ok || groqData.error) {
+                const errMsg = groqData.error?.message || groqData.message || JSON.stringify(groqData.error || groqData);
+                throw new Error(`Groq API خطا: ${errMsg}`);
             }
-            const grokText = grokData.choices?.[0]?.message?.content;
-            if (!grokText) throw new Error('Grok نے کوئی جواب نہیں دیا۔');
+            const groqText = groqData.choices?.[0]?.message?.content;
+            if (!groqText) throw new Error('Groq نے کوئی جواب نہیں دیا۔');
             
-            const cleanGrok = grokText.replace(/```json|```/g, '').trim();
-            if (codeInput) codeInput.value = cleanGrok;
+            const cleanGroq = groqText.replace(/```json|```/g, '').trim();
+            if (codeInput) codeInput.value = cleanGroq;
             if (scanModal) scanModal.classList.add('hidden');
-            setTimeout(() => { if (window.loadDesignFromCode) window.loadDesignFromCode(cleanGrok); }, 50);
+            setTimeout(() => { if (window.loadDesignFromCode) window.loadDesignFromCode(cleanGroq); }, 50);
 
             if (!window.userState.isAdmin && window.userState.licenseStatus !== 'approved') {
                 const userRef = doc(db, "users", window.userState.uid);
                 await updateDoc(userRef, { credits: increment(-5), usedCredits: increment(5) });
             }
-            return; // Done with Grok
+            return; 
         }
 
         // ===== GEMINI PATH =====
@@ -974,63 +961,55 @@ function getApiKey() {
     return localStorage.getItem('gemini_api_key');
 }
 
-// ================ GROK (xAI) API MANAGEMENT ================
-function getGrokApiKey() {
-    return localStorage.getItem('grok_api_key');
+// ================ GROQ (Free) API MANAGEMENT ================
+function getGroqApiKey() {
+    return localStorage.getItem('groq_api_key');
 }
 
-window.saveGrokApiKey = () => {
-    const key = document.getElementById('grokKeyInput')?.value.trim();
+window.saveGroqApiKey = () => {
+    const key = document.getElementById('groqKeyInput')?.value.trim();
     if (!key) return;
-    localStorage.setItem('grok_api_key', key);
-    const msg = document.getElementById('grokSaveStatusMsg');
+    localStorage.setItem('groq_api_key', key);
+    const msg = document.getElementById('groqSaveStatusMsg');
     if (msg) { msg.style.display = 'block'; setTimeout(() => msg.style.display = 'none', 3000); }
-    verifyGrokApiKey();
+    verifyGroqApiKey();
 };
 
-window.verifyGrokApiKey = async () => {
-    const key = document.getElementById('grokKeyInput')?.value.trim() || getGrokApiKey();
-    const statusEl = document.getElementById('grokVerifyStatus');
+window.verifyGroqApiKey = async () => {
+    const key = document.getElementById('groqKeyInput')?.value.trim() || getGroqApiKey();
+    const statusEl = document.getElementById('groqVerifyStatus');
     if (!statusEl) return;
 
     if (!key) {
-        statusEl.innerHTML = "<span style='color:var(--warning-orange);'>براہ کرم Grok API Key درج کریں۔</span>";
+        statusEl.innerHTML = "<span style='color:var(--warning-orange);'>براہ کرم Groq API Key درج کریں۔</span>";
         statusEl.style.display = 'block';
         return;
     }
 
-    statusEl.innerHTML = "<span style='color:var(--warning-orange);'><i class='fa-solid fa-spinner fa-spin'></i> Grok کنکشن ٹیسٹ ہو رہا ہے...</span>";
+    statusEl.innerHTML = "<span style='color:var(--warning-orange);'><i class='fa-solid fa-spinner fa-spin'></i> Groq کنکشن ٹیسٹ ہو رہا ہے...</span>";
     statusEl.style.display = 'block';
 
     try {
-        // Minimal chat completion test (1 token only)
-        const res = await fetch('https://api.x.ai/v1/chat/completions', {
+        const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${key}` 
             },
             body: JSON.stringify({
-                model: 'grok-2-latest',
+                model: 'llama-3.3-70b-versatile',
                 messages: [{ role: 'user', content: 'Hi' }],
                 max_tokens: 1
             })
         });
-        if (res.ok || res.status === 200) {
-            statusEl.innerHTML = "<span style='color:var(--success-green);'><i class='fa-solid fa-check-circle'></i> Grok کنکشن کامیاب! Key بالکل صحیح ہے۔</span>";
-        } else if (res.status === 401) {
-            statusEl.innerHTML = "<span style='color:#ff5252;'><i class='fa-solid fa-ban'></i> Key غلط ہے یا Expire ہو گئی۔</span>";
-        } else if (res.status === 429) {
-            statusEl.innerHTML = "<span style='color:var(--warning-orange);'><i class='fa-solid fa-check'></i> Key صحیح ہے لیکن Rate Limit ہے۔</span>";
+        if (res.ok) {
+            statusEl.innerHTML = "<span style='color:var(--success-green);'><i class='fa-solid fa-check-circle'></i> Groq کنکشن کامیاب! Key بالکل صحیح ہے۔</span>";
         } else {
-            statusEl.innerHTML = `<span style='color:var(--success-green);'><i class='fa-solid fa-check-circle'></i> Key صحیح ہے (${res.status})</span>`;
+            const data = await res.json();
+            statusEl.innerHTML = `<span style='color:#ff5252;'><i class='fa-solid fa-ban'></i> ${data.error?.message || 'Key غلط ہے۔'}</span>`;
         }
     } catch (e) {
-        if (key && key.startsWith('xai-') && key.length > 30) {
-            statusEl.innerHTML = "<span style='color:var(--success-green);'><i class='fa-solid fa-check-circle'></i> Key کی شکل صحیح ہے۔ (ڈیزائن جنریٹ کام کرے گا)</span>";
-        } else {
-            statusEl.innerHTML = `<span style='color:#ff5252;'><i class='fa-solid fa-xmark'></i> نیٹ ورک مسئلہ: ${e.message}</span>`;
-        }
+        statusEl.innerHTML = `<span style='color:#ff5252;'><i class='fa-solid fa-xmark'></i> نیٹ ورک مسئلہ: ${e.message}</span>`;
     }
 };
 
@@ -1043,12 +1022,12 @@ function updateProviderBadge(p) {
     const label = document.getElementById('activeProviderLabel');
     if (!label) return;
 
-    if (p === 'grok') {
-        label.innerHTML = "<i class='fa-solid fa-x'></i> Grok (xAI)";
-        label.style.color = 'orange';
+    if (p === 'groq') {
+        label.innerHTML = "<i class='fa-solid fa-bolt'></i> Groq (Free)";
+        label.style.color = 'var(--neon-cyan)';
         if (badge) {
-            badge.style.background = 'rgba(255,165,0,0.08)';
-            badge.style.borderColor = 'rgba(255,165,0,0.3)';
+            badge.style.background = 'rgba(0,255,157,0.08)';
+            badge.style.borderColor = 'rgba(0,255,157,0.3)';
         }
     } else {
         label.innerHTML = "<i class='fa-solid fa-gem'></i> Gemini";
@@ -1198,64 +1177,52 @@ window.runAnalysis = async () => {
         const selectedProvider = window.getSelectedProvider?.() || 'gemini';
         const grokKey = getGrokApiKey();
 
-        // ===== GROK (xAI) VISION PATH =====
-        if (selectedProvider === 'grok') {
-            if (!grokKey) {
+        // ===== GROQ (Free) VISION PATH =====
+        if (selectedProvider === 'groq') {
+            const groqKey = getGroqApiKey();
+            if (!groqKey) {
                 if (scanModal) scanModal.classList.add('hidden');
                 if (runBtn) runBtn.disabled = false;
                 clearTimeout(killSwitch);
-                return alert("آپ نے Grok provider select کیا ہے لیکن Grok API Key سیو نہیں کی ہے۔\nبراہ کرم پروفائل > Grok Key درج کر کے سیو کریں۔");
+                return alert("آپ نے Groq provider select کیا ہے لیکن Groq API Key سیو نہیں کی ہے۔\nبراہ کرم پروفائل > Groq Key درج کر کے سیو کریں۔");
             }
 
-            console.log("v4.18.15: Using Grok AI for analysis...");
+            console.log("v4.18.15: Using Groq AI for analysis...");
             if (scanStatusText) scanStatusText.innerText = "AI ڈیزائن کا جائزہ لے رہا ہے...";
 
-            let grokModelToUse = 'grok-3';
-            try {
-                const listRes = await fetch('https://api.x.ai/v1/models', { headers: { 'Authorization': `Bearer ${grokKey}` } });
-                if (listRes.ok) {
-                    const listData = await listRes.json();
-                    if (listData.data && listData.data.length > 0) {
-                        const models = listData.data.map(m => m.id);
-                        const visionModel = models.find(m => m.includes('vision'));
-                        const bestModel = models.find(m => m.includes('grok-4') || m.includes('grok-3')) || models.find(m => m.includes('grok-2') || m.includes('latest')) || models[0];
-                        grokModelToUse = visionModel || bestModel || grokModelToUse;
-                    }
-                }
-            } catch (e) { console.warn("List Grok Models failed", e); }
-
-            const grokRes = await fetch('https://api.x.ai/v1/chat/completions', {
+            const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${grokKey}`
+                    'Authorization': `Bearer ${groqKey}`
                 },
                 body: JSON.stringify({
-                    model: grokModelToUse,
+                    model: 'llama-3.2-90b-vision-preview',
                     messages: [{
                         role: 'user',
                         content: [
-                            { type: 'image_url', image_url: { url: compressedBase64, detail: 'high' } },
+                            { type: 'image_url', image_url: { url: compressedBase64 } },
                             { type: 'text', text: prompt }
                         ]
                     }],
                     response_format: { type: 'json_object' },
-                    temperature: 0.3
+                    temperature: 0.1
                 })
             });
 
-            const grokData = await grokRes.json();
-            if (!grokRes.ok || grokData.error) {
-                const errMsg = grokData.error?.message || grokData.error?.code || grokData.message || JSON.stringify(grokData.error || grokData);
-                throw new Error(`Grok API خطا (${grokRes.status}): ${errMsg}`);
+            const groqData = await groqRes.json();
+            if (!groqRes.ok || groqData.error) {
+                const errMsg = groqData.error?.message || groqData.message || JSON.stringify(groqData.error || groqData);
+                throw new Error(`Groq API خطا (${groqRes.status}): ${errMsg}`);
             }
-            const grokText = grokData.choices?.[0]?.message?.content;
-            if (!grokText) throw new Error("Grok نے کوئی جواب نہیں دیا۔");
+            const groqText = groqData.choices?.[0]?.message?.content;
+            if (!groqText) throw new Error("Groq نے کوئی جواب نہیں دیا۔");
+            
             let resultData;
             try {
-                resultData = JSON.parse(grokText.replace(/```json|```/g, '').trim());
+                resultData = JSON.parse(groqText.replace(/```json|```/g, '').trim());
             } catch(parseErr) {
-                throw new Error("Grok نے JSON فارمیٹ میں جواب نہیں دیا۔ دوبارہ کوشش کریں۔");
+                throw new Error("Groq نے JSON فارمیٹ میں جواب نہیں دیا۔ دوبارہ کوشش کریں۔");
             }
 
             if (scanStatusText) scanStatusText.innerText = "نتائج دکھائے جا رہے ہیں...";
@@ -1264,7 +1231,7 @@ window.runAnalysis = async () => {
             if (userState.loggedIn && !userState.isAdmin && userState.licenseStatus !== 'approved') {
                 deductCredit().catch(e => console.log("Credit bg deduction."));
             }
-            console.log("v4.18.15: Grok Analysis SUCCESS.");
+            console.log("v4.18.15: Groq Analysis SUCCESS.");
             return;
         }
 
