@@ -1583,42 +1583,18 @@ footer { margin-top: 40px; }
     margin-top: 20px;
 }
 .package-card {
-    border: 1px solid rgba(255,255,255,0.1);
-    background: rgba(255,255,255,0.02);
-    border-radius: 20px;
-    padding: 30px 20px;
-    text-align: center;
-    transition: 0.3s;
+    background: #ffffff !important;
+    border: 1px solid #dadce0 !important;
+    border-radius: 20px !important;
+    padding: 24px !important;
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+    transition: all 0.2s;
     position: relative;
     overflow: hidden;
     color: #3c4043 !important;
-}
-
-.package-card:hover {
-    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-}
-
-.package-card.active-package {
-    border: 2px solid #1a73e8 !important;
-}
-
-.package-badge {
-    position: absolute;
-    top: 16px;
-    right: 16px;
-    background: #e8f0fe;
-    color: #1967d2;
-    padding: 4px 12px;
-    border-radius: 100px;
-    font-size: 0.75rem;
-    font-weight: 700;
-}
-
-.package-header {
-    font-size: 1.75rem;
-    font-weight: 500;
-    margin-bottom: 8px;
-    color: #202124 !important;
+    height: 100%;
 }
 
 .package-tagline {
