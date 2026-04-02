@@ -788,6 +788,20 @@ window.toggleModal = (id, show) => {
     }
 };
 
+// v4.22.3: Open Personalization Popup
+window.openPersonalization = function() {
+    toggleModal('profileDropdown', false); // close the profile dropdown first
+    renderFontPicker(); // populate font grid
+    // Sync slider and language to current settings
+    const slider = document.getElementById('fontSizeSlider');
+    if (slider) slider.value = userSettings.fontSize;
+    const sizeVal = document.getElementById('fontSizeVal');
+    if (sizeVal) sizeVal.innerText = `${userSettings.fontSize}px`;
+    const lang = document.getElementById('languageSelect');
+    if (lang) lang.value = userSettings.language;
+    toggleModal('personalizationModal', true);
+};
+
 // ================ UI UPDATES ================
 function updateUI() {
     const hasLocalKey = !!getApiKey();
@@ -1880,64 +1894,12 @@ function renderFontPicker() {
 }
 
 window.updateLanguageState = function() {
-    userSettings.language = document.getElementById('languageSelect').value;
+    const sel = document.getElementById('languageSelect');
+    if (sel) userSettings.language = sel.value;
     saveSettings();
-    
-    // v4.22.2: Smart Re-Translation
-    if (lastAnalysisData) {
-        showToast(`زبان تبدیل کی جا رہی ہے: ${userSettings.language} — دوبارہ ترجمہ ہو رہا ہے...`, 'info');
-        retranslateResults();
-    } else {
-        showToast(`زبان سیٹ ہو گئی: ${userSettings.language} — اگلی بار نتائج اسی زبان میں آئیں گے`, 'info');
-    }
+    showToast(`✅ زبان سیٹ ہو گئی: ${userSettings.language} — اگلے تجزیہ میں اسی زبان میں نتائج آئیں گے`, 'success');
 };
 
-// v4.22.2: Re-translate last results into new language using AI
-window.retranslateResults = async function() {
-    if (!lastAnalysisData) return;
-    try {
-        const keyToUse = getApiKey() || masterKeys.gemini || "AIzaSyC7f4QH6CSRN6dAhGNm7P4kMHTv12mtdEo";
-        const lang = userSettings.language;
-        const summary = JSON.stringify({
-            score: lastAnalysisData.score,
-            accessibility: lastAnalysisData.accessibility,
-            contrast: lastAnalysisData.contrast,
-            strengths: lastAnalysisData.strengths,
-            improvements: lastAnalysisData.improvements,
-            detailed_improvements: lastAnalysisData.detailed_improvements,
-            pricing: lastAnalysisData.pricing,
-            client_impression: lastAnalysisData.client_impression,
-            colors: lastAnalysisData.colors,
-            fonts: lastAnalysisData.fonts,
-            category: lastAnalysisData.category
-        });
-
-        const prompt = `Translate this design analysis JSON into ${lang} language. Keep the JSON structure identical, only translate text values (not keys, hex colors, or font names). Return ONLY valid JSON with no markdown.\n\n${summary}`;
-
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${keyToUse}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{ parts: [{ text: prompt }] }],
-                generationConfig: { response_mime_type: "application/json" }
-            })
-        });
-        const data = await res.json();
-        if (data.error) throw new Error(data.error.message);
-        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (!text) throw new Error('Empty response');
-        const translated = JSON.parse(text);
-        // Preserve score & colors from original
-        translated.score = lastAnalysisData.score;
-        translated.colors = lastAnalysisData.colors;
-        translated.fonts = lastAnalysisData.fonts;
-        displayResults(translated);
-        showToast(`✅ نتائج ${lang} میں ترجمہ ہو گئے`, 'success');
-    } catch (e) {
-        console.error('Re-translation error:', e);
-        showToast('ترجمہ نہیں ہو سکا — براہ کرم دوبارہ تجزیہ کریں', 'warning');
-    }
-};
 
 window.updateFontSize = function(val, save = true) {
     const size = parseInt(val);
