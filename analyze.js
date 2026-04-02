@@ -5,7 +5,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
 import { getAnalytics, isSupported } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-analytics.js";
 
-// v4.21.5: Final Stable Reconstruction (Restoring All Functions)
+// v4.21.7: The "Everything Restored" Build
 const firebaseConfig = {
     apiKey: "AIzaSyC7f4QH6CSRN6dAhGNm7P4kMHTv12mtdEo",
     authDomain: "designcheck-8be9f.firebaseapp.com",
@@ -197,6 +197,40 @@ window.saveGroqApiKey = async () => {
     showToast("Groq Key محفوظ!", "success");
 };
 
+// ================ FILE HANDLING ================
+function handleFile(file) {
+    if (!file || !file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+        currentImageBase64 = event.target.result;
+        if (elements.designPreview) elements.designPreview.src = currentImageBase64;
+        if (elements.previewContainer) elements.previewContainer.classList.remove('hidden');
+        if (elements.dropZone) elements.dropZone.classList.add('hidden');
+        showToast("ڈیزائن اپلوڈ ہو گیا!", "success");
+    };
+    reader.readAsDataURL(file);
+}
+
+if (elements.fileInput) {
+    elements.fileInput.onchange = (e) => handleFile(e.target.files[0]);
+}
+
+if (elements.dropZone) {
+    elements.dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        elements.dropZone.style.borderColor = 'var(--neon-cyan)';
+        elements.dropZone.style.background = 'rgba(0, 229, 255, 0.05)';
+    });
+    elements.dropZone.addEventListener('dragleave', () => {
+        elements.dropZone.style.borderColor = 'rgba(255,255,255,0.1)';
+        elements.dropZone.style.background = 'rgba(255,255,255,0.02)';
+    });
+    elements.dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        handleFile(e.dataTransfer.files[0]);
+    });
+}
+
 // ================ ANALYSIS ================
 window.runAnalysis = async () => {
     if (!currentImageBase64) return alert("ڈیزائن اپلوڈ کریں۔");
@@ -214,7 +248,7 @@ window.runAnalysis = async () => {
 
         if (provider === 'groq') {
             key = localStorage.getItem('groq_api_key') || masterKeys.groq;
-            const promptStr = `Analyze design. Language: ${userSettings.language}. Output JSON.`;
+            const promptStr = `Analyze design. Language: ${userSettings.language}. Output JSON fixed schema.`;
             res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
                 method: "POST",
                 headers: { "Authorization": `Bearer ${key}`, "Content-Type": "application/json" },
@@ -227,11 +261,9 @@ window.runAnalysis = async () => {
             });
         } else {
             key = localStorage.getItem('gemini_api_key') || masterKeys.gemini || "AIzaSyC7f4QH6CSRN6dAhGNm7P4kMHTv12mtdEo";
-            const prompt = `Analyze this design. Language: ${userSettings.language}. Output JSON structure: {score, category, strengths[], improvements[], accessibility, contrast, detailed_improvements[{text, priority}], pricing{current, improved}, client_impression{level, feedback, warning}, colors[], fonts[]}`;
-            // v4.21.5: Reliable Gemini Path
+            const prompt = `Analyze this design. Language: ${userSettings.language}. Output JSON: {score, category, strengths[], improvements[], accessibility, contrast, detailed_improvements[{text, priority}], pricing{current, improved}, client_impression{level, feedback, warning}, colors[], fonts[]}`;
             res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${key}`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
+                method: "POST", headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     contents: [{ parts: [{ text: prompt }, { inline_data: { mime_type: "image/jpeg", data: compressed.split(',')[1] } }] }],
                     generationConfig: { responseMimeType: "application/json" }
@@ -283,7 +315,7 @@ window.generateAIDesign = async () => {
     try {
         const provider = localStorage.getItem('designcheck_provider') || 'gemini';
         let key, res;
-        const systemPrompt = "Create a Fabric.js canvas design. Return ONLY valid JSON: { objects: [], backgroundColor: '#fff', width: 800, height: 600 }. Objects: { type: 'i-text'|'rect'|'circle', left, top, fill, text, fontSize, fontFamily, width, height }.";
+        const systemPrompt = "Create a Fabric.js design JSON. Return ONLY: { objects: [], backgroundColor: '#fff', width: 800, height: 600 }.";
 
         if (provider === 'groq') {
             key = localStorage.getItem('groq_api_key') || masterKeys.groq;
@@ -306,19 +338,11 @@ window.generateAIDesign = async () => {
 
         const data = await res.json();
         const text = provider === 'groq' ? data.choices[0].message.content : data.candidates[0].content.parts[0].text;
-        const designJson = JSON.parse(text);
-        
         if (window.dc_canvas) {
-            window.dc_canvas.loadFromJSON(designJson, () => {
-                window.dc_canvas.renderAll();
-                showToast("AI ڈیزائن تیار ہے!", "success");
-            });
+            window.dc_canvas.loadFromJSON(JSON.parse(text), () => { window.dc_canvas.renderAll(); showToast("AI ڈیزائن تیار ہے!", "success"); });
         }
-    } catch (e) { alert("ڈیزائن جنریشن میں مسئلہ: " + e.message); }
-    finally {
-        genBtn.disabled = false;
-        genBtn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> ڈیزائن جنریٹ کریں (Magic Build)';
-    }
+    } catch (e) { alert("Generation Error: " + e.message); }
+    finally { genBtn.disabled = false; genBtn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> ڈیزائن جنریٹ کریں (Magic Build)'; }
 };
 
 // ================ ADMIN & CLAIMS ================
@@ -336,6 +360,7 @@ window.submitCreditClaim = async () => {
     if(!name || !tid) return alert("تمام خانے پُر کریں۔");
     await addDoc(collection(db, "claims"), { name, tid, uid: userState.uid, email: userState.email, status: 'pending', createdAt: serverTimestamp() });
     document.getElementById('claimStatus').style.display = 'block';
+    showToast("درخواست بھیج دی گئی!", "success");
     toggleModal('creditClaimModal', false);
 };
 
@@ -344,10 +369,9 @@ window.openAdminPanel = async () => {
     const snap = await getDocs(collection(db, "users"));
     elements.adminUsersList.innerHTML = snap.docs.map(u => {
         const d = u.data();
-        return `<div class="admin-user-card">
-            <span>${d.email}</span>
-            <span>Credits: ${d.credits}</span>
-            <button onclick="approveUser('${u.id}')" class="btn approve">Approve</button>
+        return `<div class="admin-user-card" style="padding:10px; background:rgba(255,255,255,0.05); margin-bottom:5px; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-size:0.8rem;">${d.email} (Credits: ${d.credits})</span>
+            <button onclick="approveUser('${u.id}')" class="btn approve" style="padding:5px 10px; font-size:0.7rem;">Approve</button>
         </div>`;
     }).join("");
 };
