@@ -169,7 +169,10 @@ const elements = {
     historyList: document.getElementById('historyList'),
     resultsCard: document.querySelector('.results-card'),
     statusHeader: document.getElementById('statusHeader'),
-    exportGroup: document.getElementById('exportGroup')
+    exportGroup: document.getElementById('exportGroup'),
+    loginGate: document.getElementById('loginGate'),
+    loginLoading: document.getElementById('loginLoading'),
+    loginMain: document.getElementById('loginMain')
 };
 
 // Ensure session persistence
@@ -808,6 +811,15 @@ function updateUI() {
     if (userState.loggedIn) {
         elements.loginBtn.classList.add('hidden');
         elements.authContainer.classList.remove('hidden');
+
+        // Hide login gate if logged in
+        if (elements.loginGate) {
+            elements.loginGate.style.opacity = '0';
+            elements.loginGate.style.pointerEvents = 'none';
+            setTimeout(() => {
+                if (userState.loggedIn) elements.loginGate.style.display = 'none';
+            }, 500); // match transition time
+        }
         
         const emailDisplay = userState.email.split('@')[0];
         elements.profileEmail.innerText = emailDisplay;
@@ -881,6 +893,17 @@ function updateUI() {
         elements.loginBtn.classList.remove('hidden');
         elements.authContainer.classList.add('hidden');
         elements.loginBtn.innerHTML = "<i class='fa-brands fa-google'></i> Google سے سائن ان کریں";
+        
+        // Show login gate if logged out
+        if (elements.loginGate) {
+            elements.loginGate.style.display = 'flex';
+            elements.loginGate.style.opacity = '1';
+            elements.loginGate.style.pointerEvents = 'auto';
+
+            // Toggle between loading and main login form
+            if (elements.loginLoading) elements.loginLoading.classList.add('hidden');
+            if (elements.loginMain) elements.loginMain.classList.remove('hidden');
+        }
     }
 }
 

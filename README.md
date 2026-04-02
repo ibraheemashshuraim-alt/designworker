@@ -1,4 +1,4 @@
-# DesignCheck AI Design Editor (v4.18.5 - Bulletproof Edition)
+# DesignCheck AI Design Editor (v4.23.1 - Enhanced Auth Gate)
 
 ![Premium AI Design](https://img.shields.io/badge/AI-Gemini_Architect-cyan?style=for-the-badge)
 ![Stable Release](https://img.shields.io/badge/Stability-99.9%25-green?style=for-the-badge)
@@ -29,4 +29,4 @@ To make this live on the web:
 Created by **Abdullah** with **Antigravity (Google Deepmind AI)**.
 
 ---
-*v4.18.5 - The Bulletproof Stability Update*
+*v4.23.1 - The Enhanced Auth Gate Update*
