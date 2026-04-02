@@ -159,22 +159,13 @@
                         <h3 id="profileEmailVal" class="profile-email-text"></h3>
                     </div>
 
-                    <div class="credit-box">
-                        <div class="credit-box-title">آپ کے کریڈٹس</div>
-                        <div id="profileCreditsModal" class="credit-box-value">--</div>
-                    </div>
-
-                    
-                    <div id="buyCreditsSection" class="modal-section hidden">
-                        <h4><i class="fa-solid fa-gem" style="color:var(--neon-purple);"></i> پریمیم کریڈٹس حاصل کریں</h4>
-                        <p>500 روپے SadaPay پر بھیجیں:</p>
-                        <div class="payment-card">
-                            <span class="selectable-text">03703603184</span>
-                        </div>
-                        <button id="claimBtn" onclick="toggleModal('creditClaimModal', true)" class="btn approve" style="width: 100%; margin-top: 10px; font-size: 0.8rem;">
-                            میں نے پیمنٹ کر دی ہے (تفصیلات دیں)
+                    <div class="modal-section">
+                        <button onclick="toggleModal('packagesModal', true); toggleModal('profileDropdown', false);" class="btn secondary-btn" style="width: 100%; margin-bottom: 10px; border-color: var(--neon-purple); color: var(--neon-purple);">
+                            <i class="fa-solid fa-gem"></i> Buy Credits / Upgrade
                         </button>
-                        <p id="claimStatus" style="font-size: 0.65rem; color: var(--warning-orange); margin-top: 5px; display: none;">درخواست بھیج دی گئی ہے!</p>
+                        <button onclick="toggleModal('licenseModal', true); toggleModal('profileDropdown', false);" class="btn secondary-btn" style="width: 100%; border-color: #ffd700; color: #ffd700;">
+                            <i class="fa-solid fa-crown"></i> Agency License (1.5 Lac)
+                        </button>
                     </div>
 
                     <div class="modal-section">
@@ -314,7 +305,7 @@
                             <i class="fa-solid fa-wand-magic-sparkles"></i> AI کے ساتھ تجزیہ کریں
                         </button>
                         <!-- Premium Buy Credits Button -->
-                        <button id="buyCreditsBtn" class="btn hidden" style="width: 100%; font-size: 1.1rem; padding: 15px; background: linear-gradient(45deg, #ffd700, #ffb300); color: #000; font-weight: 800; box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);" onclick="toggleModal('profileDropdown', true)">
+                        <button id="buyCreditsBtn" class="btn hidden" style="width: 100%; font-size: 1.1rem; padding: 15px; background: linear-gradient(45deg, #ffd700, #ffb300); color: #000; font-weight: 800; box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);" onclick="toggleModal('packagesModal', true)">
                             <i class="fa-solid fa-gem"></i> کریڈٹس خریدیں (Upgrade Now)
                         </button>
                     </div>
@@ -634,59 +625,88 @@
         </div>
     </div>
 
-    <!-- v5.0.0: Packages Modal (3-Tier Pricing) -->
+    <!-- v5.1.0: Refined Packages Modal (3-Tier Credits) -->
     <div id="packagesModal" class="modal hidden">
-        <div class="modal-content" style="max-width: 900px; width: 95%; background: #02060c; border: 1px solid rgba(157,0,255,0.3); padding: 30px;">
+        <div class="modal-content" style="max-width: 950px; width: 95%; background: #02060c; border: 1px solid rgba(157,0,255,0.3); padding: 30px;">
             <span class="close-btn" onclick="toggleModal('packagesModal', false)">&times;</span>
             <div style="text-align: center; margin-bottom: 30px;">
-                <h2 style="color: var(--neon-cyan); margin-bottom: 10px;"><i class="fa-solid fa-gem"></i> ڈیزائن چیک پریمیم پلان</h2>
-                <p style="color: var(--text-muted);">اپنی ضرورت کے مطابق بہترین پلان منتخب کریں</p>
+                <h2 style="color: var(--neon-cyan); margin-bottom: 10px;"><i class="fa-solid fa-gem"></i> پریمیم کریڈٹ پلانز</h2>
+                <p style="color: var(--text-muted);">اپنی ضرورت کے مطابق کریڈٹس منتخب کریں</p>
             </div>
             
             <div class="pricing-grid">
                 <!-- Pro Plan -->
-                <div class="package-card" style="border-color: rgba(0, 229, 255, 0.3);">
+                <div class="package-card">
                     <div class="package-header" style="color: var(--neon-cyan);">PRO</div>
                     <div class="package-price">1500 PKR</div>
                     <div class="package-credits">100 Credits</div>
                     <ul class="package-features">
-                        <li><i class="fa-solid fa-check"></i> Expert Suggestions</li>
-                        <li><i class="fa-solid fa-check"></i> Detailed Improvements</li>
-                        <li><i class="fa-solid fa-xmark" style="color: #ff5252;"></i> Design Editor Tools</li>
-                        <li><i class="fa-solid fa-check"></i> Email Reports</li>
+                        <li class="feat-yes">Expert Suggestions</li>
+                        <li class="feat-yes">Detailed Analysis</li>
+                        <li class="feat-yes">Printable Reports</li>
+                        <li class="feat-no">Design Editor</li>
+                        <li class="feat-no">AI Magic Build</li>
                     </ul>
-                    <button class="package-btn" style="background: rgba(0, 229, 255, 0.1); border-color: var(--neon-cyan);" onclick="toggleModal('creditClaimModal', true); toggleModal('packagesModal', false);">ممبر بنیں</button>
+                    <button class="package-btn" onclick="triggerPackagePurchase('Pro')">Buy Now</button>
                 </div>
 
                 <!-- Premium Plan -->
-                <div class="package-card active-package" style="border-color: var(--neon-purple); transform: scale(1.05); background: rgba(157, 0, 255, 0.03);">
+                <div class="package-card active-package">
                     <div class="package-badge">POPULAR</div>
                     <div class="package-header" style="color: var(--neon-purple);">PREMIUM</div>
                     <div class="package-price">10,000 PKR</div>
                     <div class="package-credits">1000 Credits</div>
                     <ul class="package-features">
-                        <li><i class="fa-solid fa-check"></i> <b>Design Editor (Full Access)</b></li>
-                        <li><i class="fa-solid fa-check"></i> AI Magic Build</li>
-                        <li><i class="fa-solid fa-check"></i> Expert Suggestions</li>
-                        <li><i class="fa-solid fa-check"></i> Unlimited History</li>
+                        <li class="feat-yes"><b>Full Design Editor</b></li>
+                        <li class="feat-yes">AI Magic Designer</li>
+                        <li class="feat-yes">Expert Suggestions</li>
+                        <li class="feat-yes">BG Removal Tool</li>
+                        <li class="feat-yes">Priority Processing</li>
                     </ul>
-                    <button class="package-btn" style="background: linear-gradient(135deg, var(--neon-purple), var(--neon-cyan)); color: #fff;" onclick="toggleModal('creditClaimModal', true); toggleModal('packagesModal', false);">ابھی اپ گریڈ کریں</button>
+                    <button class="package-btn" style="background: var(--neon-purple);" onclick="triggerPackagePurchase('Premium')">Buy Now</button>
                 </div>
 
                 <!-- Business Plan -->
-                <div class="package-card" style="border-color: #ffd700;">
+                <div class="package-card">
                     <div class="package-header" style="color: #ffd700;">BUSINESS</div>
                     <div class="package-price">20,000 PKR</div>
-                    <div class="package-credits">Unlimited (30 Days)</div>
+                    <div class="package-credits">10,000 Credits</div>
                     <ul class="package-features">
-                        <li><i class="fa-solid fa-check"></i> Agency Level Access</li>
-                        <li><i class="fa-solid fa-check"></i> <b>10,000 Credits</b></li>
-                        <li><i class="fa-solid fa-check"></i> Priority Support</li>
-                        <li><i class="fa-solid fa-check"></i> Team Management</li>
+                        <li class="feat-yes">Everything in Premium</li>
+                        <li class="feat-yes">Team Workspace</li>
+                        <li class="feat-yes">White-label Reports</li>
+                        <li class="feat-yes">Bulk Analysis</li>
+                        <li class="feat-yes">30 Days Support</li>
                     </ul>
-                    <button class="package-btn" style="border-color: #ffd700; color: #ffd700; background: rgba(255, 215, 0, 0.05);" onclick="toggleModal('creditClaimModal', true); toggleModal('packagesModal', false);">رابطہ کریں / بائے</button>
+                    <button class="package-btn" onclick="triggerPackagePurchase('Business')">Buy Now</button>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- v5.1.0: Standalone License Modal -->
+    <div id="licenseModal" class="modal hidden">
+        <div class="modal-content" style="max-width: 600px; border-color: #ffd700; background: linear-gradient(to bottom, #0a0a14, #121225);">
+            <span class="close-btn" onclick="toggleModal('licenseModal', false)">&times;</span>
+            <div style="text-align: center; margin-bottom: 25px;">
+                <i class="fa-solid fa-crown" style="font-size: 3rem; color: #ffd700; text-shadow: 0 0 20px rgba(255,215,0,0.5);"></i>
+                <h2 style="color: #ffd700; margin-top: 15px;">Agency License</h2>
+                <div style="font-size: 1.5rem; font-weight: 800; color: #fff; margin: 10px 0;">150,000 PKR</div>
+                <p style="color: var(--text-muted);">Ultimate Agency Solution</p>
+            </div>
+
+            <ul class="package-features license-feats" style="margin-bottom: 30px;">
+                <li class="feat-yes">Lifetime Full Source Code</li>
+                <li class="feat-yes">Self-Hosting Capability</li>
+                <li class="feat-yes">Custom Branding & Logo</li>
+                <li class="feat-yes">Unlimited Users & Workspace</li>
+                <li class="feat-yes">Commercial Selling Rights</li>
+                <li class="feat-yes">Priority Development Support</li>
+            </ul>
+
+            <button class="btn" style="width: 100%; padding: 18px; background: #ffd700; color: #000; font-weight: 800; border-radius: 12px; font-size: 1.1rem;" onclick="triggerPackagePurchase('Agency License')">
+                Get License Now
+            </button>
         </div>
     </div>
 

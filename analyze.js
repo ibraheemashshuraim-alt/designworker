@@ -46,6 +46,7 @@ let userState = {
     paymentStatus: 'none',
     packageType: 'Free'
 };
+let currentSelectedPackage = null; // v5.1.0: Stores intended purchase context
 
 // v4.20.0: Personalization Settings
 let userSettings = {
@@ -352,6 +353,7 @@ async function setupUserPersistence(user) {
             userState.photoURL = user.photoURL;
             userState.isAdmin = ADMIN_EMAILS.includes(user.email);
             userState.packageType = data.packageType || 'Free';
+            userState.requestedPackage = data.requestedPackage || null; // NEW: Track intent
 
             // v4.19.2: Globally Load Email Settings (for everyone to use admin keys)
             getDoc(doc(db, "config", "email_settings")).then(snap => {
@@ -969,12 +971,14 @@ window.openAdminPanel = async () => {
             const joinedDate = data.joinDate ? new Date(data.joinDate.seconds * 1000).toLocaleDateString() : 'New';
             const isPendingCredit = data.paymentStatus === 'pending';
             const pType = data.packageType || 'Free';
+            const reqPlan = data.requestedPackage || 'N/A';
             
             let statusBadge = `<span class="status-badge badge-trial">Free User</span>`;
             if (isPendingCredit) statusBadge = `<span class="status-badge badge-pending">Payment Pending</span>`;
             else if (pType === 'Pro') statusBadge = `<span class="status-badge badge-pro">Pro Plan</span>`;
             else if (pType === 'Premium') statusBadge = `<span class="status-badge badge-premium">Premium Plan</span>`;
             else if (pType === 'Business') statusBadge = `<span class="status-badge badge-business">Business Plan</span>`;
+            else if (pType === 'Agency License') statusBadge = `<span class="status-badge badge-business" style="border-color:#ffd700; color:#ffd700;">Agency License</span>`;
 
             const card = document.createElement('div');
             card.className = `admin-user-card ${isPendingCredit ? 'pending-highlight' : ''}`;
@@ -993,15 +997,20 @@ window.openAdminPanel = async () => {
 
                 ${isPendingCredit ? `
                 <div class="claim-details-box" style="background: rgba(255,165,0,0.05); padding: 12px; border-radius: 10px; border: 1px dashed orange; margin: 10px 0;">
-                    <span class="stat-label" style="color: orange;">PENDING CLAIM:</span>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                        <span class="stat-label" style="color: orange;">PENDING CLAIM</span>
+                        <span style="font-size:0.7rem; background:orange; color:#000; padding:2px 6px; border-radius:4px; font-weight:800;">PACK: ${reqPlan}</span>
+                    </div>
                     <div class="claim-value" style="font-size: 0.9rem; font-weight:700;"><i class="fa-solid fa-user"></i> ${data.claimName || 'N/A'}</div>
                     <div class="claim-value" style="font-size: 0.75rem; color: var(--neon-cyan); margin-top:4px;">
                         TID: <span style="font-family: monospace; background:rgba(0,0,0,0.3); padding: 2px 6px;">${data.claimTid || 'N/A'}</span>
                     </div>
-                    <div style="display:flex; gap:8px; margin-top:10px;">
-                        <button class="package-action-btn active" style="flex:1;" onclick="grantPackage('${data.id}', 'Pro', 100, true)">Approve Pro</button>
-                        <button class="package-action-btn active" style="flex:1; border-color: var(--neon-purple); color: var(--neon-purple);" onclick="grantPackage('${data.id}', 'Premium', 1000, true)">Approve Prem</button>
-                        <button class="package-action-btn" style="color: #ff5252; border-color: #ff5252;" onclick="rejectClaim('${data.id}')">Reject</button>
+                    <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
+                        <button class="package-action-btn ${reqPlan==='Pro'?'active':''}" onclick="grantPackage('${data.id}', 'Pro', 100, true)">Approve Pro</button>
+                        <button class="package-action-btn ${reqPlan==='Premium'?'active':''}" style="border-color: var(--neon-purple); color: var(--neon-purple);" onclick="grantPackage('${data.id}', 'Premium', 1000, true)">Approve Prem</button>
+                        <button class="package-action-btn ${reqPlan==='Business'?'active':''}" style="border-color: #ffd700; color: #ffd700;" onclick="grantPackage('${data.id}', 'Business', 10000, true)">Approve Biz</button>
+                        <button class="package-action-btn ${reqPlan==='Agency License'?'active':''}" style="border-color: #fff; color: #fff;" onclick="grantPackage('${data.id}', 'Agency License', 99999, true)">Approve License</button>
+                        <button class="package-action-btn" style="color: #ff5252; border-color: #ff5252; width:100%;" onclick="rejectClaim('${data.id}')">Reject Claim</button>
                     </div>
                 </div>
                 ` : ''}
@@ -1022,17 +1031,18 @@ window.openAdminPanel = async () => {
                 </div>
                 
                 <div style="margin-top: 10px;">
-                    <div class="stat-label" style="margin-bottom:8px;">MANAGE PACKAGE:</div>
+                    <div class="stat-label" style="margin-bottom:8px;">MANAGE PACKAGE (Manual Override):</div>
                     <div class="user-actions-grid">
-                        <button class="package-action-btn ${pType === 'Free' ? 'active' : ''}" onclick="grantPackage('${data.id}', 'Free', 10)">Free (10)</button>
-                        <button class="package-action-btn ${pType === 'Pro' ? 'active' : ''}" onclick="grantPackage('${data.id}', 'Pro', 100)">Pro (100)</button>
-                        <button class="package-action-btn ${pType === 'Premium' ? 'active' : ''}" onclick="grantPackage('${data.id}', 'Premium', 1000)">Premium (1k)</button>
-                        <button class="package-action-btn ${pType === 'Business' ? 'active' : ''}" onclick="grantPackage('${data.id}', 'Business', 10000)">Business (10k)</button>
+                        <button class="package-action-btn ${pType === 'Free' ? 'active' : ''}" onclick="grantPackage('${data.id}', 'Free', 10)">Free</button>
+                        <button class="package-action-btn ${pType === 'Pro' ? 'active' : ''}" onclick="grantPackage('${data.id}', 'Pro', 100)">Pro</button>
+                        <button class="package-action-btn ${pType === 'Premium' ? 'active' : ''}" onclick="grantPackage('${data.id}', 'Premium', 1000)">Prem</button>
+                        <button class="package-action-btn ${pType === 'Business' ? 'active' : ''}" onclick="grantPackage('${data.id}', 'Business', 10000)">Biz</button>
+                        <button class="package-action-btn ${pType === 'Agency License' ? 'active' : ''}" onclick="grantPackage('${data.id}', 'Agency License', 99999)">Lic</button>
                     </div>
                 </div>
 
                 <div style="display:flex; gap:10px; margin-top:10px; border-top: 1px solid rgba(255,255,255,0.05); padding-top:10px;">
-                    <button class="action-btn danger-btn" style="flex:1; padding: 6px; font-size:0.75rem;" onclick="resetUserCredits('${data.id}')">Reset Credits</button>
+                    <button class="action-btn danger-btn" style="flex:1; padding: 6px; font-size:0.75rem;" onclick="resetUserCredits('${data.id}')">Reset Acc</button>
                     <button class="action-btn danger-btn" style="flex:1; padding: 6px; font-size:0.75rem;" onclick="deleteUser('${data.id}')">Delete User</button>
                 </div>
             `;
@@ -1142,6 +1152,14 @@ window.closeAdminPanel = () => {
 };
 
 // ================ NEW PAYMENT & SHARE FEATURES ================
+// v5.1.0: Refined Purchase Trigger
+window.triggerPackagePurchase = (planName) => {
+    currentSelectedPackage = planName;
+    toggleModal('packagesModal', false);
+    toggleModal('licenseModal', false);
+    toggleModal('creditClaimModal', true);
+};
+
 window.submitCreditClaim = async () => {
     const name = document.getElementById('creditNameInput').value.trim();
     const tid = document.getElementById('creditTidInput').value.trim();
@@ -1151,19 +1169,18 @@ window.submitCreditClaim = async () => {
     
     const userRef = doc(db, "users", userState.uid);
     try {
-        // Give 5 temporary credits immediately and mark as pending
+        // v5.1.0: Now saves the requested package name
         await updateDoc(userRef, {
-            credits: userState.credits + 5,
             paymentStatus: 'pending',
             claimName: name,
             claimTid: tid,
+            requestedPackage: currentSelectedPackage || 'Custom/Manual',
             lastClaimAt: serverTimestamp()
         });
         
         toggleModal('creditClaimModal', false);
-        document.getElementById('claimStatus').style.display = 'block';
-        document.getElementById('claimBtn').disabled = true;
-        alert("آپ کو 5 عارضی کریڈٹس دے دیے گئے ہیں۔ ایڈمن جلد آپ کی پیمنٹ چیک کر کے اسے اپروو کر دے گا۔");
+        alert(`شکریہ! آپ کی درخواست وصول ہوگئی ہے۔ ایڈمن جلد آپ کی پیمنٹ چیک کر کے ${currentSelectedPackage || 'سروس'} کو فعال کر دے گا۔`);
+        currentSelectedPackage = null; // Reset
     } catch (e) {
         console.error("Claim Error:", e);
         alert("درخواست بھیجنے میں مسئلہ ہوا۔");

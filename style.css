@@ -1527,8 +1527,9 @@ footer { margin-top: 40px; }
 
 /* v4.22.2: Custom Slider - Appearance Fix (CSS Lint) */
 .custom-slider {
-    -webkit-appearance: none;
     appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
     width: 100%;
     height: 5px;
     background: linear-gradient(90deg, var(--neon-purple, #9d00ff), var(--neon-cyan, #00e5ff));
@@ -1655,6 +1656,36 @@ footer { margin-top: 40px; }
 .badge-pro { background: rgba(0, 229, 255, 0.1); color: var(--neon-cyan); }
 .badge-premium { background: rgba(157, 0, 255, 0.1); color: var(--neon-purple); }
 .badge-business { background: rgba(255, 215, 0, 0.1); color: #ffd700; }
+}
+
+/* v5.1.0: Feature Icons & License Styles */
+.package-features li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.feat-yes::before {
+    content: "\f058"; /* FontAwesome Circle Check */
+    font-family: "Font Awesome 6 Free";
+    font-weight: 900;
+    color: var(--success-green);
+    font-size: 0.9rem;
+}
+.feat-no::before {
+    content: "\f057"; /* FontAwesome Circle Xmark */
+    font-family: "Font Awesome 6 Free";
+    font-weight: 900;
+    color: #ff5252;
+    font-size: 0.9rem;
+    opacity: 0.7;
+}
+
+.license-feats li {
+    font-size: 1rem !important;
+    margin-bottom: 15px;
+    color: #fff !important;
+    letter-spacing: 0.5px;
+}
 
 /* Global variables and utility classes */
 :root { --user-font-size: 16px; }
