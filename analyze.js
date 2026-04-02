@@ -34,6 +34,7 @@ isSupported().then(yes => {
 
 // Global State
 let currentImageBase64 = null;
+let lastAnalysisData = null; // v4.22.2: Persisted for re-translation
 let userState = {
     loggedIn: false,
     uid: null,
@@ -1584,11 +1585,13 @@ window.runAnalysis = async () => {
         const text = dataJson.candidates?.[0]?.content?.parts?.[0]?.text;
         if (!text) throw new Error("AI نے کوئی جواب نہیں دیا۔");
         
-        displayResults(JSON.parse(text));
+        const parsedResults = JSON.parse(text);
+        lastAnalysisData = parsedResults; // v4.22.2: Store for re-translation
+        displayResults(parsedResults);
 
         // v4.7.0: Auto-Save to History
         if (userState.loggedIn) {
-            const resData = JSON.parse(text);
+            const resData = parsedResults;
             saveAnalysisToHistory(resData, compressedBase64);
             
             // v4.19.0: Best Designs Logic
@@ -1879,7 +1882,61 @@ function renderFontPicker() {
 window.updateLanguageState = function() {
     userSettings.language = document.getElementById('languageSelect').value;
     saveSettings();
-    showToast(`Language: ${userSettings.language}`, 'info');
+    
+    // v4.22.2: Smart Re-Translation
+    if (lastAnalysisData) {
+        showToast(`زبان تبدیل کی جا رہی ہے: ${userSettings.language} — دوبارہ ترجمہ ہو رہا ہے...`, 'info');
+        retranslateResults();
+    } else {
+        showToast(`زبان سیٹ ہو گئی: ${userSettings.language} — اگلی بار نتائج اسی زبان میں آئیں گے`, 'info');
+    }
+};
+
+// v4.22.2: Re-translate last results into new language using AI
+window.retranslateResults = async function() {
+    if (!lastAnalysisData) return;
+    try {
+        const keyToUse = getApiKey() || masterKeys.gemini || "AIzaSyC7f4QH6CSRN6dAhGNm7P4kMHTv12mtdEo";
+        const lang = userSettings.language;
+        const summary = JSON.stringify({
+            score: lastAnalysisData.score,
+            accessibility: lastAnalysisData.accessibility,
+            contrast: lastAnalysisData.contrast,
+            strengths: lastAnalysisData.strengths,
+            improvements: lastAnalysisData.improvements,
+            detailed_improvements: lastAnalysisData.detailed_improvements,
+            pricing: lastAnalysisData.pricing,
+            client_impression: lastAnalysisData.client_impression,
+            colors: lastAnalysisData.colors,
+            fonts: lastAnalysisData.fonts,
+            category: lastAnalysisData.category
+        });
+
+        const prompt = `Translate this design analysis JSON into ${lang} language. Keep the JSON structure identical, only translate text values (not keys, hex colors, or font names). Return ONLY valid JSON with no markdown.\n\n${summary}`;
+
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${keyToUse}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: { response_mime_type: "application/json" }
+            })
+        });
+        const data = await res.json();
+        if (data.error) throw new Error(data.error.message);
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!text) throw new Error('Empty response');
+        const translated = JSON.parse(text);
+        // Preserve score & colors from original
+        translated.score = lastAnalysisData.score;
+        translated.colors = lastAnalysisData.colors;
+        translated.fonts = lastAnalysisData.fonts;
+        displayResults(translated);
+        showToast(`✅ نتائج ${lang} میں ترجمہ ہو گئے`, 'success');
+    } catch (e) {
+        console.error('Re-translation error:', e);
+        showToast('ترجمہ نہیں ہو سکا — براہ کرم دوبارہ تجزیہ کریں', 'warning');
+    }
 };
 
 window.updateFontSize = function(val, save = true) {

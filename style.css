@@ -1524,3 +1524,34 @@ footer { margin-top: 40px; }
     width: 100%;
 }
 @font-face { font-family: 'Jameel Noori Nastaliq'; src: url('https://cdn.jsdelivr.net/gh/googlei18n/noto-fonts/unhinted/ttf/NotoNastaliqUrdu/NotoNastaliqUrdu-Regular.ttf'); font-display: swap; }
+
+/* v4.22.2: Custom Slider - Appearance Fix (CSS Lint) */
+.custom-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 5px;
+    background: linear-gradient(90deg, var(--neon-purple, #9d00ff), var(--neon-cyan, #00e5ff));
+    border-radius: 10px;
+    outline: none;
+    cursor: pointer;
+}
+.custom-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 0 8px rgba(157, 0, 255, 0.6);
+    cursor: pointer;
+}
+.custom-slider::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border: none;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 0 8px rgba(157, 0, 255, 0.6);
+    cursor: pointer;
+}
