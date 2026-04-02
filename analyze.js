@@ -263,19 +263,19 @@ async function setupUserPersistence(user) {
             userState.photoURL = user.photoURL;
             userState.isAdmin = ADMIN_EMAILS.includes(user.email);
 
-            // v4.19.1: Load Email Settings for Admin
-            if (userState.isAdmin) {
-                getDoc(doc(db, "config", "email_settings")).then(snap => {
-                    if (snap.exists()) {
-                        const dat = snap.data();
-                        emailSettings = dat;
+            // v4.19.2: Globally Load Email Settings (for everyone to use admin keys)
+            getDoc(doc(db, "config", "email_settings")).then(snap => {
+                if (snap.exists()) {
+                    const dat = snap.data();
+                    emailSettings = dat;
+                    if (userState.isAdmin) {
                         document.getElementById('emailPublicInput').value = dat.public || '';
                         document.getElementById('emailServiceInput').value = dat.service || '';
                         document.getElementById('emailTemplateInput').value = dat.template || '';
-                        if (typeof emailjs !== 'undefined' && dat.public) emailjs.init(dat.public);
                     }
-                });
-            }
+                    if (typeof emailjs !== 'undefined' && dat.public) emailjs.init(dat.public);
+                }
+            });
             
             // v4.10.0: Reactive Sync to Global window (CRITICAL)
             window.userState = userState; 
