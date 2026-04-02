@@ -1204,7 +1204,7 @@ window.runAnalysis = async () => {
                     'Authorization': `Bearer ${grokKey}`
                 },
                 body: JSON.stringify({
-                    model: 'grok-2-vision-1212',
+                    model: 'grok-2-latest',
                     messages: [{
                         role: 'user',
                         content: [
