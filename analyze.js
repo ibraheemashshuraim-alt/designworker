@@ -197,11 +197,12 @@ window.setProvider = (provider) => {
     document.querySelectorAll('.provider-tab').forEach(t => {
         t.style.border = '1px solid rgba(255,255,255,0.1)';
         t.style.background = 'rgba(255,255,255,0.03)';
+        t.style.color = 'var(--text-muted)';
     });
     const activeBtn = document.getElementById(`tab-${provider}`);
     if (activeBtn) {
         activeBtn.style.border = '1px solid var(--neon-cyan)';
-        activeBtn.background = 'rgba(0,229,255,0.1)';
+        activeBtn.style.background = 'rgba(0,229,255,0.1)';
         activeBtn.style.color = 'var(--neon-cyan)';
     }
     showToast(`AI Provider: ${provider.toUpperCase()}`, 'info');
@@ -261,7 +262,26 @@ window.runAnalysis = async () => {
         }
 
         const data = await res.json();
-        const text = provider === 'groq' ? data.choices[0].message.content : data.candidates[0].content.parts[0].text;
+        
+        // v4.21.2: Robust error handling for API responses
+        if (data.error) {
+            throw new Error(data.error.message || "API Error occurred.");
+        }
+
+        let text = "";
+        try {
+            if (provider === 'groq') {
+                if (!data.choices || !data.choices[0]) throw new Error("Groq returned no choices.");
+                text = data.choices[0].message.content;
+            } else {
+                if (!data.candidates || !data.candidates[0]) throw new Error("Gemini returned no candidates (Safety Block or Quota).");
+                text = data.candidates[0].content.parts[0].text;
+            }
+        } catch (innerErr) {
+            console.error("Parse Error:", data);
+            throw new Error("AI response structure invalid. Check API keys/quota.");
+        }
+
         const resData = JSON.parse(text);
         displayResults(resData);
         lastAnalysisData = resData;
@@ -270,8 +290,11 @@ window.runAnalysis = async () => {
             saveAnalysisToHistory(resData, compressed);
             if (!userState.isAdmin && userState.licenseStatus !== 'approved') deductCredit();
         }
-    } catch (e) { alert("Error: " + e.message); }
-    finally { runBtn.disabled = false; scanModal.classList.add('hidden'); }
+    } catch (err) { 
+        console.error("ANALYSIS ERROR:", err);
+        alert("مسلہ: " + err.message); 
+    }
+    finally { if(runBtn) runBtn.disabled = false; if(scanModal) scanModal.classList.add('hidden'); }
 };
 
 function displayResults(data) {
