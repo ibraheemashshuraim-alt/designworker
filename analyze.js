@@ -1175,7 +1175,6 @@ window.runAnalysis = async () => {
 
         // ===== v4.18.15: CHECK SELECTED PROVIDER =====
         const selectedProvider = window.getSelectedProvider?.() || 'gemini';
-        const grokKey = getGrokApiKey();
 
         // ===== GROQ (Free) VISION PATH =====
         if (selectedProvider === 'groq') {
