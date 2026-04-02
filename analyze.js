@@ -242,7 +242,7 @@ window.runAnalysis = async () => {
                 method: "POST",
                 headers: { "Authorization": `Bearer ${key}`, "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    model: "llama3-70b-8192",
+                    model: "llama-3.3-70b-versatile",
                     messages: [{ role: "user", content: promptStr }],
                     temperature: 0.1,
                     response_format: { type: "json_object" }
@@ -251,7 +251,8 @@ window.runAnalysis = async () => {
         } else {
             key = localStorage.getItem('gemini_api_key') || masterKeys.gemini || "AIzaSyC7f4QH6CSRN6dAhGNm7P4kMHTv12mtdEo";
             const prompt = `Analyze this design. Language: ${userSettings.language}. Output JSON: {score, category, strengths[], improvements[], accessibility, contrast, detailed_improvements[{text, priority}], pricing{current, improved}, client_impression{level, feedback, warning}, colors[], fonts[]}`;
-            res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`, {
+            // v4.21.3: Use stable v1 endpoint
+            res = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${key}`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
