@@ -557,6 +557,7 @@ function resizeCanvas() {
 window.checkPremiumAccess = () => {
     const gate = document.getElementById('editorPremiumGate');
     const state = window.userState || {};
-    const hasAccess = state.isAdmin || state.licenseStatus === 'approved' || (Number(state.credits || 0) > 0);
+    // v5.0.0: Only Premium, Business or Admin (Pro can use Suggestions but NOT editor)
+    const hasAccess = ['Premium', 'Business'].includes(state.packageType) || state.isAdmin;
     gate?.classList.toggle('hidden', hasAccess);
 };

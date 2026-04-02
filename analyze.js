@@ -40,7 +40,11 @@ let userState = {
     uid: null,
     email: null,
     credits: 0,
-    isAdmin: false
+    usedCredits: 0,
+    isAdmin: false,
+    licenseStatus: 'none',
+    paymentStatus: 'none',
+    packageType: 'Free'
 };
 
 // v4.20.0: Personalization Settings
@@ -283,8 +287,11 @@ async function handleExpertSuggestion(results) {
     
     if (section) section.classList.add('hidden'); // Reset
 
-    // Only for Premium/Paid users (Credits > 0 or Approved License)
-    const isPremium = userState.credits > 0 || userState.licenseStatus === 'approved';
+    // v5.0.0: Package-Based Permission
+    // Pro, Premium, Business, and Admin can see suggestions if score < 80
+    const hasPackage = ['Pro', 'Premium', 'Business'].includes(userState.packageType) || userState.isAdmin;
+    const isPremium = userState.credits > 0 || userState.licenseStatus === 'approved' || hasPackage;
+    
     if (!isPremium || results.score >= 80) return; // Only suggest for < 80 scores
 
     try {
@@ -344,6 +351,7 @@ async function setupUserPersistence(user) {
             userState.uid = user.uid;
             userState.photoURL = user.photoURL;
             userState.isAdmin = ADMIN_EMAILS.includes(user.email);
+            userState.packageType = data.packageType || 'Free';
 
             // v4.19.2: Globally Load Email Settings (for everyone to use admin keys)
             getDoc(doc(db, "config", "email_settings")).then(snap => {
@@ -375,7 +383,8 @@ async function setupUserPersistence(user) {
                 lastActive: serverTimestamp(),
                 status: 'active',
                 licenseStatus: 'none',
-                paymentStatus: 'none'
+                paymentStatus: 'none',
+                packageType: 'Free'
             };
             setDoc(userRef, newUser).catch(err => console.error("User init error:", err));
         }
@@ -957,12 +966,15 @@ window.openAdminPanel = async () => {
         }
 
         users.forEach((data) => {
-            const lastActive = data.createdAt ? new Date(data.createdAt.seconds * 1000).toLocaleDateString() : 'New';
+            const joinedDate = data.joinDate ? new Date(data.joinDate.seconds * 1000).toLocaleDateString() : 'New';
             const isPendingCredit = data.paymentStatus === 'pending';
+            const pType = data.packageType || 'Free';
             
             let statusBadge = `<span class="status-badge badge-trial">Free User</span>`;
             if (isPendingCredit) statusBadge = `<span class="status-badge badge-pending">Payment Pending</span>`;
-            else if (data.credits > 10) statusBadge = `<span class="status-badge badge-premium">Premium User</span>`;
+            else if (pType === 'Pro') statusBadge = `<span class="status-badge badge-pro">Pro Plan</span>`;
+            else if (pType === 'Premium') statusBadge = `<span class="status-badge badge-premium">Premium Plan</span>`;
+            else if (pType === 'Business') statusBadge = `<span class="status-badge badge-business">Business Plan</span>`;
 
             const card = document.createElement('div');
             card.className = `admin-user-card ${isPendingCredit ? 'pending-highlight' : ''}`;
@@ -971,16 +983,25 @@ window.openAdminPanel = async () => {
                 <div class="user-card-header">
                     <div class="user-info-main">
                         <span class="user-email-chip">${data.email}</span>
-                        <div style="margin-top:5px;">${statusBadge}</div>
+                        <div style="margin-top:8px;">${statusBadge}</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div class="stat-label" style="font-size:0.6rem;">Last Active</div>
+                        <div style="font-size:0.7rem; color:#fff;">${data.lastActive ? new Date(data.lastActive.seconds*1000).toLocaleDateString() : 'N/A'}</div>
                     </div>
                 </div>
 
                 ${isPendingCredit ? `
-                <div class="claim-details-box">
-                    <span class="claim-label">Credit Claim Details:</span>
-                    <div class="claim-value"><i class="fa-solid fa-user"></i> ${data.claimName || 'N/A'}</div>
-                    <div class="claim-value" style="font-size: 0.8rem; color: var(--neon-cyan); direction: ltr; text-align: left; margin-top:5px;">
-                        <i class="fa-solid fa-hashtag"></i> TID: ${data.claimTid || 'N/A'}
+                <div class="claim-details-box" style="background: rgba(255,165,0,0.05); padding: 12px; border-radius: 10px; border: 1px dashed orange; margin: 10px 0;">
+                    <span class="stat-label" style="color: orange;">PENDING CLAIM:</span>
+                    <div class="claim-value" style="font-size: 0.9rem; font-weight:700;"><i class="fa-solid fa-user"></i> ${data.claimName || 'N/A'}</div>
+                    <div class="claim-value" style="font-size: 0.75rem; color: var(--neon-cyan); margin-top:4px;">
+                        TID: <span style="font-family: monospace; background:rgba(0,0,0,0.3); padding: 2px 6px;">${data.claimTid || 'N/A'}</span>
+                    </div>
+                    <div style="display:flex; gap:8px; margin-top:10px;">
+                        <button class="package-action-btn active" style="flex:1;" onclick="grantPackage('${data.id}', 'Pro', 100, true)">Approve Pro</button>
+                        <button class="package-action-btn active" style="flex:1; border-color: var(--neon-purple); color: var(--neon-purple);" onclick="grantPackage('${data.id}', 'Premium', 1000, true)">Approve Prem</button>
+                        <button class="package-action-btn" style="color: #ff5252; border-color: #ff5252;" onclick="rejectClaim('${data.id}')">Reject</button>
                     </div>
                 </div>
                 ` : ''}
@@ -988,28 +1009,31 @@ window.openAdminPanel = async () => {
                 <div class="user-stats-row">
                     <div class="stat-item">
                         <div class="stat-label">Credits</div>
-                        <div class="stat-value" style="color: var(--neon-purple);">${data.credits || 0}</div>
+                        <div class="stat-value" style="color: var(--neon-cyan);">${data.credits || 0}</div>
                     </div>
                     <div class="stat-item">
-                        <div class="stat-label">Analyzed</div>
+                        <div class="stat-label">Used</div>
                         <div class="stat-value">${data.usedCredits || 0}</div>
                     </div>
                     <div class="stat-item">
                         <div class="stat-label">Joined</div>
-                        <div class="stat-value" style="font-size: 0.7rem; opacity: 0.7;">${lastActive}</div>
+                        <div class="stat-value" style="font-size: 0.75rem; opacity: 0.8;">${joinedDate}</div>
                     </div>
                 </div>
                 
-                <div class="user-actions">
-                    ${isPendingCredit ? `
-                        <button class="action-btn claim-approve" onclick="grantCredits('${data.id}', 50, true)">Approve Payment (+50)</button>
-                        <button class="action-btn danger-btn" onclick="rejectClaim('${data.id}')">Reject Claim</button>
-                    ` : ''}
+                <div style="margin-top: 10px;">
+                    <div class="stat-label" style="margin-bottom:8px;">MANAGE PACKAGE:</div>
+                    <div class="user-actions-grid">
+                        <button class="package-action-btn ${pType === 'Free' ? 'active' : ''}" onclick="grantPackage('${data.id}', 'Free', 10)">Free (10)</button>
+                        <button class="package-action-btn ${pType === 'Pro' ? 'active' : ''}" onclick="grantPackage('${data.id}', 'Pro', 100)">Pro (100)</button>
+                        <button class="package-action-btn ${pType === 'Premium' ? 'active' : ''}" onclick="grantPackage('${data.id}', 'Premium', 1000)">Premium (1k)</button>
+                        <button class="package-action-btn ${pType === 'Business' ? 'active' : ''}" onclick="grantPackage('${data.id}', 'Business', 10000)">Business (10k)</button>
+                    </div>
+                </div>
 
-                    <button class="action-btn approve" onclick="grantCredits('${data.id}', 10)">+10 Creds</button>
-                    <button class="action-btn approve" onclick="grantCredits('${data.id}', 100)">+100 Creds</button>
-                    <button class="action-btn danger-btn" onclick="resetUserCredits('${data.id}')">Reset</button>
-                    <button class="action-btn danger-btn" onclick="deleteUser('${data.id}')">Delete</button>
+                <div style="display:flex; gap:10px; margin-top:10px; border-top: 1px solid rgba(255,255,255,0.05); padding-top:10px;">
+                    <button class="action-btn danger-btn" style="flex:1; padding: 6px; font-size:0.75rem;" onclick="resetUserCredits('${data.id}')">Reset Credits</button>
+                    <button class="action-btn danger-btn" style="flex:1; padding: 6px; font-size:0.75rem;" onclick="deleteUser('${data.id}')">Delete User</button>
                 </div>
             `;
             elements.adminUsersList.appendChild(card);
@@ -1020,12 +1044,32 @@ window.openAdminPanel = async () => {
     }
 };
 
+window.grantPackage = async (uid, type, credits, isApproval = false) => {
+    const userRef = doc(db, "users", uid);
+    try {
+        const updates = { 
+            packageType: type,
+            credits: credits,
+            lastActive: serverTimestamp()
+        };
+        if (isApproval) {
+            updates.paymentStatus = 'approved';
+            updates.claimApprovedAt = serverTimestamp();
+        }
+        await updateDoc(userRef, updates);
+        alert(`کامیابی! ممبر کو ${type} پلان دے دیا گیا ہے۔`);
+        openAdminPanel(); // Refresh list
+    } catch (e) {
+        alert("پلان اپ ڈیٹ کرنے میں مسئلہ ہوا۔");
+    }
+};
+
 window.resetUserCredits = async (uid) => {
     if (!confirm("Are you sure you want to reset this user's credits to 0?")) return;
     const userRef = doc(db, "users", uid);
     try {
-        await updateDoc(userRef, { credits: 0, usedCredits: 0 }); // Reset usedCredits as well
-        alert("Credits reset successfully.");
+        await updateDoc(userRef, { credits: 0, usedCredits: 0, packageType: 'Free' }); // Reset both
+        alert("Credits reset successfully (Package set to Free).");
         openAdminPanel();
     } catch (e) {
         alert("Error resetting credits.");
