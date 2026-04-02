@@ -27,8 +27,41 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
+    
+    <style>
+        /* Toast Notification Styling */
+        #ui-toast-container {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .ui-toast {
+            background: rgba(18, 22, 28, 0.95);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(0, 229, 255, 0.3);
+            color: #fff;
+            padding: 14px 22px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            animation: slideIn 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            max-width: 320px;
+        }
+        @keyframes slideIn { from { transform: translateX(120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        .ui-toast.success { border-color: var(--success-green); border-left: 4px solid var(--success-green); }
+        .ui-toast.info { border-color: var(--neon-cyan); border-left: 4px solid var(--neon-cyan); }
+        .ui-toast i { font-size: 1.1rem; }
+    </style>
 </head>
 <body>
+    <div id="ui-toast-container"></div>
     <div class="background-backdrop"></div>
 
     <nav class="top-nav">
@@ -141,6 +174,16 @@
                         <button onclick="openAdminPanel()" class="btn admin-btn">
                             <i class="fa-solid fa-shield-halved"></i> ایڈمن ڈیش بورڈ
                         </button>
+                        
+                        <!-- NEW: EmailJS Configuration for Admin -->
+                        <div style="margin-top: 15px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 15px;">
+                            <div style="font-size: 0.7rem; color: var(--neon-cyan); margin-bottom: 8px;"><i class="fa-solid fa-envelope-circle-check"></i> EmailJS سنٹر (ای میل سیٹنگز):</div>
+                            <input type="text" id="emailPublicInput" class="custom-input" placeholder="Public Key" style="margin-bottom: 5px; font-size: 0.7rem;">
+                            <input type="text" id="emailServiceInput" class="custom-input" placeholder="Service ID" style="margin-bottom: 5px; font-size: 0.7rem;">
+                            <input type="text" id="emailTemplateInput" class="custom-input" placeholder="Template ID" style="margin-bottom: 8px; font-size: 0.7rem;">
+                            <button onclick="saveEmailSettings()" class="btn approve" style="width: 100%; padding: 8px; font-size: 0.7rem;">ای میل سیٹنگز محفوظ کریں</button>
+                            <p id="emailSaveStatus" style="color: var(--success-green); font-size: 0.65rem; margin-top: 5px; display: none; text-align: center;">سیٹنگز کلاؤڈ پر محفوظ ہو گئیں!</p>
+                        </div>
                     </div>
 
                     <div class="modal-section" style="border-top: 1px solid var(--border-dim); padding-top: 15px;">
@@ -234,6 +277,9 @@
                 <div id="analysisResults" class="hidden">
                     <div class="score-orb">
                         <div class="score-inner">
+                            <div id="expertBadge" class="hidden" style="position: absolute; top: -10px; right: -10px; background: #ffd700; color: #000; padding: 4px 8px; border-radius: 20px; font-size: 0.6rem; font-weight: 800; box-shadow: 0 4px 10px rgba(255,215,0,0.3); border: 2px solid #fff;">
+                                <i class="fa-solid fa-star"></i> EXPERT
+                            </div>
                             <div style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase;">Score</div>
                             <div style="font-size:2.5rem; font-weight:800; color:#fff;" id="overallScoreText">--</div>
                         </div>

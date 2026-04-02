@@ -137,7 +137,44 @@ onAuthStateChanged(auth, async (user) => {
     }
 });
 
+// v4.19.1: Toast System
+window.showToast = (message, type = 'info') => {
+    const container = document.getElementById('ui-toast-container');
+    if (!container) return;
+    const toast = document.createElement('div');
+    toast.className = `ui-toast ${type}`;
+    const icon = type === 'success' ? 'fa-circle-check' : 'fa-circle-info';
+    toast.innerHTML = `<i class="fa-solid ${icon}"></i> <span>${message}</span>`;
+    container.appendChild(toast);
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(20px)';
+        setTimeout(() => toast.remove(), 400);
+    }, 4000);
+};
+
 // v4.19.0: 'Best Designs' & Email Notifications Logic
+let emailSettings = { public: '', service: '', template: '' };
+
+window.saveEmailSettings = async () => {
+    const pub = document.getElementById('emailPublicInput').value.trim();
+    const ser = document.getElementById('emailServiceInput').value.trim();
+    const tem = document.getElementById('emailTemplateInput').value.trim();
+    
+    if (!userState.isAdmin) return;
+    try {
+        const configRef = doc(db, "config", "email_settings");
+        await setDoc(configRef, { public: pub, service: ser, template: tem });
+        emailSettings = { public: pub, service: ser, template: tem };
+        if (typeof emailjs !== 'undefined' && pub) emailjs.init(pub);
+        
+        const status = document.getElementById('emailSaveStatus');
+        status.style.display = 'block';
+        setTimeout(() => status.style.display = 'none', 3000);
+        showToast("ای میل سیٹنگز محفوظ کر لی گئیں", "success");
+    } catch (e) { console.error(e); showToast("سیٹنگز سیو کرنے میں مسئلہ"); }
+};
+
 async function checkAndSaveBestDesign(results, image64) {
     if (!results || results.score < 90) return;
     try {
@@ -146,28 +183,30 @@ async function checkAndSaveBestDesign(results, image64) {
             score: results.score,
             category: results.category || "General",
             strengths: results.strengths,
-            imageUrl: image64, // Base64 storage (Small designs/thumbnails recommended)
+            imageUrl: image64, 
             userName: userState.email.split('@')[0],
             userEmail: userState.email,
             timestamp: serverTimestamp()
         });
-        console.log("System: Expert Design saved to Cloud!");
+        showToast("مبارک ہو! ڈیزائن 'Best Designs' میں شامل کر لیا گیا", "success");
         sendSuccessEmail(userState.email, results.category, results.score);
     } catch (e) { console.error("Best Design Save Error:", e); }
 }
 
 async function sendSuccessEmail(email, category, score) {
-    if (typeof emailjs === 'undefined') return;
+    if (typeof emailjs === 'undefined' || !emailSettings.service || !emailSettings.template) {
+        console.warn("Email offset: EmailJS Settings missing.");
+        return;
+    }
     const params = {
         to_email: email,
         category: category,
         score: score,
         message: "مبارک ہو! آپ کا ڈیزائن 'Premium Example' کے طور پر منتخب ہو گیا ہے۔"
     };
-    // Note: User needs to set their Service/Template ID in EmailJS Dashboard
-    emailjs.send("YOUR_SERVICE_ID", "YOUR_TEMPLATE_ID", params)
-        .then(() => console.log("Success Email Sent!"))
-        .catch(err => console.warn("Email offset: Service/Template IDs not set yet."));
+    emailjs.send(emailSettings.service, emailSettings.template, params)
+        .then(() => showToast("کامیابی کی ای میل بھیج دی گئی", "success"))
+        .catch(err => console.error("EmailJS Error:", err));
 }
 
 async function handleExpertSuggestion(results) {
@@ -223,6 +262,20 @@ async function setupUserPersistence(user) {
             userState.uid = user.uid;
             userState.photoURL = user.photoURL;
             userState.isAdmin = ADMIN_EMAILS.includes(user.email);
+
+            // v4.19.1: Load Email Settings for Admin
+            if (userState.isAdmin) {
+                getDoc(doc(db, "config", "email_settings")).then(snap => {
+                    if (snap.exists()) {
+                        const dat = snap.data();
+                        emailSettings = dat;
+                        document.getElementById('emailPublicInput').value = dat.public || '';
+                        document.getElementById('emailServiceInput').value = dat.service || '';
+                        document.getElementById('emailTemplateInput').value = dat.template || '';
+                        if (typeof emailjs !== 'undefined' && dat.public) emailjs.init(dat.public);
+                    }
+                });
+            }
             
             // v4.10.0: Reactive Sync to Global window (CRITICAL)
             window.userState = userState; 
@@ -1536,6 +1589,11 @@ function displayResults(data) {
     elements.statusHeader.classList.add('hidden');
     elements.exportGroup.classList.remove('hidden');
     
+    const expertBadge = document.getElementById('expertBadge');
+    if (expertBadge) {
+        if (data.score >= 90) expertBadge.classList.remove('hidden');
+        else expertBadge.classList.add('hidden');
+    }
     elements.overallScoreText.innerText = data.score;
     elements.accessOut.innerText = data.accessibility;
     elements.contrastOut.innerText = data.contrast;
