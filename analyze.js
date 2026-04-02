@@ -409,7 +409,7 @@ Each object must be a valid Fabric.js object with these properties:
 - Text: { "type": "textbox", "text": "...", "left": N, "top": N, "fontSize": N, "fill": "#color", "fontFamily": "Outfit", "fontWeight": "bold" }
 Canvas is 800x600. Use originX: "center", originY: "center" for positioning.`;
 
-            let grokModelToUse = 'grok-beta';
+            let grokModelToUse = 'grok-2-latest';
             try {
                 const listRes = await fetch('https://api.x.ai/v1/models', { headers: { 'Authorization': `Bearer ${grokKey}` } });
                 if (listRes.ok) {
@@ -1210,7 +1210,7 @@ window.runAnalysis = async () => {
             console.log("v4.18.15: Using Grok AI for analysis...");
             if (scanStatusText) scanStatusText.innerText = "AI ڈیزائن کا جائزہ لے رہا ہے...";
 
-            let grokModelToUse = 'grok-beta';
+            let grokModelToUse = 'grok-2-latest';
             try {
                 const listRes = await fetch('https://api.x.ai/v1/models', { headers: { 'Authorization': `Bearer ${grokKey}` } });
                 if (listRes.ok) {
