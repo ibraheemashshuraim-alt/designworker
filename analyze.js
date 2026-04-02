@@ -1187,34 +1187,42 @@ window.runAnalysis = async () => {
         const base64Data = compressedBase64.split(',')[1];
 
         const prompt = `
-            تم ایک سینئر گرافک ڈیزائنر ہو (Senior Graphic Designer)۔
-            دیے گئے ڈیزائن کا گہرائی سے جائزہ لو (Detailed Critique)۔
-            نتیجہ صرف JSON فارمیٹ میں دیں:
+            You are a World-Class Creative Director and Senior UI/Graphic Designer from a top Design Agency.
+            Objective: Analyze the provided design with surgical precision and artistic depth.
+
+            ### ANALYSIS CRITERIA:
+            1. Visual Hierarchy: Is the focal point clear?
+            2. Typography: Legibility, pairing, and spacing of fonts.
+            3. Color Theory: Harmony, contrast, and accessibility.
+            4. Layout: Grid alignment, white space usage, and balance.
+
+            ### OUTPUT SPECIFICATIONS:
+            - Language: Urdu (Strictly). Do NOT include Hindi, Chinese, or any non-Urdu scripts.
+            - Format: Valid JSON only.
+            - Length: Provide detail for every field (Minimum 5 strengths and 5 improvements).
+
             {
                 "score": Number (0-100),
-                "accessibility": "ایکسیسبلٹی (اردو)",
-                "contrast": "تضاد (اردو)",
-                "strengths": ["خوبی1", "خوبی2"],
-                "improvements": ["بہتری1", "بہتری2"],
+                "accessibility": "ایکسیسبلٹی اور پڑھائی (اردو تفصیل)",
+                "contrast": "کلر تضاد اور توازن (اردو تفصیل)",
+                "strengths": ["خوبی 1 (تفصیلی)", "خوبی 2", "خوبی 3", "خوبی 4", "خوبی 5"],
+                "improvements": ["بہتری 1 (تفصیلی)", "بہتری 2", "بہتری 3", "بہتری 4", "بہتری 5"],
                 "detailed_improvements": [
-                    { "text": "تفصیلی بہتری کا پوائنٹ 1", "priority": "mandatory" },
-                    { "text": "تفصیلی بہتری کا پوائنٹ 2", "priority": "optional" }
+                    { "text": "ایک لازمی بہتری کا نکتہ (تفصیلی)", "priority": "mandatory" },
+                    { "text": "ڈیزائن کو بہتر بنانے کا ایک اور مشورہ", "priority": "optional" }
                 ],
                 "pricing": {
-                    "current": "موجودہ ریٹ (e.g. 2000-5000)",
-                    "improved": "بہتری کے بعد ریٹ (e.g. 8000-10000)"
+                    "current": "موجودہ مارکیٹ ریٹ (PKR/USD)",
+                    "improved": "بہتری کے بعد ممکنہ ریٹ (PKR/USD)"
                 },
                 "client_impression": {
-                    "level": "پروفیشنل / نوآموز / درمیانہ",
-                    "feedback": "کلائنٹ پر کیا اثر پڑے گا (اردو)",
-                    "warning": "اگر ڈیزائن بہت برا ہے تو وارننگ (اردو) ورنہ خالی چھوڑ دیں"
+                    "level": "پروفیشنل / مارکیٹ لیول",
+                    "feedback": "کلائنٹ پر ڈیزائن کا گہرا نفسیاتی اثر (اردو)",
+                    "warning": "اگر کوئی سنگین غلطی ہے تو یہاں لکھیں"
                 },
-                "colors": ["#hex1", "#hex2"],
-                "fonts": ["Font1", "Font2"]
+                "colors": ["#hex1", "#hex2", "#hex3", "#hex4", "#hex5"],
+                "fonts": ["FontName1", "FontName2", "FontName3"]
             }
-            جواب صرف اردو میں دیں۔
-            "priority" میں صرف "mandatory" یا "optional" لکھیں۔
-            "pricing" میں روپوں (PKR) کا ذکر کریں (اگر ضرورت ہو تو USD بھی لکھ سکتے ہیں)۔
         `;
 
         // ===== v4.18.15: CHECK SELECTED PROVIDER =====
