@@ -1189,6 +1189,31 @@ window.runAnalysis = async () => {
             console.log("v4.18.15: Using Groq AI for analysis...");
             if (scanStatusText) scanStatusText.innerText = "AI ڈیزائن کا جائزہ لے رہا ہے...";
 
+            // v4.18.17: Dynamic Vision Model Selection
+            let groqVisionModel = 'llama-3.2-11b-vision-preview'; // Default fallback
+            try {
+                const listRes = await fetch('https://api.groq.com/openai/v1/models', {
+                    headers: { 'Authorization': `Bearer ${groqKey}` }
+                });
+                if (listRes.ok) {
+                    const listData = await listRes.json();
+                    const models = listData.data.map(m => m.id);
+                    // Priority: Llama 4 Scout/Maverick -> Llama 3.2 Vision -> any vision
+                    const best = models.find(m => m.includes('llama-4-scout')) || 
+                                 models.find(m => m.includes('llama-4-maverick')) || 
+                                 models.find(m => m.includes('vision') && !m.includes('preview')) ||
+                                 models.find(m => m.includes('vision')) ||
+                                 models[0];
+                    if (best) {
+                        groqVisionModel = best;
+                        console.log("Dynamic Groq Vision Model:", groqVisionModel);
+                    }
+                }
+            } catch (e) {
+                console.warn("Groq Model List failed, using fallback:", e);
+                groqVisionModel = 'meta-llama/llama-4-scout-17b-16e-instruct';
+            }
+
             const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
                 method: 'POST',
                 headers: {
@@ -1196,7 +1221,7 @@ window.runAnalysis = async () => {
                     'Authorization': `Bearer ${groqKey}`
                 },
                 body: JSON.stringify({
-                    model: 'llama-3.2-11b-vision-preview',
+                    model: groqVisionModel,
                     messages: [{
                         role: 'user',
                         content: [
