@@ -625,88 +625,98 @@
         </div>
     </div>
 
-    <!-- v5.1.0: Refined Packages Modal (3-Tier Credits) -->
+    <!-- v5.2.0: Refined Packages Modal (Google AI Style) -->
     <div id="packagesModal" class="modal hidden">
-        <div class="modal-content" style="max-width: 950px; width: 95%; background: #02060c; border: 1px solid rgba(157,0,255,0.3); padding: 30px;">
-            <span class="close-btn" onclick="toggleModal('packagesModal', false)">&times;</span>
-            <div style="text-align: center; margin-bottom: 30px;">
-                <h2 style="color: var(--neon-cyan); margin-bottom: 10px;"><i class="fa-solid fa-gem"></i> پریمیم کریڈٹ پلانز</h2>
-                <p style="color: var(--text-muted);">اپنی ضرورت کے مطابق کریڈٹس منتخب کریں</p>
+        <div class="modal-content" style="max-width: 1050px; width: 95%; background: #ffffff; border: none; padding: 40px; border-radius: 28px;">
+            <span class="close-btn" onclick="toggleModal('packagesModal', false)" style="color: #5f6368;">&times;</span>
+            <div style="text-align: center; margin-bottom: 40px;">
+                <h2 style="color: #202124; font-size: 2.2rem; font-weight: 500; margin-bottom: 12px;">Choose your DesignCheck plan</h2>
+                <p style="color: #5f6368; font-size: 1.1rem;">Get access to powerful AI features to boost your creativity</p>
             </div>
             
             <div class="pricing-grid">
                 <!-- Pro Plan -->
                 <div class="package-card">
-                    <div class="package-header" style="color: var(--neon-cyan);">PRO</div>
-                    <div class="package-price">1500 PKR</div>
-                    <div class="package-credits">100 Credits</div>
+                    <div class="package-header">DesignCheck Plus</div>
+                    <p class="package-tagline">Get more access to powerful analysis features</p>
+                    
+                    <div class="package-price-row">
+                        <span class="price-old">1,400</span>
+                        <span class="price-new">PKR 700/mo</span>
+                    </div>
+                    <div style="font-size: 0.8rem; color: #5f6368; margin-bottom: 20px;">for 6 months, PKR 1,500 after</div>
+                    
+                    <button class="package-btn primary" onclick="triggerPackagePurchase('Pro')">Get DesignCheck Plus</button>
+
                     <ul class="package-features">
-                        <li class="feat-yes">Expert Suggestions</li>
-                        <li class="feat-yes">Detailed Analysis</li>
-                        <li class="feat-yes">Printable Reports</li>
-                        <li class="feat-no">Design Editor</li>
-                        <li class="feat-no">AI Magic Build</li>
+                        <li><i class="fa-solid fa-sparkles feat-icon-blue"></i> <div>Expert Suggestions on all designs</div></li>
+                        <li><i class="fa-solid fa-list-check feat-icon-green"></i> <div>Detailed priority improvements</div></li>
+                        <li><i class="fa-solid fa-file-pdf feat-icon-purple"></i> <div>Printable professional reports</div></li>
                     </ul>
-                    <button class="package-btn" onclick="triggerPackagePurchase('Pro')">Buy Now</button>
                 </div>
 
                 <!-- Premium Plan -->
                 <div class="package-card active-package">
-                    <div class="package-badge">POPULAR</div>
-                    <div class="package-header" style="color: var(--neon-purple);">PREMIUM</div>
-                    <div class="package-price">10,000 PKR</div>
-                    <div class="package-credits">1000 Credits</div>
+                    <div class="package-badge">RECOMMENDED</div>
+                    <div class="package-header">DesignCheck Pro</div>
+                    <p class="package-tagline">Highest level of access to AI design tools</p>
+                    
+                    <div class="package-price-row">
+                        <span class="price-old">15,000</span>
+                        <span class="price-new">PKR 10,000/mo</span>
+                    </div>
+                    <div style="font-size: 0.8rem; color: #5f6368; margin-bottom: 20px;">for 1 month, PKR 12,000 after</div>
+                    
+                    <button class="package-btn primary" onclick="triggerPackagePurchase('Premium')">Get DesignCheck Pro</button>
+
                     <ul class="package-features">
-                        <li class="feat-yes"><b>Full Design Editor</b></li>
-                        <li class="feat-yes">AI Magic Designer</li>
-                        <li class="feat-yes">Expert Suggestions</li>
-                        <li class="feat-yes">BG Removal Tool</li>
-                        <li class="feat-yes">Priority Processing</li>
+                        <li><i class="fa-solid fa-wand-magic-sparkles feat-icon-purple"></i> <div><b>Full Design Editor</b> with AI Magic</div></li>
+                        <li><i class="fa-solid fa-bolt feat-icon-orange"></i> <div>Unlimited Background Removal</div></li>
+                        <li><i class="fa-solid fa-microchip feat-icon-blue"></i> <div>Deep Analysis with 1000 Credits</div></li>
                     </ul>
-                    <button class="package-btn" style="background: var(--neon-purple);" onclick="triggerPackagePurchase('Premium')">Buy Now</button>
                 </div>
 
                 <!-- Business Plan -->
                 <div class="package-card">
-                    <div class="package-header" style="color: #ffd700;">BUSINESS</div>
-                    <div class="package-price">20,000 PKR</div>
-                    <div class="package-credits">10,000 Credits</div>
+                    <div class="package-header">DesignCheck Ultra</div>
+                    <p class="package-tagline">Unlock the best of DesignCheck for your team</p>
+                    
+                    <div class="package-price-row">
+                        <span class="price-main">PKR 20,000</span>
+                    </div>
+                    <div style="font-size: 0.8rem; color: #5f6368; margin-bottom: 20px;">One-time payment for 10k credits</div>
+                    
+                    <button class="package-btn" onclick="triggerPackagePurchase('Business')">Get DesignCheck Ultra</button>
+
                     <ul class="package-features">
-                        <li class="feat-yes">Everything in Premium</li>
-                        <li class="feat-yes">Team Workspace</li>
-                        <li class="feat-yes">White-label Reports</li>
-                        <li class="feat-yes">Bulk Analysis</li>
-                        <li class="feat-yes">30 Days Support</li>
+                        <li><i class="fa-solid fa-users feat-icon-blue"></i> <div>Team management & workspaces</div></li>
+                        <li><i class="fa-solid fa-shield-halved feat-icon-green"></i> <div>Priority agency level support</div></li>
+                        <li><i class="fa-solid fa-infinity feat-icon-purple"></i> <div>Bulk processing capabilities</div></li>
                     </ul>
-                    <button class="package-btn" onclick="triggerPackagePurchase('Business')">Buy Now</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- v5.1.0: Standalone License Modal -->
+    <!-- v5.2.0: Clean License Modal -->
     <div id="licenseModal" class="modal hidden">
-        <div class="modal-content" style="max-width: 600px; border-color: #ffd700; background: linear-gradient(to bottom, #0a0a14, #121225);">
-            <span class="close-btn" onclick="toggleModal('licenseModal', false)">&times;</span>
-            <div style="text-align: center; margin-bottom: 25px;">
-                <i class="fa-solid fa-crown" style="font-size: 3rem; color: #ffd700; text-shadow: 0 0 20px rgba(255,215,0,0.5);"></i>
-                <h2 style="color: #ffd700; margin-top: 15px;">Agency License</h2>
-                <div style="font-size: 1.5rem; font-weight: 800; color: #fff; margin: 10px 0;">150,000 PKR</div>
-                <p style="color: var(--text-muted);">Ultimate Agency Solution</p>
+        <div class="modal-content" style="max-width: 650px; background: #ffffff; border-radius: 28px; padding: 40px;">
+            <span class="close-btn" onclick="toggleModal('licenseModal', false)" style="color: #5f6368;">&times;</span>
+            <div style="text-align: center; margin-bottom: 30px;">
+                <div style="color: #1a73e8; font-size: 0.9rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;">Full Access</div>
+                <h2 style="color: #202124; font-size: 2.2rem; font-weight: 500;">Agency Enterprise License</h2>
+                <div style="font-size: 2.5rem; font-weight: 700; color: #202124; margin: 15px 0;">PKR 150,000</div>
+                <button class="package-btn primary" style="max-width: 300px; margin: 20px auto;" onclick="triggerPackagePurchase('Agency License')">Get Started</button>
             </div>
 
-            <ul class="package-features license-feats" style="margin-bottom: 30px;">
-                <li class="feat-yes">Lifetime Full Source Code</li>
-                <li class="feat-yes">Self-Hosting Capability</li>
-                <li class="feat-yes">Custom Branding & Logo</li>
-                <li class="feat-yes">Unlimited Users & Workspace</li>
-                <li class="feat-yes">Commercial Selling Rights</li>
-                <li class="feat-yes">Priority Development Support</li>
+            <ul class="package-features" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <li><i class="fa-solid fa-code feat-icon-blue"></i> <div>Lifetime Source Code</div></li>
+                <li><i class="fa-solid fa-server feat-icon-green"></i> <div>Self-Hosting Mode</div></li>
+                <li><i class="fa-solid fa-copyright feat-icon-purple"></i> <div>White-label Branding</div></li>
+                <li><i class="fa-solid fa-briefcase feat-icon-orange"></i> <div>Full Commercial Rights</div></li>
+                <li><i class="fa-solid fa-headset feat-icon-blue"></i> <div>Dedicated Support</div></li>
+                <li><i class="fa-solid fa-cloud-arrow-up feat-icon-green"></i> <div>Future Updates included</div></li>
             </ul>
-
-            <button class="btn" style="width: 100%; padding: 18px; background: #ffd700; color: #000; font-weight: 800; border-radius: 12px; font-size: 1.1rem;" onclick="triggerPackagePurchase('Agency License')">
-                Get License Now
-            </button>
         </div>
     </div>
 
