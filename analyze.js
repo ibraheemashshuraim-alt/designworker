@@ -1904,16 +1904,27 @@ window.updateLanguageState = function() {
 window.updateFontSize = function(val, save = true) {
     const size = parseInt(val);
     userSettings.fontSize = size;
+
+    // v4.22.4: Apply via CSS root variable so it works everywhere, even before analysis
+    document.documentElement.style.setProperty('--user-font-size', `${size}px`);
+
+    // Also directly set on results panel for immediate effect
     const wrapper = document.getElementById('results-typography-wrapper');
     if (wrapper) wrapper.style.fontSize = `${size}px`;
-    
+
+    // All result text elements
+    const resultsPanel = document.getElementById('resultsPanel');
+    if (resultsPanel) resultsPanel.style.fontSize = `${size}px`;
+
+    // Update the display badge
     const valDisplay = document.getElementById('fontSizeVal');
     if (valDisplay) valDisplay.innerText = `${size}px`;
-    
+
+    // Sync slider position
     const slider = document.getElementById('fontSizeSlider');
     if (slider) slider.value = size;
 
-    // v4.22.3: Live preview in personalization modal
+    // Live preview in the personalization modal
     const preview = document.getElementById('fontSizePreview');
     if (preview) preview.style.fontSize = `${size}px`;
 

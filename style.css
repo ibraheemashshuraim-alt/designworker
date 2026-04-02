@@ -1555,3 +1555,25 @@ footer { margin-top: 40px; }
     box-shadow: 0 0 8px rgba(157, 0, 255, 0.6);
     cursor: pointer;
 }
+
+/* v4.22.4: User font size variable - applies to all result text */
+:root { --user-font-size: 16px; }
+#resultsPanel .chip,
+#resultsPanel p,
+#resultsPanel span,
+#resultsPanel .priority-text,
+#resultsPanel .impression-feedback,
+#resultsPanel .price-value,
+#resultsPanel .pricing-label,
+#accessOut,
+#contrastOut,
+#reportGoodOut,
+#reportBadOut,
+#detailedImprovementsOut,
+#pricingEstimationOut,
+#clientImpressionOut,
+#colorPaletteOut,
+#fontsUsedOut {
+    font-size: var(--user-font-size) !important;
+    transition: font-size 0.2s ease;
+}
