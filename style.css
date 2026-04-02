@@ -1457,3 +1457,70 @@ footer { margin-top: 40px; }
     50% { transform: translateY(-10px) scale(1.1); box-shadow: 0 0 20px var(--neon-purple); }
     100% { transform: translateY(0) scale(1); }
 }
+
+/* v4.20.0: Personalization System Styles */
+.custom-slider {
+    width: 100%;
+    margin: 10px 0;
+    -webkit-appearance: none;
+    height: 6px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 5px;
+    outline: none;
+    cursor: pointer;
+}
+.custom-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    background: var(--neon-cyan);
+    border: 2px solid #fff;
+    border-radius: 50%;
+    box-shadow: 0 0 10px var(--neon-cyan);
+}
+
+.font-picker-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    max-height: 250px;
+    overflow-y: auto;
+    padding: 10px 5px;
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 12px;
+    background: rgba(0,0,0,0.2);
+    margin-top: 5px;
+}
+.font-picker-grid::-webkit-scrollbar { width: 4px; }
+.font-picker-grid::-webkit-scrollbar-thumb { background: var(--border-glow); border-radius: 10px; }
+
+.font-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 8px;
+    padding: 12px 8px;
+    text-align: center;
+    cursor: pointer;
+    transition: 0.2s;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    word-break: break-all;
+}
+.font-card:hover {
+    background: rgba(0, 229, 255, 0.05);
+    border-color: var(--neon-cyan);
+    color: #fff;
+    transform: translateY(-2px);
+}
+.font-card.active {
+    background: rgba(157, 0, 255, 0.1);
+    border-color: var(--neon-purple);
+    color: var(--neon-cyan);
+    box-shadow: 0 0 15px rgba(157, 0, 255, 0.2);
+}
+
+#results-typography-wrapper {
+    transition: all 0.3s ease;
+    width: 100%;
+}
+@font-face { font-family: 'Jameel Noori Nastaliq'; src: url('https://cdn.jsdelivr.net/gh/googlei18n/noto-fonts/unhinted/ttf/NotoNastaliqUrdu/NotoNastaliqUrdu-Regular.ttf'); font-display: swap; }

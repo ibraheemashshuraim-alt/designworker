@@ -152,14 +152,43 @@
                             </div>
                         </div>
 
-                        <!-- System Key Active Badge (Show for regular users) -->
-                        <div id="systemAiBadge" class="admin-only-config-inverse" style="padding: 12px; border-radius: 10px; background: rgba(0,255,157,0.05); border: 1px solid rgba(0,255,157,0.2); text-align: center; margin-top: 10px;">
-                            <div style="color: var(--success-green); font-size: 0.8rem; font-weight: 700;">
-                                <i class="fa-solid fa-cloud-bolt"></i> System AI Active
+                        <!-- v4.20.0: Personalization Section (Lang, Font, Size) -->
+                        <div class="modal-section" style="border-top: 1px solid rgba(255,255,255,0.06); margin-top: 15px; padding-top: 15px;">
+                            <h4 style="margin-bottom: 12px;"><i class="fa-solid fa-wand-magic-sparkles" style="color:var(--neon-purple);"></i> Personalization</h4>
+                            
+                            <!-- Language Selection -->
+                            <div style="margin-bottom: 15px;">
+                                <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 6px;">رزلٹ کی زبان (Language):</div>
+                                <select id="languageSelect" class="custom-input" style="font-size: 0.8rem; cursor: pointer;" onchange="updateLanguageState()">
+                                    <option value="Urdu">Urdu (اردو)</option>
+                                    <option value="English">English</option>
+                                    <option value="Arabic">Arabic (العربية)</option>
+                                    <option value="Pashto">Pashto (پښتو)</option>
+                                    <option value="Punjabi">Punjabi (شاہ مکھی)</option>
+                                </select>
                             </div>
-                            <div style="font-size: 0.65rem; color: var(--text-muted); margin-top: 3px;">
-                                آپ کو اپنی API Key ڈالنے کی ضرورت نہیں، ٹول ایڈمن کی Key استعمال کر رہا ہے۔
+
+                            <!-- Font Size Slider -->
+                            <div style="margin-bottom: 15px;">
+                                <div style="display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--text-muted); margin-bottom: 6px;">
+                                    <span>فونٹ سائز (Font Size):</span>
+                                    <span id="fontSizeVal">16px</span>
+                                </div>
+                                <input type="range" id="fontSizeSlider" min="12" max="32" value="16" class="custom-slider" oninput="updateFontSize(this.value)">
                             </div>
+
+                            <!-- Font Picker -->
+                            <div>
+                                <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 6px;">فونٹ فیملی (Font Preview):</div>
+                                <div id="fontPickerGrid" class="font-picker-grid">
+                                    <!-- Dynamic Font Cards -->
+                                </div>
+                            </div>
+                            
+                            <!-- Reset Button -->
+                            <button onclick="resetToDefaults()" class="btn secondary-btn" style="width: 100%; margin-top: 15px; font-size: 0.75rem; border-color: rgba(255,82,82,0.3); color: #ff5252; background: rgba(255,82,82,0.05);">
+                                <i class="fa-solid fa-arrow-rotate-left"></i> Reset to Defaults
+                            </button>
                         </div>
                     </div>
 
@@ -275,6 +304,8 @@
                 </div>
 
                 <div id="analysisResults" class="hidden">
+                    <div id="results-typography-wrapper" style="width: 100%;">
+                    <div id="results-typography-wrapper" style="width: 100%;">
                     <div class="score-orb">
                         <div class="score-inner">
                             <div id="expertBadge" class="hidden" style="position: absolute; top: -10px; right: -10px; background: #ffd700; color: #000; padding: 4px 8px; border-radius: 20px; font-size: 0.6rem; font-weight: 800; box-shadow: 0 4px 10px rgba(255,215,0,0.3); border: 2px solid #fff;">
@@ -344,7 +375,8 @@
                         <p style="font-size: 0.65rem; color: #ffd700; margin-top: 8px; font-style: italic;">آپ اس ڈیزائن سے تحریک لے کر اپنے ڈیزائن کو بہتر بنا سکتے ہیں۔</p>
                     </div>
 
-                    <button class="btn primary-btn" style="width: 100%; margin-top: 15px;" onclick="location.reload()">
+                    </div> <!-- End results-typography-wrapper -->
+                    <button class="btn primary-btn" style="width: 100%; margin-top: 25px;" onclick="location.reload()">
                         <i class="fa-solid fa-arrows-rotate"></i> نیا ڈیزائن چیک کریں
                     </button>
                 </div>
@@ -616,3 +648,4 @@
     </script>
 </body>
 </html>
+

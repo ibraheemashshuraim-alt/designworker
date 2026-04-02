@@ -42,6 +42,66 @@ let userState = {
     isAdmin: false
 };
 
+// v4.20.0: Personalization Settings
+let userSettings = {
+    language: 'Urdu',
+    font: 'Outfit',
+    fontSize: 16
+};
+
+const FONT_LIST = [
+    { name: 'Outfit', family: "'Outfit', sans-serif" },
+    { name: 'Inter', family: "'Inter', sans-serif" },
+    { name: 'Roboto', family: "'Roboto', sans-serif" },
+    { name: 'Poppins', family: "'Poppins', sans-serif" },
+    { name: 'Montserrat', family: "'Montserrat', sans-serif" },
+    { name: 'Open Sans', family: "'Open Sans', sans-serif" },
+    { name: 'Lato', family: "'Lato', sans-serif" },
+    { name: 'Oswald', family: "'Oswald', sans-serif" },
+    { name: 'Raleway', family: "'Raleway', sans-serif" },
+    { name: 'Ubuntu', family: "'Ubuntu', sans-serif" },
+    { name: 'Playfair Display', family: "'Playfair Display', serif" },
+    { name: 'Merriweather', family: "'Merriweather', serif" },
+    { name: 'Lora', family: "'Lora', serif" },
+    { name: 'PT Serif', family: "'PT Serif', serif" },
+    { name: 'EB Garamond', family: "'EB Garamond', serif" },
+    { name: 'Roboto Slab', family: "'Roboto Slab', serif" },
+    { name: 'Pacifico', family: "'Pacifico', cursive" },
+    { name: 'Dancing Script', family: "'Dancing Script', cursive" },
+    { name: 'Lobster', family: "'Lobster', cursive" },
+    { name: 'Caveat', family: "'Caveat', cursive" },
+    { name: 'Jameel Noori', family: "'Jameel Noori Nastaliq', 'Noto Nastaliq Urdu', serif" },
+    { name: 'Noto Sans Arabic', family: "'Noto Sans Arabic', sans-serif" },
+    { name: 'Tajawal', family: "'Tajawal', sans-serif" },
+    { name: 'Amiri', family: "'Amiri', serif" },
+    { name: 'Cairo', family: "'Cairo', sans-serif" },
+    { name: 'El Messiri', family: "'El Messiri', sans-serif" },
+    { name: 'Lateef', family: "'Lateef', serif" },
+    { name: 'Scheherazade', family: "'Scheherazade New', serif" },
+    { name: 'Reem Kufi', family: "'Reem Kufi', sans-serif" },
+    { name: 'Harmattan', family: "'Harmattan', sans-serif" },
+    { name: 'Work Sans', family: "'Work Sans', sans-serif" },
+    { name: 'Kanit', family: "'Kanit', sans-serif" },
+    { name: 'Quicksand', family: "'Quicksand', sans-serif" },
+    { name: 'Heebo', family: "'Heebo', sans-serif" },
+    { name: 'Josefin Sans', family: "'Josefin Sans', sans-serif" },
+    { name: 'Archivo', family: "'Archivo', sans-serif" },
+    { name: 'Fira Sans', family: "'Fira Sans', sans-serif" },
+    { name: 'Source Sans Pro', family: "'Source Sans Pro', sans-serif" },
+    { name: 'Inconsolata', family: "'Inconsolata', monospace" },
+    { name: 'Zilla Slab', family: "'Zilla Slab', serif" },
+    { name: 'Bitter', family: "'Bitter', serif" },
+    { name: 'Arvo', family: "'Arvo', serif" },
+    { name: 'Crimson Text', family: "'Crimson Text', serif" },
+    { name: 'Righteous', family: "'Righteous', cursive" },
+    { name: 'Comfortaa', family: "'Comfortaa', cursive" },
+    { name: 'Fredoka One', family: "'Fredoka One', cursive" },
+    { name: 'Indie Flower', family: "'Indie Flower', cursive" },
+    { name: 'Permanent Marker', family: "'Permanent Marker', cursive" },
+    { name: 'Abril Fatface', family: "'Abril Fatface', serif" },
+    { name: 'Libre Baskerville', family: "'Libre Baskerville', serif" }
+];
+
 // v4.18.17: Master API Keys (Cloud Fallback)
 let masterKeys = { gemini: null, groq: null };
 
@@ -1308,7 +1368,7 @@ window.runAnalysis = async () => {
             4. Layout: Grid alignment, white space usage, and balance.
 
             ### OUTPUT SPECIFICATIONS:
-            - Language: Urdu (Strictly). Do NOT include Hindi, Chinese, or any non-Urdu scripts.
+            - Language: ${userSettings.language} (Strictly). Do NOT include non-${userSettings.language} scripts.
             - Format: Valid JSON only.
             - Length: Provide detail for every field (Minimum 5 strengths and 5 improvements).
 
@@ -1774,3 +1834,128 @@ if (savedGroq) {
     const groqInput = document.getElementById('groqKeyInput');
     if (groqInput) groqInput.value = savedGroq;
 }
+
+// v4.20.0: Personalization Core Logic
+window.initPersonalization = function() {
+    const saved = localStorage.getItem('designcheck_settings');
+    if (saved) {
+        try {
+            userSettings = JSON.parse(saved);
+        } catch(e) {}
+    }
+    
+    // Apply Font Size
+    updateFontSize(userSettings.fontSize, false);
+    
+    // Apply Language
+    const langEl = document.getElementById('languageSelect');
+    if (langEl) langEl.value = userSettings.language;
+    
+    // Render Font Picker
+    renderFontPicker();
+    
+    // Load Selected Font
+    if (userSettings.font !== 'Outfit') {
+        applyFont(userSettings.font, false);
+    }
+}
+
+function renderFontPicker() {
+    const picker = document.getElementById('fontPickerGrid');
+    if (!picker) return;
+    
+    picker.innerHTML = FONT_LIST.map(f => 
+        <div class="font-card " 
+             style="font-family: "
+             onmouseover="previewFont('')"
+             onmouseout="revertFont()"
+             onclick="applyFont('')">
+            
+        </div>
+    ).join('');
+}
+
+window.updateLanguageState = function() {
+    userSettings.language = document.getElementById('languageSelect').value;
+    saveSettings();
+    showToast(Language: , 'info');
+};
+
+window.updateFontSize = function(val, save = true) {
+    const size = parseInt(val);
+    userSettings.fontSize = size;
+    const wrapper = document.getElementById('results-typography-wrapper');
+    if (wrapper) wrapper.style.fontSize = ${size}px;
+    
+    const valDisplay = document.getElementById('fontSizeVal');
+    if (valDisplay) valDisplay.innerText = ${size}px;
+    
+    const slider = document.getElementById('fontSizeSlider');
+    if (slider) slider.value = size;
+
+    if (save) saveSettings();
+};
+
+window.previewFont = function(name) {
+    const font = FONT_LIST.find(f => f.name === name);
+    if (!font) return;
+    
+    loadGoogleFont(font.name);
+    
+    const wrapper = document.getElementById('results-typography-wrapper');
+    if (wrapper) wrapper.style.fontFamily = font.family;
+};
+
+window.revertFont = function() {
+    const font = FONT_LIST.find(f => f.name === userSettings.font);
+    const wrapper = document.getElementById('results-typography-wrapper');
+    if (wrapper && font) wrapper.style.fontFamily = font.family;
+};
+
+window.applyFont = function(name, save = true) {
+    userSettings.font = name;
+    const font = FONT_LIST.find(f => f.name === name);
+    if (font) {
+        loadGoogleFont(font.name);
+        const wrapper = document.getElementById('results-typography-wrapper');
+        if (wrapper) wrapper.style.fontFamily = font.family;
+    }
+    
+    renderFontPicker();
+    if (save) {
+        saveSettings();
+        showToast(Font:  Applied, 'success');
+    }
+};
+
+function loadGoogleFont(name) {
+    if (name === 'Outfit' || name === 'Jameel Noori') return;
+    const linkId = ont-link-;
+    if (!document.getElementById(linkId)) {
+        const link = document.createElement('link');
+        link.id = linkId;
+        link.rel = 'stylesheet';
+        link.href = https://fonts.googleapis.com/css2?family=:wght@400;700&display=swap;
+        document.head.appendChild(link);
+    }
+}
+
+window.resetToDefaults = function() {
+    userSettings = { language: 'Urdu', font: 'Outfit', fontSize: 16 };
+    localStorage.removeItem('designcheck_settings');
+    updateFontSize(16, false);
+    const langEl = document.getElementById('languageSelect');
+    if (langEl) langEl.value = 'Urdu';
+    const wrapper = document.getElementById('results-typography-wrapper');
+    if (wrapper) wrapper.style.fontFamily = "'Outfit', 'Noto Nastaliq Urdu', sans-serif";
+    renderFontPicker();
+    showToast("Settings Reset!", "warning");
+};
+
+function saveSettings() {
+    localStorage.setItem('designcheck_settings', JSON.stringify(userSettings));
+}
+
+document.addEventListener('DOMContentLoaded', initPersonalization);
+setTimeout(initPersonalization, 1500);
+
