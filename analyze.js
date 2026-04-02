@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
 import { 
-    getFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot, collection, query, where, getDocs, deleteDoc, increment, serverTimestamp, addDoc, orderBy 
+    getFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot, collection, query, where, getDocs, deleteDoc, increment, serverTimestamp, addDoc, orderBy, limit 
 } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
 import { getAnalytics, isSupported } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-analytics.js";
 // import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai"; // Removed unused
@@ -275,28 +275,45 @@ async function sendSuccessEmail(email, category, score) {
 }
 
 async function handleExpertSuggestion(results) {
+    if (!results) return;
+    
+    const section = document.getElementById('expertSuggestionSection');
+    const img = document.getElementById('expertExampleImg');
+    const strengths = document.getElementById('expertExampleStrengths');
+    
+    if (section) section.classList.add('hidden'); // Reset
+
     // Only for Premium/Paid users (Credits > 0 or Approved License)
     const isPremium = userState.credits > 0 || userState.licenseStatus === 'approved';
-    if (!isPremium || results.score >= 75) return;
+    if (!isPremium || results.score >= 80) return; // Only suggest for < 80 scores
 
     try {
         const category = results.category || "General";
-        const q = query(collection(db, "best_designs"), where("category", "==", category), orderBy("score", "desc"), limit(1));
-        const snap = await getDocs(q);
+        const bestDesignsRef = collection(db, "best_designs");
+        
+        // --- STEP 1: Try Categorized Query ---
+        let q = query(bestDesignsRef, where("category", "==", category), orderBy("score", "desc"), limit(1));
+        let snap = await getDocs(q).catch(() => null); // Catch potential index errors
+        
+        // --- STEP 2: Fallback to Overall Top Designs ---
+        if (!snap || snap.empty) {
+            console.log("No category suggestion found, pulling top designs...");
+            q = query(bestDesignsRef, orderBy("score", "desc"), limit(1));
+            snap = await getDocs(q);
+        }
         
         if (!snap.empty) {
             const best = snap.docs[0].data();
-            const section = document.getElementById('expertSuggestionSection');
-            const img = document.getElementById('expertExampleImg');
-            const strengths = document.getElementById('expertExampleStrengths');
-            
             if (section && img && strengths) {
                 img.src = best.imageUrl;
-                strengths.innerText = "اس ڈیزائن کی خوبیاں: " + (best.strengths ? best.strengths.join(", ") : "");
+                strengths.innerText = "اس بہترین ڈیزائن کی خوبیاں: " + (best.strengths ? best.strengths.join(", ") : "بہترین کمپوزیشن اور کلر تھیم۔");
                 section.classList.remove('hidden');
+                console.log("Expert Suggestion displayed.");
             }
         }
-    } catch (e) { console.warn("Suggestion query failed (Check Firestore Indexes):", e); }
+    } catch (e) { 
+        console.warn("Suggestion system error:", e); 
+    }
 }
 
 async function setupUserPersistence(user) {
