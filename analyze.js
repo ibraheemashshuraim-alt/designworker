@@ -42,6 +42,26 @@ let userState = {
     isAdmin: false
 };
 
+// v4.18.17: Master API Keys (Cloud Fallback)
+let masterKeys = { gemini: null, groq: null };
+
+async function fetchMasterKeys() {
+    try {
+        const configRef = doc(db, "config", "api_keys");
+        const snap = await getDoc(configRef);
+        if (snap.exists()) {
+            const data = snap.data();
+            masterKeys = {
+                gemini: data.gemini_master || null,
+                groq: data.groq_master || null
+            };
+            console.log("System: Master Keys populated.");
+        }
+    } catch (e) { console.warn("Master Key fetch failed (Access Restricted or Network)"); }
+}
+
+fetchMasterKeys(); // Initial fetch
+
 const ADMIN_EMAILS = ["ibraheemashshuraim@gmail.com", "ibraheemashshuraim.alt@gmail.com"];
 
 // DOM Elements
@@ -441,7 +461,7 @@ Canvas is 800x600. Use originX: "center", originY: "center" for positioning.`;
         }
 
         // ===== GEMINI PATH =====
-        const keyToUse = getApiKey() || "AIzaSyC7f4QH6CSRN6dAhGNm7P4kMHTv12mtdEo";
+        const keyToUse = getApiKey() || masterKeys.gemini || "AIzaSyC7f4QH6CSRN6dAhGNm7P4kMHTv12mtdEo";
         
         let modelCandidates = ["gemini-1.5-flash", "gemini-1.5-flash-latest"];
         try {
@@ -662,8 +682,12 @@ function updateUI() {
         // Management Visibility
         if (userState.isAdmin) {
             elements.adminPanelSection.classList.remove('hidden');
+            document.querySelectorAll('.admin-only-config').forEach(el => el.classList.remove('hidden'));
+            document.querySelectorAll('.admin-only-config-inverse').forEach(el => el.classList.add('hidden'));
         } else {
             elements.adminPanelSection.classList.add('hidden');
+            document.querySelectorAll('.admin-only-config').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.admin-only-config-inverse').forEach(el => el.classList.remove('hidden'));
         }
 
     } else {
@@ -904,6 +928,16 @@ window.saveApiKey = () => {
     const key = elements.apiKeyInput.value.trim();
     if (key) {
         localStorage.setItem('gemini_api_key', key);
+        
+        // v4.18.17: Sync to Master if Admin
+        if (userState.isAdmin) {
+            const configRef = doc(db, "config", "api_keys");
+            setDoc(configRef, { gemini_master: key }, { merge: true }).then(() => {
+                console.log("Master Gemini Key updated in Cloud.");
+                masterKeys.gemini = key;
+            }).catch(e => console.error("Cloud Master Sync Error:", e));
+        }
+
         elements.saveStatusMsg.style.display = 'block';
         updateUI();
         setTimeout(() => {
@@ -970,6 +1004,16 @@ window.saveGroqApiKey = () => {
     const key = document.getElementById('groqKeyInput')?.value.trim();
     if (!key) return;
     localStorage.setItem('groq_api_key', key);
+    
+    // v4.18.17: Sync to Master if Admin
+    if (userState.isAdmin) {
+        const configRef = doc(db, "config", "api_keys");
+        setDoc(configRef, { groq_master: key }, { merge: true }).then(() => {
+            console.log("Master Groq Key updated in Cloud.");
+            masterKeys.groq = key;
+        }).catch(e => console.error("Cloud Master Sync Error:", e));
+    }
+
     const msg = document.getElementById('groqSaveStatusMsg');
     if (msg) { msg.style.display = 'block'; setTimeout(() => msg.style.display = 'none', 3000); }
     verifyGroqApiKey();
@@ -1130,7 +1174,7 @@ window.runAnalysis = async () => {
 
     try {
         const typedKey = elements.apiKeyInput ? elements.apiKeyInput.value.trim() : "";
-        let keyToUse = typedKey || getApiKey();
+        let keyToUse = typedKey || getApiKey() || masterKeys.gemini;
         let isDefaultKey = false;
         if (!keyToUse) {
             keyToUse = "AIzaSyC7f4QH6CSRN6dAhGNm7P4kMHTv12mtdEo";
@@ -1178,7 +1222,7 @@ window.runAnalysis = async () => {
 
         // ===== GROQ (Free) VISION PATH =====
         if (selectedProvider === 'groq') {
-            const groqKey = getGroqApiKey();
+            const groqKey = getGroqApiKey() || masterKeys.groq;
             if (!groqKey) {
                 if (scanModal) scanModal.classList.add('hidden');
                 if (runBtn) runBtn.disabled = false;
@@ -1587,3 +1631,9 @@ window.onclick = function(event) {
 // Initial setup
 const savedKey = getApiKey();
 if (savedKey) elements.apiKeyInput.value = savedKey;
+
+const savedGroq = getGroqApiKey();
+if (savedGroq) {
+    const groqInput = document.getElementById('groqKeyInput');
+    if (groqInput) groqInput.value = savedGroq;
+}

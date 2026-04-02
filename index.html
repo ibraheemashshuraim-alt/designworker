@@ -79,32 +79,48 @@
                             </button>
                         </div>
 
-                        <!-- Gemini API Key -->
-                        <div id="gemini-section">
-                            <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 6px;">Google Gemini API Key:</div>
-                            <input type="password" id="apiKeyInput" class="custom-input" placeholder="AIzaSy...">
-                            <div style="display: flex; gap: 5px; margin-top:5px;">
-                                <button onclick="saveApiKey()" class="btn secondary-btn" style="flex: 1; padding: 10px;">سیو کریں</button>
-                                <button onclick="verifyApiKey()" class="btn warning-btn" style="flex: 1; padding: 10px; font-size: 0.8rem; background: rgba(0,229,255,0.1); border: 1px solid var(--neon-cyan); color: var(--neon-cyan);">
-                                    <i class="fa-solid fa-satellite-dish"></i> ٹیسٹ
-                                </button>
+                        <div class="admin-only-config hidden">
+                            <div style="font-size: 0.65rem; color: var(--neon-cyan); margin-bottom: 10px; padding: 5px; border-radius: 4px; background: rgba(0,229,255,0.05); border: 1px dashed var(--neon-cyan);">
+                                <i class="fa-solid fa-shield-halved"></i> ایڈمن نوٹ: یہاں سیو کرنا 'ماسٹر کی' کو کلاؤڈ پر بھی اپ ڈیٹ کر دے گا۔
                             </div>
-                            <p id="saveStatusMsg" style="color: var(--success-green); font-size: 0.7rem; margin-top: 5px; display: none;">محفوظ کر لی گئی!</p>
-                            <p id="apiVerifyStatus" style="font-size: 0.7rem; margin-top: 5px; display: none;"></p>
+                            
+                            <!-- Gemini API Key -->
+                            <div id="gemini-section">
+                                <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 6px;">Google Gemini API Key:</div>
+                                <input type="password" id="apiKeyInput" class="custom-input" placeholder="AIzaSy...">
+                                <div style="display: flex; gap: 5px; margin-top:5px;">
+                                    <button onclick="saveApiKey()" class="btn secondary-btn" style="flex: 1; padding: 10px;">سیو کریں</button>
+                                    <button onclick="verifyApiKey()" class="btn warning-btn" style="flex: 1; padding: 10px; font-size: 0.8rem; background: rgba(0,229,255,0.1); border: 1px solid var(--neon-cyan); color: var(--neon-cyan);">
+                                        <i class="fa-solid fa-satellite-dish"></i> ٹیسٹ
+                                    </button>
+                                </div>
+                                <p id="saveStatusMsg" style="color: var(--success-green); font-size: 0.7rem; margin-top: 5px; display: none;">محفوظ کر لی گئی!</p>
+                                <p id="apiVerifyStatus" style="font-size: 0.7rem; margin-top: 5px; display: none;"></p>
+                            </div>
+
+                            <!-- Groq API Key (Free Alternative) -->
+                            <div id="groq-section" style="margin-top: 14px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.06);">
+                                <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 6px;">Groq Cloud API Key (<a href="https://console.groq.com" target="_blank" style="color:var(--neon-cyan);">console.groq.com</a> سے حاصل کریں):</div>
+                                <input type="password" id="groqKeyInput" class="custom-input" placeholder="gsk_...">
+                                <div style="display: flex; gap: 5px; margin-top:5px;">
+                                    <button onclick="saveGroqApiKey()" class="btn secondary-btn" style="flex: 1; padding: 10px;">Groq Key سیو کریں</button>
+                                    <button onclick="verifyGroqApiKey()" class="btn warning-btn" style="flex: 1; padding: 10px; font-size: 0.8rem; background: rgba(255,165,0,0.1); border: 1px solid orange; color: orange;">
+                                        <i class="fa-solid fa-satellite-dish"></i> ٹیسٹ
+                                    </button>
+                                </div>
+                                <p id="groqSaveStatusMsg" style="color: var(--success-green); font-size: 0.7rem; margin-top: 5px; display: none;">Groq Key محفوظ!</p>
+                                <p id="groqVerifyStatus" style="font-size: 0.7rem; margin-top: 5px; display: none;"></p>
+                            </div>
                         </div>
 
-                        <!-- Groq API Key (Free Alternative) -->
-                        <div id="groq-section" style="margin-top: 14px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.06);">
-                            <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 6px;">Groq Cloud API Key (<a href="https://console.groq.com" target="_blank" style="color:var(--neon-cyan);">console.groq.com</a> سے حاصل کریں):</div>
-                            <input type="password" id="groqKeyInput" class="custom-input" placeholder="gsk_...">
-                            <div style="display: flex; gap: 5px; margin-top:5px;">
-                                <button onclick="saveGroqApiKey()" class="btn secondary-btn" style="flex: 1; padding: 10px;">Groq Key سیو کریں</button>
-                                <button onclick="verifyGroqApiKey()" class="btn warning-btn" style="flex: 1; padding: 10px; font-size: 0.8rem; background: rgba(255,165,0,0.1); border: 1px solid orange; color: orange;">
-                                    <i class="fa-solid fa-satellite-dish"></i> ٹیسٹ
-                                </button>
+                        <!-- System Key Active Badge (Show for regular users) -->
+                        <div id="systemAiBadge" class="admin-only-config-inverse" style="padding: 12px; border-radius: 10px; background: rgba(0,255,157,0.05); border: 1px solid rgba(0,255,157,0.2); text-align: center; margin-top: 10px;">
+                            <div style="color: var(--success-green); font-size: 0.8rem; font-weight: 700;">
+                                <i class="fa-solid fa-cloud-bolt"></i> System AI Active
                             </div>
-                            <p id="groqSaveStatusMsg" style="color: var(--success-green); font-size: 0.7rem; margin-top: 5px; display: none;">Groq Key محفوظ!</p>
-                            <p id="groqVerifyStatus" style="font-size: 0.7rem; margin-top: 5px; display: none;"></p>
+                            <div style="font-size: 0.65rem; color: var(--text-muted); margin-top: 3px;">
+                                آپ کو اپنی API Key ڈالنے کی ضرورت نہیں، ٹول ایڈمن کی Key استعمال کر رہا ہے۔
+                            </div>
                         </div>
                     </div>
 
