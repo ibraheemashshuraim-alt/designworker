@@ -152,11 +152,11 @@
                             </div>
                         </div>
 
-                        <!-- v4.20.0: Personalization Section (Lang, Font, Size) -->
+                        <!-- v4.20.0: Personalization Settings (Settings Modal Trigger) -->
                         <div class="modal-section" style="border-top: 1px solid rgba(255,255,255,0.06); margin-top: 15px; padding-top: 15px;">
                             <h4 style="margin-bottom: 12px;"><i class="fa-solid fa-wand-magic-sparkles" style="color:var(--neon-purple);"></i> Personalization</h4>
                             
-                            <!-- Language Selection -->
+                            <!-- Language Selection (Kept in Dropdown as requested) -->
                             <div style="margin-bottom: 15px;">
                                 <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 6px;">رزلٹ کی زبان (Language):</div>
                                 <select id="languageSelect" class="custom-input" style="font-size: 0.8rem; cursor: pointer;" onchange="updateLanguageState()">
@@ -168,26 +168,9 @@
                                 </select>
                             </div>
 
-                            <!-- Font Size Slider -->
-                            <div style="margin-bottom: 15px;">
-                                <div style="display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--text-muted); margin-bottom: 6px;">
-                                    <span>فونٹ سائز (Font Size):</span>
-                                    <span id="fontSizeVal">16px</span>
-                                </div>
-                                <input type="range" id="fontSizeSlider" min="12" max="32" value="16" class="custom-slider" oninput="updateFontSize(this.value)">
-                            </div>
-
-                            <!-- Font Picker -->
-                            <div>
-                                <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 6px;">فونٹ فیملی (Font Preview):</div>
-                                <div id="fontPickerGrid" class="font-picker-grid">
-                                    <!-- Dynamic Font Cards -->
-                                </div>
-                            </div>
-                            
-                            <!-- Reset Button -->
-                            <button onclick="resetToDefaults()" class="btn secondary-btn" style="width: 100%; margin-top: 15px; font-size: 0.75rem; border-color: rgba(255,82,82,0.3); color: #ff5252; background: rgba(255,82,82,0.05);">
-                                <i class="fa-solid fa-arrow-rotate-left"></i> Reset to Defaults
+                            <!-- Open Settings Modal Button -->
+                            <button onclick="toggleModal('personalizationModal', true)" class="btn secondary-btn" style="width: 100%; font-size: 0.8rem; border-color: var(--neon-purple); color: var(--neon-purple); background: rgba(157, 0, 255, 0.05);">
+                                <i class="fa-solid fa-sliders"></i> فونٹ اور سائز سیٹنگز
                             </button>
                         </div>
                     </div>
@@ -609,6 +592,46 @@
             <div><span id="uiVersion" style="color: var(--neon-cyan); font-family: monospace;">DesignCheck Studio v4.18.15</span></div>
         </div>
     </footer>
+
+    <!-- Personalization Modal (v4.20.0 Improved) -->
+    <div id="personalizationModal" class="modal hidden">
+        <div class="modal-content personalization-content">
+            <span class="close-btn" onclick="toggleModal('personalizationModal', false)">&times;</span>
+            <div class="profile-header">
+                <i class="fa-solid fa-wand-magic-sparkles" style="font-size: 2.5rem; color: var(--neon-purple);"></i>
+                <h3>فونٹ اور ڈیزائن سیٹنگز</h3>
+                <p style="font-size: 0.75rem; opacity: 0.7;">اپنی پسند کے مطابق رزلٹ کو تبدیل کریں</p>
+            </div>
+
+            <div class="modal-section">
+                <!-- Font Size Slider -->
+                <div style="margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: #fff; margin-bottom: 10px; font-weight: 700;">
+                        <span>فونٹ سائز (Font Size):</span>
+                        <span id="fontSizeVal" style="color: var(--neon-purple);">16px</span>
+                    </div>
+                    <input type="range" id="fontSizeSlider" min="12" max="32" value="16" class="custom-slider" oninput="updateFontSize(this.value)">
+                </div>
+
+                <!-- Font Picker -->
+                <div>
+                    <div style="font-size: 0.8rem; color: #fff; margin-bottom: 12px; font-weight: 700;">فونٹ فیملی (Font Selection):</div>
+                    <div id="fontPickerGrid" class="font-picker-grid">
+                        <!-- Dynamic Font Cards -->
+                    </div>
+                </div>
+                
+                <!-- Reset Button -->
+                <button onclick="resetToDefaults()" class="btn secondary-btn" style="width: 100%; margin-top: 20px; font-size: 0.8rem; border-color: rgba(255,82,82,0.3); color: #ff5252; background: rgba(255,82,82,0.05);">
+                    <i class="fa-solid fa-arrow-rotate-left"></i> ری سیٹ ڈیفالٹ (Reset All)
+                </button>
+            </div>
+            
+            <button onclick="toggleModal('personalizationModal', false)" class="btn primary-btn" style="width: 100%;">
+                سیو اور بند کریں (Done)
+            </button>
+        </div>
+    </div>
 
     <script type="module" src="analyze.js?v=4.18.15"></script>
     <script src="editor.js?v=4.18.15"></script>

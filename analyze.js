@@ -156,6 +156,7 @@ const elements = {
     modalIcon: document.getElementById('modalIcon'),
     adminPanelSection: document.getElementById('adminPanelSection'),
     profileDropdown: document.getElementById('profileDropdown'),
+    personalizationModal: document.getElementById('personalizationModal'),
     adminUsersList: document.getElementById('adminUsersList'),
     colorPaletteOut: document.getElementById('colorPaletteOut'),
     fontsUsedOut: document.getElementById('fontsUsedOut'),
@@ -1876,15 +1877,18 @@ function renderFontPicker() {
     const picker = document.getElementById('fontPickerGrid');
     if (!picker) return;
     
-    picker.innerHTML = FONT_LIST.map(f => `
-        <div class="font-card" 
-             style="font-family: ${f.family}"
-             onmouseover="previewFont('${f.name}')"
-             onmouseout="revertFont()"
-             onclick="applyFont('${f.name}')">
-            ${f.name}
-        </div>
-    `).join('');
+    picker.innerHTML = FONT_LIST.map(f => {
+        const isActive = userSettings.font === f.name;
+        return `
+            <div class="font-card ${isActive ? 'active-font' : ''}" 
+                 style="font-family: ${f.family}"
+                 onmouseover="previewFont('${f.name}')"
+                 onmouseout="revertFont()"
+                 onclick="applyFont('${f.name}')">
+                <span class="font-name">${f.name}</span>
+            </div>
+        `;
+    }).join('');
 }
 
 window.updateLanguageState = function() {
@@ -1961,6 +1965,7 @@ window.resetToDefaults = function() {
     const wrapper = document.getElementById('results-typography-wrapper');
     if (wrapper) wrapper.style.fontFamily = "'Outfit', 'Noto Nastaliq Urdu', sans-serif";
     renderFontPicker();
+    window.toggleModal('personalizationModal', false);
     showToast("Settings Reset!", "warning");
 };
 
