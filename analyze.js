@@ -1474,8 +1474,9 @@ window.runAnalysis = async () => {
         const url = `https://generativelanguage.googleapis.com/${endpoint}/models/${modelToUse}:generateContent?key=${keyToUse}`;
         
         try {
-            const fetchSignal = AbortSignal.timeout ? AbortSignal.timeout(15000) : controller.signal;
-            if (!AbortSignal.timeout) setTimeout(() => controller.abort(), 15000);
+            // v4.19.5: Increased timeout to 45s for heavy vision tasks
+            const fetchSignal = AbortSignal.timeout ? AbortSignal.timeout(45000) : controller.signal;
+            if (!AbortSignal.timeout) setTimeout(() => controller.abort(), 45000);
 
             const payload = {
                 contents: [{ parts: [{ text: prompt }, { inline_data: { mime_type: mimeType, data: base64Data } }] }],
