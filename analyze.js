@@ -24,7 +24,7 @@ isSupported().then(yes => { if (yes) getAnalytics(app); });
 
 // Global State
 let currentImageBase64 = null;
-let lastAnalysisData = null; // v4.21.0: Required for real-time translation
+let lastAnalysisData = null;
 let userState = {
     loggedIn: false,
     uid: null,
@@ -164,7 +164,6 @@ function updateUI() {
         elements.loginBtn.classList.add('hidden');
         elements.authContainer.classList.remove('hidden');
         
-        // Update top-right chip
         elements.profileEmail.innerText = userState.email.split('@')[0];
         if (userState.photoURL) {
             elements.profileAvatar.src = userState.photoURL;
@@ -172,7 +171,6 @@ function updateUI() {
             elements.profileIcon.classList.add('hidden');
         }
 
-        // Update Unified Dropdown Header
         if (elements.profileEmailVal) elements.profileEmailVal.innerText = userState.email;
         if (userState.photoURL && elements.modalAvatar) {
             elements.modalAvatar.src = userState.photoURL;
@@ -180,23 +178,34 @@ function updateUI() {
             if (elements.modalIcon) elements.modalIcon.classList.add('hidden');
         }
 
-        // --- CRITICAL FIX: Update Credits ---
         if (elements.profileCreditsModal) {
             elements.profileCreditsModal.innerText = userState.credits;
-            // v4.21.1: Visual feedback if credits are zero
             if (userState.credits <= 0) elements.profileCreditsModal.style.color = "#ff5252";
             else elements.profileCreditsModal.style.color = "var(--neon-purple)";
         }
 
-        if (userState.isAdmin) {
-            if (elements.adminPanelSection) elements.adminPanelSection.classList.remove('hidden');
-        }
+        if (userState.isAdmin) elements.adminPanelSection.classList.remove('hidden');
     } else {
         elements.loginBtn.classList.remove('hidden');
         elements.authContainer.classList.add('hidden');
-        if (elements.adminPanelSection) elements.adminPanelSection.classList.add('hidden');
     }
 }
+
+// ================ PROVIDER MGMT ================
+window.setProvider = (provider) => {
+    localStorage.setItem('designcheck_provider', provider);
+    document.querySelectorAll('.provider-tab').forEach(t => {
+        t.style.border = '1px solid rgba(255,255,255,0.1)';
+        t.style.background = 'rgba(255,255,255,0.03)';
+    });
+    const activeBtn = document.getElementById(`tab-${provider}`);
+    if (activeBtn) {
+        activeBtn.style.border = '1px solid var(--neon-cyan)';
+        activeBtn.background = 'rgba(0,229,255,0.1)';
+        activeBtn.style.color = 'var(--neon-cyan)';
+    }
+    showToast(`AI Provider: ${provider.toUpperCase()}`, 'info');
+};
 
 // ================ FILE HANDLING ================
 elements.fileInput.onchange = (e) => {
@@ -222,21 +231,37 @@ window.runAnalysis = async () => {
     
     try {
         const compressed = await compressImage(currentImageBase64);
-        const key = localStorage.getItem('gemini_api_key') || masterKeys.gemini || "AIzaSyC7f4QH6CSRN6dAhGNm7P4kMHTv12mtdEo";
-        
-        const prompt = `Analyze this design. Language: ${userSettings.language}. Output JSON: {score, category, strengths[], improvements[], accessibility, contrast, detailed_improvements[{text, priority}], pricing{current, improved}, client_impression{level, feedback, warning}, colors[], fonts[]}`;
-        
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                contents: [{ parts: [{ text: prompt }, { inline_data: { mime_type: "image/jpeg", data: compressed.split(',')[1] } }] }],
-                generationConfig: { responseMimeType: "application/json" }
-            })
-        });
+        const provider = localStorage.getItem('designcheck_provider') || 'gemini';
+        let key, res, payload;
+
+        if (provider === 'groq') {
+            key = localStorage.getItem('groq_api_key') || masterKeys.groq;
+            const promptStr = `Analyze design. Language: ${userSettings.language}. Output JSON fixed schema.`;
+            res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+                method: "POST",
+                headers: { "Authorization": `Bearer ${key}`, "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    model: "llama3-70b-8192",
+                    messages: [{ role: "user", content: promptStr }],
+                    temperature: 0.1,
+                    response_format: { type: "json_object" }
+                })
+            });
+        } else {
+            key = localStorage.getItem('gemini_api_key') || masterKeys.gemini || "AIzaSyC7f4QH6CSRN6dAhGNm7P4kMHTv12mtdEo";
+            const prompt = `Analyze this design. Language: ${userSettings.language}. Output JSON: {score, category, strengths[], improvements[], accessibility, contrast, detailed_improvements[{text, priority}], pricing{current, improved}, client_impression{level, feedback, warning}, colors[], fonts[]}`;
+            res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: prompt }, { inline_data: { mime_type: "image/jpeg", data: compressed.split(',')[1] } }] }],
+                    generationConfig: { responseMimeType: "application/json" }
+                })
+            });
+        }
 
         const data = await res.json();
-        const text = data.candidates[0].content.parts[0].text;
+        const text = provider === 'groq' ? data.choices[0].message.content : data.candidates[0].content.parts[0].text;
         const resData = JSON.parse(text);
         displayResults(resData);
         lastAnalysisData = resData;
@@ -343,7 +368,9 @@ window.toggleTheme = () => {
 
 function updateThemeUI(theme) {
     const text = document.getElementById('themeText');
+    const icon = document.getElementById('themeIcon');
     if (text) text.innerText = theme === 'light' ? 'Light Mode' : 'Dark Mode';
+    if (icon) icon.className = theme === 'light' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
 }
 
 window.renderFontPicker = () => {
@@ -359,7 +386,6 @@ window.applyFont = (name, save = true) => {
     if (save) localStorage.setItem('designcheck_settings', JSON.stringify(userSettings));
 };
 
-// ================ TRANSLATION ================
 window.updateLanguageState = async () => {
     const target = document.getElementById('languageSelect').value;
     if (lastAnalysisData && userSettings.language !== target) {
@@ -372,7 +398,7 @@ window.updateLanguageState = async () => {
 
 async function translateCurrentResults(target) {
     const status = document.getElementById('statusHeader');
-    status.innerHTML = `Translating to ${target}...`;
+    status.innerHTML = `<span class="status-indicator">Translating to ${target}...</span>`;
     try {
         const key = localStorage.getItem('gemini_api_key') || masterKeys.gemini || "AIzaSyC7f4QH6CSRN6dAhGNm7P4kMHTv12mtdEo";
         const prompt = `Translate this JSON to ${target}. Keys must stay same. JSON: ${JSON.stringify(lastAnalysisData)}`;
@@ -391,6 +417,15 @@ async function translateCurrentResults(target) {
 window.toggleModal = (id, show) => {
     const m = document.getElementById(id);
     if (m) show ? m.classList.remove('hidden') : m.classList.add('hidden');
+};
+
+window.showToast = (msg, type='info') => {
+    const c = document.getElementById('ui-toast-container');
+    const t = document.createElement('div');
+    t.className = `ui-toast ${type}`;
+    t.innerHTML = `<i class="fa-solid fa-info-circle"></i> ${msg}`;
+    c.appendChild(t);
+    setTimeout(() => t.remove(), 3000);
 };
 
 document.addEventListener('DOMContentLoaded', initPersonalization);
