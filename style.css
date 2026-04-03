@@ -1,4 +1,4 @@
-/* v5.4.0: Admin & Tier Correction */
+/* v5.4.1: Admin Overhaul & Feature Control */
 .credits-mini-badge {
     background: rgba(0, 229, 255, 0.1);
     color: var(--neon-cyan);
@@ -642,8 +642,16 @@ body {
 }
 
 .admin-user-grid { 
+    display: flex; flex-direction: column; gap: 25px; padding: 20px; overflow-y: auto; flex: 1; margin-top: 10px;
+}
+.pending-claims-section {
     display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); 
-    gap: 25px; padding: 20px; overflow-y: auto; flex: 1; margin-top: 10px;
+    gap: 20px; padding: 20px; background: rgba(0, 229, 255, 0.03); 
+    border: 1px dashed rgba(0, 229, 255, 0.2); border-radius: 20px; margin-bottom: 30px;
+}
+.active-users-section {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); 
+    gap: 20px;
 }
 .admin-user-grid::-webkit-scrollbar { width: 5px; }
 .admin-user-grid::-webkit-scrollbar-thumb { background: var(--border-glow); border-radius: 10px; }
@@ -1791,10 +1799,26 @@ footer { margin-top: 40px; }
     gap: 12px !important;
     margin-top: 15px !important;
     padding: 12px;
-    background: rgba(0, 229, 255, 0.05);
-    border: 1px solid rgba(0, 229, 255, 0.2);
+    background: rgba(0, 229, 255, 0.08); /* v5.4.1: More prominent for Pending */
+    border: 1px solid rgba(0, 229, 255, 0.3);
     border-radius: 12px;
 }
+
+/* Feature Toggles (Admin Only) */
+.feature-toggles-box {
+    margin-top: 15px; background: rgba(255,255,255,0.03); 
+    padding: 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05);
+}
+.toggle-row {
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;
+}
+.toggle-row:last-child { margin-bottom: 0; }
+.toggle-label { font-size: 0.7rem; color: var(--text-muted); font-weight: 600; }
+.toggle-btn-small {
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+    color: #fff; padding: 3px 8px; border-radius: 5px; font-size: 0.6rem; cursor: pointer;
+}
+.toggle-btn-small.on { background: var(--success-green); color: #000; border-color: var(--success-green); }
 .package-action-btn {
     padding: 8px; font-size: 0.75rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);
     background: rgba(255,255,255,0.05); color: #fff; cursor: pointer; transition: 0.2s;
@@ -1905,5 +1929,52 @@ footer { margin-top: 40px; }
 @keyframes suggestFade {
     from { opacity: 0; transform: translateY(30px); }
     to { opacity: 1; transform: translateY(0); }
+}
+
+/* v5.4.1: Admin Overhaul Styles */
+#adminGlobalSettings {
+    margin-bottom: 25px; margin-top: 10px;
+    padding: 15px; background: rgba(255,215,0,0.05);
+    border-radius: 12px; border: 1px solid rgba(255,215,0,0.15);
+    display: flex; justify-content: center;
+}
+
+.pending-claims-section {
+    display: flex; flex-direction: column; gap: 20px;
+    margin-bottom: 40px; padding: 15px;
+    background: rgba(0, 229, 255, 0.03); border-radius: 15px; border: 1px dashed rgba(0, 229, 255, 0.2);
+}
+
+.active-users-section {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px;
+}
+
+/* Fix Card Height & Button Visibility */
+.admin-user-card {
+    height: auto !important;
+    min-height: auto !important;
+    display: flex; flex-direction: column;
+}
+
+/* Feature Toggles Box */
+.feature-toggles-box {
+    margin-top: 15px; padding: 12px; background: rgba(255,255,255,0.03);
+    border-radius: 10px; border: 1px solid rgba(255,255,255,0.05);
+}
+
+.toggle-row {
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;
+}
+.toggle-row:last-child { margin-bottom: 0; }
+.toggle-label { font-size: 0.7rem; color: var(--text-muted); font-weight: 600; }
+
+.toggle-btn-small {
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.15);
+    color: #fff; padding: 4px 10px; border-radius: 50px; font-size: 0.65rem; cursor: pointer; transition: 0.3s;
+}
+.toggle-btn-small.on { background: var(--success-green); color: #000; border-color: var(--success-green); font-weight: 800; }
+
+.admin-hidden.hidden {
+    display: none !important;
 }
 

@@ -249,13 +249,16 @@ window.saveEmailSettings = async () => {
 async function checkAndSaveBestDesign(results, image64) {
     if (!results || results.score < 80) return;
     
-    // v5.4.0: Correct tier check (Lock only for Free, allow Pro/Premium/Business/Agency)
+    // v5.4.1: Correct tier check (Lock only for Free, allow Pro/Premium/Business/Agency)
     const paidTiers = ['Pro', 'Premium', 'Business', 'Agency License'];
     const userTier = window.userState?.packageType || 'Free';
-    const isSpecialCase = window.userState?.isAdmin || paidTiers.includes(userTier);
+    const features = window.userState?.featuresEnabled || {};
+    
+    // Manual Override bypass (Admin Control)
+    const isSpecialCase = window.userState?.isAdmin || paidTiers.includes(userTier) || features.email === true;
     
     if (!isSpecialCase) {
-        console.log("v5.4.0: Best Design feature locked for Free tier.");
+        console.log("v5.4.1: Best Design feature locked for Free tier.");
         return; 
     }
 
@@ -989,149 +992,179 @@ function updateUI() {
     }
 }
 
-// Admin Dashboard Logic (VIP Card Layout)
+// Admin Dashboard Logic (v5.4.1 restructured)
 window.openAdminPanel = async () => {
     const adminView = document.getElementById('adminDashboardView');
     adminView.classList.remove('hidden');
     
     elements.adminUsersList.innerHTML = "<div class='loading-spinner-container' style='grid-column: 1/-1; text-align: center; padding: 50px;'><div class='spinner' style='margin: 0 auto;'></div><p style='margin-top:15px;'>VIP ڈیٹا لوڈ ہو رہا ہے...</p></div>";
     
+    const globalSettingsEl = document.getElementById('adminGlobalSettings');
+    if (globalSettingsEl) {
+        globalSettingsEl.innerHTML = `
+            <button class="action-btn approve" style="padding:5px 15px; font-size:0.75rem; border-radius:5px;" onclick="adminEnableAllFeatures()">
+                <i class="fa-solid fa-bolt"></i> Enable All (Free Users Allowed)
+            </button>
+        `;
+    }
+
     try {
         const querySnapshot = await getDocs(collection(db, "users"));
         elements.adminUsersList.innerHTML = "";
         
-        const users = [];
+        const allUsers = [];
         querySnapshot.forEach(doc => {
             const data = doc.data();
-            // Filter out admin
             if (!ADMIN_EMAILS.includes(data.email)) {
-                users.push({id: doc.id, ...data});
+                allUsers.push({id: doc.id, ...data});
             }
         });
 
-        // Sorting: Pending claims first, then recently active
-        users.sort((a, b) => {
-            if (a.paymentStatus === 'pending') return -1;
-            if (b.paymentStatus === 'pending') return 1;
-            return (b.lastActive?.seconds || 0) - (a.lastActive?.seconds || 0);
-        });
+        const pending = allUsers.filter(u => u.paymentStatus === 'pending');
+        const active = allUsers.filter(u => u.paymentStatus !== 'pending')
+                             .sort((a,b) => (b.lastActive?.seconds || 0) - (a.lastActive?.seconds || 0));
 
-        if (users.length === 0) {
-            elements.adminUsersList.innerHTML = "<p style='grid-column: 1/-1; text-align: center; opacity: 0.5; padding: 50px;'>کوئی ممبر دستیاب نہیں ہے۔</p>";
-            return;
+        if (pending.length > 0) {
+            const pHeader = document.createElement('h4');
+            pHeader.style.color = "var(--neon-purple)";
+            pHeader.style.margin = "10px 0 15px 20px";
+            pHeader.innerHTML = `<i class="fa-solid fa-clock-rotate-left"></i> پینڈنگ کلیمز (Pending Claims)`;
+            elements.adminUsersList.appendChild(pHeader);
+
+            const pSection = document.createElement('div');
+            pSection.className = "pending-claims-section";
+            pending.forEach(u => pSection.appendChild(createAdminUserCard(u, true)));
+            elements.adminUsersList.appendChild(pSection);
         }
 
-        users.forEach((data) => {
-            const joinedDate = data.joinDate ? new Date(data.joinDate.seconds * 1000).toLocaleDateString() : 'New';
-            const isPendingCredit = data.paymentStatus === 'pending';
-            const pType = data.packageType || 'Free';
-            const reqPlan = data.requestedPackage || 'N/A';
-            
-            let statusBadge = `<span class="status-badge badge-trial">Free User</span>`;
-            if (isPendingCredit) statusBadge = `<span class="status-badge badge-pending">Payment Pending</span>`;
-            else if (pType === 'Pro') statusBadge = `<span class="status-badge badge-pro">Pro Plan</span>`;
-            else if (pType === 'Premium') statusBadge = `<span class="status-badge badge-premium">Premium Plan</span>`;
-            else if (pType === 'Business') statusBadge = `<span class="status-badge badge-business">Business Plan</span>`;
-            else if (pType === 'Agency License') statusBadge = `<span class="status-badge badge-business" style="border-color:#ffd700; color:#ffd700;">Agency License</span>`;
+        const aHeader = document.createElement('h4');
+        aHeader.style.color = "var(--neon-cyan)";
+        aHeader.style.margin = "30px 0 15px 20px";
+        aHeader.innerHTML = `<i class="fa-solid fa-users"></i> تمام ممبرز (Active Users)`;
+        elements.adminUsersList.appendChild(aHeader);
 
-            // CONTEXTUAL BUTTON FILTERING (v5.3.8 robust check)
-            let approveBtnHtml = "";
-            if (isPendingCredit) {
-                const planUpper = reqPlan ? reqPlan.toUpperCase().trim() : '';
-                if (planUpper.includes('PRO')) 
-                    approveBtnHtml = `<button class="package-action-btn active" style="width:100%; margin-bottom:8px;" onclick="grantPackage('${data.id}', 'Pro', 100, true)">Approve Pro (100 Credit)</button>`;
-                else if (planUpper.includes('PREMIUM')) 
-                    approveBtnHtml = `<button class="package-action-btn active" style="width:100%; margin-bottom:8px; border-color: var(--neon-purple); color: var(--neon-purple);" onclick="grantPackage('${data.id}', 'Premium', 1000, true)">Approve Premium (1,000 Credit)</button>`;
-                else if (planUpper.includes('BUSINESS')) 
-                    approveBtnHtml = `<button class="package-action-btn active" style="width:100%; margin-bottom:8px; border-color: #ffd700; color: #ffd700;" onclick="grantPackage('${data.id}', 'Business', 10000, true)">Approve Business (10,000 Credit)</button>`;
-                else if (planUpper.includes('AGENCY')) 
-                    approveBtnHtml = `<button class="package-action-btn active" style="width:100%; margin-bottom:8px; border-color: #fff; color: #fff;" onclick="grantPackage('${data.id}', 'Agency License', 99999, true)">Approve Agency License</button>`;
-                else 
-                    approveBtnHtml = `
-                        <div style="display:flex; gap:5px; flex-direction:column;">
-                            <button class="package-action-btn" style="font-size:0.6rem;" onclick="grantPackage('${data.id}', 'Pro', 100, true)">Grant Pro</button>
-                            <button class="package-action-btn" style="font-size:0.6rem;" onclick="grantPackage('${data.id}', 'Premium', 1000, true)">Grant Prem</button>
-                        </div>`;
-            }
-
-            const card = document.createElement('div');
-            card.className = `admin-user-card ${isPendingCredit ? 'pending-highlight' : ''}`;
-            
-            card.innerHTML = `
-                <div class="user-card-header">
-                    <div class="user-info-main">
-                        <span class="user-email-chip" style="font-size:0.75rem;">${data.email}</span>
-                        <div style="margin-top:8px;">${statusBadge}</div>
-                    </div>
-                    <div style="text-align: right;">
-                        <div class="stat-label" style="font-size:0.6rem;">Last Active</div>
-                        <div style="font-size:0.7rem; color:#fff;">${data.lastActive ? new Date(data.lastActive.seconds*1000).toLocaleDateString() : 'N/A'}</div>
-                    </div>
-                </div>
-
-                ${isPendingCredit ? `
-                <div class="claim-details-box" style="background: rgba(0,229,255,0.03); padding: 15px; border-radius: 12px; border: 1px solid rgba(0,229,255,0.2); margin: 15px 0; position: relative; overflow: hidden;">
-                    <div style="position:absolute; top:0; right:0; background:var(--neon-cyan); color:#000; font-size:0.6rem; font-weight:900; padding:2px 10px; border-bottom-left-radius:8px;">PENDING</div>
-                    
-                    <div style="margin-bottom:12px;">
-                        <span class="stat-label" style="color: var(--neon-cyan); font-size:0.65rem;">REQUESTED PACKAGE:</span>
-                        <div style="font-size:1.1rem; color:#fff; font-weight:800; letter-spacing:1px;">${reqPlan}</div>
-                    </div>
-
-                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:15px;">
-                        <div>
-                            <span class="stat-label" style="font-size:0.6rem;">CLAIMANT NAME</span>
-                            <div style="font-size:0.8rem; color:#fff;">${data.claimName || 'N/A'}</div>
-                        </div>
-                        <div>
-                            <span class="stat-label" style="font-size:0.6rem;">TRANSACTION ID (TID)</span>
-                            <div style="font-size:0.8rem; color:var(--neon-cyan); font-family:monospace;">${data.claimTid || 'N/A'}</div>
-                        </div>
-                    </div>
-
-                    <div class="approval-actions">
-                        ${approveBtnHtml}
-                        <button class="package-action-btn" style="color: #ff5252; border-color: #ff5252; width:100%; background:rgba(255,82,82,0.05);" onclick="rejectClaim('${data.id}')">Reject Claim (Minus 5 Credits)</button>
-                    </div>
-                </div>
-                ` : ''}
-
-                <div class="user-stats-row" style="background: rgba(255,255,255,0.02); padding: 10px; border-radius: 8px; margin-top:10px;">
-                    <div class="stat-item">
-                        <div class="stat-label">Total Credits</div>
-                        <div class="stat-value" style="color: var(--neon-cyan);">${data.credits || 0}</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-label">Designs Used</div>
-                        <div class="stat-value">${data.usedCredits || 0}</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-label">Member Since</div>
-                        <div class="stat-value" style="font-size: 0.7rem;">${joinedDate}</div>
-                    </div>
-                </div>
-                
-                <div style="margin-top: 15px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 15px;">
-                    <div class="stat-label" style="margin-bottom:10px; font-size:0.65rem; color:var(--text-muted);">MANAGE PACKAGE (MANUAL OVERRIDE):</div>
-                    <div class="user-actions-grid" style="display:grid; grid-template-columns: repeat(3, 1fr); gap:6px;">
-                        <button class="package-action-btn ${pType === 'Free' ? 'active' : ''}" style="font-size:0.65rem;" onclick="grantPackage('${data.id}', 'Free', 10)">Free</button>
-                        <button class="package-action-btn ${pType === 'Pro' ? 'active' : ''}" style="font-size:0.65rem;" onclick="grantPackage('${data.id}', 'Pro', 100)">Pro</button>
-                        <button class="package-action-btn ${pType === 'Premium' ? 'active' : ''}" style="font-size:0.65rem;" onclick="grantPackage('${data.id}', 'Premium', 1000)">Prem</button>
-                        <button class="package-action-btn ${pType === 'Business' ? 'active' : ''}" style="font-size:0.65rem;" onclick="grantPackage('${data.id}', 'Business', 10000)">Biz</button>
-                        <button class="package-action-btn ${pType === 'Agency License' ? 'active' : ''}" style="font-size:0.65rem;" onclick="grantPackage('${data.id}', 'Agency License', 99999)">Lic</button>
-                    </div>
-                </div>
-
-                <div style="display:flex; gap:10px; margin-top:10px; border-top: 1px solid rgba(255,255,255,0.05); padding-top:10px;">
-                    <button class="action-btn danger-btn" style="flex:1; padding: 6px; font-size:0.75rem;" onclick="resetUserCredits('${data.id}')">Reset Acc</button>
-                    <button class="action-btn danger-btn" style="flex:1; padding: 6px; font-size:0.75rem;" onclick="deleteUser('${data.id}')">Delete User</button>
-                </div>
-            `;
-            elements.adminUsersList.appendChild(card);
-        });
+        const aSection = document.createElement('div');
+        aSection.className = "active-users-section";
+        active.forEach(u => aSection.appendChild(createAdminUserCard(u, false)));
+        elements.adminUsersList.appendChild(aSection);
     } catch (e) {
-        console.error("Admin Fetch Error:", e);
-        elements.adminUsersList.innerHTML = "<p style='color:red; grid-column: 1/-1; text-align: center;'>ڈیٹا لوڈ کرنے میں مسئلہ ہوا۔</p>";
+        console.error("Admin Error:", e);
+        elements.adminUsersList.innerHTML = "<p style='color:#ff5252; padding:50px;'>ڈیٹا لوڈ کرنے میں مسئلہ ہوا۔</p>";
+    }
+}
+
+function createAdminUserCard(data, isPendingView) {
+    const joinedDate = data.joinDate ? new Date(data.joinDate.seconds * 1000).toLocaleDateString() : 'New';
+    const isPending = data.paymentStatus === 'pending';
+    const pType = data.packageType || 'Free';
+    const reqPlan = data.requestedPackage || 'N/A';
+    const features = data.featuresEnabled || { editor: false, email: false, pricing: false };
+
+    let statusBadge = `<span class="status-badge badge-trial">${pType} User</span>`;
+    if (isPending) statusBadge = `<span class="status-badge badge-pending">Payment Pending</span>`;
+    else if (pType === 'Pro') statusBadge = `<span class="status-badge badge-pro">Pro Plan</span>`;
+    else if (pType === 'Premium') statusBadge = `<span class="status-badge badge-premium">Premium Plan</span>`;
+    else if (pType === 'Business') statusBadge = `<span class="status-badge badge-business">Business Plan</span>`;
+    else if (pType === 'Agency License') statusBadge = `<span class="status-badge badge-business" style="border-color:#ffd700; color:#ffd700;">Agency License</span>`;
+
+    const card = document.createElement('div');
+    card.className = `admin-user-card ${isPending ? 'pending-highlight' : ''}`;
+    card.innerHTML = `
+        <div class="user-card-header">
+            <div class="user-info-main">
+                <span class="user-email-chip" style="font-size:0.75rem;">${data.email}</span>
+                <div style="margin-top:8px;">${statusBadge}</div>
+            </div>
+            <div style="text-align: right;">
+                <div class="stat-label" style="font-size:0.6rem;">Last Active</div>
+                <div style="font-size:0.7rem; color:#fff;">${data.lastActive ? new Date(data.lastActive.seconds*1000).toLocaleDateString() : 'N/A'}</div>
+            </div>
+        </div>
+        ${isPending ? `
+        <div class="claim-details-box" style="background: rgba(0,229,255,0.03); padding: 15px; border-radius: 12px; border: 1px solid rgba(0,229,255,0.2); margin: 15px 0;">
+            <div style="margin-bottom:12px;">
+                <span class="stat-label" style="color: var(--neon-cyan); font-size:0.65rem;">REQUESTED PACKAGE:</span>
+                <div style="font-size:1.1rem; color:#fff; font-weight:800; letter-spacing:1px;">${reqPlan}</div>
+            </div>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:15px;">
+                <div><span class="stat-label" style="font-size:0.6rem;">CLAIMANT NAME</span><div style="font-size:0.8rem; color:#fff;">${data.claimName || 'N/A'}</div></div>
+                <div><span class="stat-label" style="font-size:0.6rem;">TID</span><div style="font-size:0.8rem; color:var(--neon-cyan);">${data.claimTid || 'N/A'}</div></div>
+            </div>
+            <div class="approval-actions">
+                ${generateApproveBtn(data.id, reqPlan)}
+                <button class="package-action-btn" style="color: #ff5252; border-color: #ff5252; width:100%;" onclick="rejectClaim('${data.id}')">Reject Claim</button>
+            </div>
+        </div>
+        ` : ''}
+        <div class="user-stats-row">
+            <div class="stat-item"><div class="stat-label">Total Credits</div><div class="stat-value" style="color: var(--neon-cyan);">${data.credits || 0}</div></div>
+            <div class="stat-item"><div class="stat-label">Designs Used</div><div class="stat-value">${data.usedCredits || 0}</div></div>
+            <div class="stat-item"><div class="stat-label">Member Since</div><div class="stat-value" style="font-size: 0.7rem;">${joinedDate}</div></div>
+        </div>
+        <div class="feature-toggles-box">
+            <div class="stat-label" style="margin-bottom:10px; font-size:0.6rem; color: #ffd700;">TOOL FEATURE ACCESS (MANUAL)</div>
+            <div class="toggle-row"><span class="toggle-label">AI Editor</span><button class="toggle-btn-small ${features.editor ? 'on' : ''}" onclick="toggleUserFeature('${data.id}', 'editor', ${!features.editor})">${features.editor ? 'Enabled' : 'Disabled'}</button></div>
+            <div class="toggle-row"><span class="toggle-label">Result Email</span><button class="toggle-btn-small ${features.email ? 'on' : ''}" onclick="toggleUserFeature('${data.id}', 'email', ${!features.email})">${features.email ? 'Enabled' : 'Disabled'}</button></div>
+            <div class="toggle-row"><span class="toggle-label">Price Check</span><button class="toggle-btn-small ${features.pricing ? 'on' : ''}" onclick="toggleUserFeature('${data.id}', 'pricing', ${!features.pricing})">${features.pricing ? 'Enabled' : 'Disabled'}</button></div>
+        </div>
+        <div style="margin-top: 15px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 15px;">
+            <div class="stat-label" style="margin-bottom:10px; font-size:0.6rem;">MANAGE PACKAGE (OVERRIDE)</div>
+            <div class="user-actions-grid">
+                <button class="package-action-btn ${pType === 'Pro' ? 'active' : ''}" onclick="grantPackage('${data.id}', 'Pro', 100)">Pro</button>
+                <button class="package-action-btn ${pType === 'Premium' ? 'active' : ''}" onclick="grantPackage('${data.id}', 'Premium', 1000)">Prem</button>
+                <button class="package-action-btn ${pType === 'Business' ? 'active' : ''}" onclick="grantPackage('${data.id}', 'Business', 10000)">Biz</button>
+            </div>
+            <div style="display:flex; gap:5px; margin-top:8px;">
+                <button class="package-action-btn" style="flex:1; border-color:#ff5252; color:#ff5252;" onclick="adminDeleteUser('${data.id}')">Delete</button>
+                <button class="package-action-btn" style="flex:1;" onclick="adminResetAccount('${data.id}')">Reset Account</button>
+            </div>
+        </div>
+    `;
+    return card;
+}
+
+function generateApproveBtn(uid, plan) {
+    const planUpper = plan ? plan.toUpperCase().trim() : '';
+    if (planUpper.includes('PRO')) return `<button class="package-action-btn active" style="width:100%; margin-bottom:8px;" onclick="grantPackage('${uid}', 'Pro', 100, true)">Approve Pro (100 Credit)</button>`;
+    if (planUpper.includes('PREMIUM')) return `<button class="package-action-btn active" style="width:100%; margin-bottom:8px; border-color: var(--neon-purple); color: var(--neon-purple);" onclick="grantPackage('${uid}', 'Premium', 1000, true)">Approve Premium (1,000 Credit)</button>`;
+    if (planUpper.includes('BUSINESS')) return `<button class="package-action-btn active" style="width:100%; margin-bottom:8px; border-color: #ffd700; color: #ffd700;" onclick="grantPackage('${uid}', 'Business', 10000, true)">Approve Business (10,000 Credit)</button>`;
+    if (planUpper.includes('AGENCY')) return `<button class="package-action-btn active" style="width:100%; margin-bottom:8px; border-color: #fff; color: #fff;" onclick="grantPackage('${uid}', 'Agency License', 99999, true)">Approve Agency License</button>`;
+    return `<button class="package-action-btn active" style="width:100%; margin-bottom:8px;" onclick="grantPackage('${uid}', 'Pro', 100, true)">Approve (Default Pro)</button>`;
+}
+
+window.toggleUserFeature = async (uid, feature, status) => {
+    try {
+        const userRef = doc(db, "users", uid);
+        const updateData = {};
+        updateData[`featuresEnabled.${feature}`] = status;
+        await updateDoc(userRef, updateData);
+        showToast("Feature Updated!", "success");
+        openAdminPanel();
+    } catch (e) {
+        console.error(e);
+        showToast("Update Failed");
+    }
+}
+
+window.adminEnableAllFeatures = async () => {
+    if (!confirm("کیا آپ تمام رجسٹرڈ یوزرز کے لیے تمام فیچرز بائی پاس کرنا چاہتے ہیں؟")) return;
+    try {
+        showToast("Updating all users...", "info");
+        const querySnapshot = await getDocs(collection(db, "users"));
+        const batchPromise = [];
+        querySnapshot.forEach(userDoc => {
+            if (!ADMIN_EMAILS.includes(userDoc.data().email)) {
+                batchPromise.push(updateDoc(doc(db, "users", userDoc.id), {
+                    featuresEnabled: { editor: true, email: true, pricing: true }
+                }));
+            }
+        });
+        await Promise.all(batchPromise);
+        showToast("All Users Activated!", "success");
+        openAdminPanel();
+    } catch (e) {
+        console.error("Batch update failed:", e);
+        showToast("Batch update failed");
     }
 };
 
