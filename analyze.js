@@ -457,20 +457,23 @@ window.openHistory = async () => {
     }
 
     try {
+        // v5.4.6: Use simple getDocs + client-side sort to avoid Firestore index issues
         const historyRef = collection(db, "users", userState.uid, "history");
-        // v5.4.5: Limit to 20 most recent items for fast load
-        const q = query(historyRef, orderBy("createdAt", "desc"), limit(20));
-        const snapshot = await getDocs(q);
+        const snapshot = await getDocs(historyRef);
         
         if (snapshot.empty) {
             elements.historyList.innerHTML = "<p style='text-align:center; padding: 20px; opacity:0.5;'>کوئی ریکارڈ دستیاب نہیں ہے۔</p>";
             return;
         }
 
+        // Sort client-side by createdAt descending
+        const docs = [];
+        snapshot.forEach(docSnap => docs.push({ id: docSnap.id, ...docSnap.data() }));
+        docs.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+
         let html = "";
-        snapshot.forEach(docSnap => {
-            const data = docSnap.data();
-            const date = data.createdAt ? new Date(data.createdAt.seconds * 1000).toLocaleDateString('ur-PK') : "زیر التوا";
+        docs.forEach(data => {
+            const date = data.createdAt ? new Date(data.createdAt.seconds * 1000).toLocaleDateString() : "زیر التوا";
             const score = data.score || '--';
             const scoreColor = score >= 80 ? 'var(--success-green)' : score >= 50 ? '#ffd700' : '#ff5252';
             html += `
@@ -481,8 +484,8 @@ window.openHistory = async () => {
                         <span style="font-size:1rem; font-weight:800; color:${scoreColor};">${score}</span>
                     </div>
                     <div class="history-actions">
-                        <button class="history-btn view-hist-btn" onclick="restoreHistoryItem('${docSnap.id}')"><i class="fa-solid fa-eye"></i> View</button>
-                        <button class="history-btn del-hist-btn" onclick="deleteHistoryItem('${docSnap.id}')"><i class="fa-solid fa-trash"></i></button>
+                        <button class="history-btn view-hist-btn" onclick="restoreHistoryItem('${data.id}')"><i class="fa-solid fa-eye"></i> View</button>
+                        <button class="history-btn del-hist-btn" onclick="deleteHistoryItem('${data.id}')"><i class="fa-solid fa-trash"></i></button>
                     </div>
                 </div>
             `;
@@ -939,23 +942,21 @@ function updateUI() {
         const expertFootnote = document.getElementById('expertLockFootnote');
         const editGate = document.getElementById('editorPremiumGate');
 
-        // Logic for Analyzer Sections (Free vs Pro/Premium)
-        if (userState.packageType === 'Free' && userState.licenseStatus !== 'approved' && !userState.isAdmin) {
-            if (pricingLock) pricingLock.classList.remove('hidden');
-            if (impressionLock) impressionLock.classList.remove('hidden');
-            if (expertLock) expertLock.classList.remove('hidden');
-            if (expertFootnote) expertFootnote.classList.add('hidden');
-        } else {
-            // Unlocked for Pro, Premium, Business, Admin
-            if (pricingLock) pricingLock.classList.add('hidden');
-            if (impressionLock) impressionLock.classList.add('hidden');
-            if (expertLock) expertLock.classList.add('hidden');
-            if (expertFootnote) expertFootnote.classList.remove('hidden');
-        }
+        // v5.4.6: Check featuresEnabled from Firestore to actually unlock features for Free users
+        const featEnabled = userState.featuresEnabled || {};
+        const isFreeLockedUser = userState.packageType === 'Free' && userState.licenseStatus !== 'approved' && !userState.isAdmin;
 
-        // Logic for AI Editor (Premium/Business/Admin Only)
-        // Pro users can use Suggestions but NOT the editor
-        const isEditorUnlocked = ['Premium', 'Business'].includes(userState.packageType) || userState.isAdmin;
+        // Logic for Analyzer Sections (Pricing, Impression, Expert Suggestion)
+        // Unlocked if: NOT free user, OR admin granted featuresEnabled.pricing
+        const pricingUnlocked = !isFreeLockedUser || featEnabled.pricing === true;
+        if (pricingLock) pricingLock.classList.toggle('hidden', pricingUnlocked);
+        if (impressionLock) impressionLock.classList.toggle('hidden', pricingUnlocked);
+        if (expertLock) expertLock.classList.toggle('hidden', pricingUnlocked);
+        if (expertFootnote) expertFootnote.classList.toggle('hidden', !pricingUnlocked);
+
+        // Logic for AI Editor
+        // Unlocked if: Premium/Business/Admin, OR admin granted featuresEnabled.editor
+        const isEditorUnlocked = ['Premium', 'Business'].includes(userState.packageType) || userState.isAdmin || featEnabled.editor === true;
         if (editGate) {
             editGate.classList.toggle('hidden', isEditorUnlocked);
         }
@@ -1010,6 +1011,15 @@ window.openAdminPanel = async () => {
             </button>
         `;
     }
+
+    // v5.4.6: Read global features toggle state from Firestore config
+    try {
+        const cfgSnap = await getDoc(doc(db, "config", "global_features"));
+        const toggle = document.getElementById('globalFeaturesToggle');
+        if (toggle && cfgSnap.exists()) {
+            toggle.checked = cfgSnap.data().allFeaturesEnabled === true;
+        }
+    } catch (e) { console.warn("Config read failed", e); }
 
     try {
         const querySnapshot = await getDocs(collection(db, "users"));
@@ -1213,6 +1223,37 @@ window.adminEnableAllFeatures = async () => {
     } catch (e) {
         console.error("Batch update failed:", e);
         showToast("Batch update failed");
+    }
+};
+
+// v5.4.6: Global toggle handler (enable or disable 3 features for ALL users)
+window.handleGlobalFeaturesToggle = async (isEnabled) => {
+    const label = isEnabled ? 'سب یوزرز کو 3 فیچرز دیں؟' : 'سب یوزرز سے یہ 3 فیچرز ہٹائیں؟';
+    if (!confirm(label)) {
+        // Revert toggle if user cancels
+        const toggle = document.getElementById('globalFeaturesToggle');
+        if (toggle) toggle.checked = !isEnabled;
+        return;
+    }
+    try {
+        showToast(isEnabled ? "Features enable ho rahe hain..." : "Features disable ho rahe hain...", "info");
+        const featureState = { editor: isEnabled, email: isEnabled, pricing: isEnabled };
+        const querySnapshot = await getDocs(collection(db, "users"));
+        const batchPromise = [];
+        querySnapshot.forEach(userDoc => {
+            if (!ADMIN_EMAILS.includes(userDoc.data().email)) {
+                batchPromise.push(updateDoc(doc(db, "users", userDoc.id), {
+                    featuresEnabled: featureState
+                }));
+            }
+        });
+        await Promise.all(batchPromise);
+        // Save global state to config for persistence
+        await setDoc(doc(db, "config", "global_features"), { allFeaturesEnabled: isEnabled }, { merge: true });
+        showToast(isEnabled ? "All Users: 3 Features Enabled!" : "All Users: Features Disabled!", "success");
+    } catch (e) {
+        console.error("Global toggle failed:", e);
+        showToast("Update failed");
     }
 };
 

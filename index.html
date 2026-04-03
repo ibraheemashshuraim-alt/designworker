@@ -602,9 +602,13 @@
             <span class="close-btn" onclick="closeAdminPanel()">&times;</span>
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px; padding: 0 5px;">
                 <h2 style="color: var(--neon-cyan); margin: 0;"><i class="fa-solid fa-users-gear"></i> ایڈمن ڈیش بورڈ</h2>
-                <button class="btn approve" style="padding: 8px 18px; font-size: 0.8rem; border-radius: 8px;" onclick="adminEnableAllFeatures()">
-                    <i class="fa-solid fa-bolt"></i> سب یوزرز کو 3 فیچرز دیں (Free)
-                </button>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <span style="font-size:0.75rem; color: var(--text-muted);">سب کو 3 فیچرز (Free)</span>
+                    <label class="ts-switch" title="Enable/Disable all 3 features for all users">
+                        <input type="checkbox" id="globalFeaturesToggle" onchange="handleGlobalFeaturesToggle(this.checked)">
+                        <span class="ts-slider"></span>
+                    </label>
+                </div>
             </div>
             <div id="adminUsersList" class="admin-user-grid"></div>
         </div>
