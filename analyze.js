@@ -1024,22 +1024,25 @@ window.openAdminPanel = async () => {
         const active = allUsers.filter(u => u.paymentStatus !== 'pending')
                              .sort((a,b) => (b.lastActive?.seconds || 0) - (a.lastActive?.seconds || 0));
 
-        if (pending.length > 0) {
-            const pSectionContainer = document.createElement('details');
-            pSectionContainer.className = "pending-claims-accordion";
-            pSectionContainer.open = true;
-            
-            const pSummary = document.createElement('summary');
-            pSummary.innerHTML = `<i class="fa-solid fa-clock-rotate-left"></i> پینڈنگ کلیمز (Pending Claims) - ${pending.length} New`;
-            pSectionContainer.appendChild(pSummary);
+        const pSectionContainer = document.createElement('details');
+        pSectionContainer.className = "pending-claims-accordion";
+        pSectionContainer.open = true;
+        
+        const pSummary = document.createElement('summary');
+        pSummary.innerHTML = `<i class="fa-solid fa-clock-rotate-left"></i> پینڈنگ کلیمز (Pending Claims) - ${pending.length > 0 ? pending.length + ' New' : '0'}`;
+        pSectionContainer.appendChild(pSummary);
 
-            const pSection = document.createElement('div');
-            pSection.className = "pending-claims-section";
+        const pSection = document.createElement('div');
+        pSection.className = "pending-claims-section";
+        
+        if (pending.length > 0) {
             pending.forEach(u => pSection.appendChild(createAdminUserCard(u, true)));
-            pSectionContainer.appendChild(pSection);
-            
-            elements.adminUsersList.appendChild(pSectionContainer);
+        } else {
+            pSection.innerHTML = `<p style="text-align:center; color: var(--text-muted); font-size: 0.8rem; padding: 20px;">کوئی نئی درخواست نہیں ہے۔</p>`;
         }
+        pSectionContainer.appendChild(pSection);
+        
+        elements.adminUsersList.appendChild(pSectionContainer);
 
         const aHeader = document.createElement('h4');
         aHeader.style.color = "var(--neon-cyan)";
@@ -1943,8 +1946,8 @@ function displayResults(data) {
     elements.accessOut.innerText = data.accessibility;
     elements.contrastOut.innerText = data.contrast;
     
-    elements.reportGoodOut.innerHTML = data.strengths.map(s => `<div class="chip chip-success">${s}</div>`).join('');
-    elements.reportBadOut.innerHTML = data.improvements.map(i => `<div class="chip chip-warning">${i}</div>`).join('');
+    elements.reportGoodOut.innerHTML = (data.strengths || []).map(s => `<div class="chip chip-success">${s}</div>`).join('');
+    elements.reportBadOut.innerHTML = (data.improvements || []).map(i => `<div class="chip chip-warning">${i}</div>`).join('');
 
     // NEW: Detailed Improvements with priorities
     if (data.detailed_improvements && data.detailed_improvements.length > 0) {
@@ -1995,7 +1998,7 @@ function displayResults(data) {
 
 
     // Render Color Palette
-    if (data.colors && data.colors.length > 0) {
+    if (data.colors && Array.isArray(data.colors) && data.colors.length > 0) {
         elements.colorPaletteOut.innerHTML = data.colors.map(hex => `
             <div class="color-swatch-wrapper">
                 <div class="color-swatch" style="background: ${hex};" onclick="copyToClipboard('${hex}', 'Color Code copied!')"></div>
