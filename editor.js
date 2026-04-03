@@ -566,7 +566,11 @@ function resizeCanvas() {
 window.checkPremiumAccess = () => {
     const gate = document.getElementById('editorPremiumGate');
     const state = window.userState || {};
+    
+    // v5.5.0: New Bypass - If Admin enabled "All Features" globally, everyone gets access
+    const isGlobalBypass = window.globalConfig?.allFeaturesEnabled === true;
+    
     // v5.0.0: Only Premium, Business or Admin (Pro can use Suggestions but NOT editor)
-    const hasAccess = ['Premium', 'Business'].includes(state.packageType) || state.isAdmin;
+    const hasAccess = ['Premium', 'Business'].includes(state.packageType) || state.isAdmin || isGlobalBypass;
     gate?.classList.toggle('hidden', hasAccess);
 };

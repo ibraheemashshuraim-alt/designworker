@@ -56,6 +56,11 @@ let userSettings = {
     fontSize: 16
 };
 
+// v5.5.0: Global Bypass State (Admin Controlled)
+window.globalConfig = {
+    allFeaturesEnabled: false
+};
+
 const FONT_LIST = [
     { name: 'Outfit', family: "'Outfit', sans-serif" },
     { name: 'Inter', family: "'Inter', sans-serif" },
@@ -112,22 +117,17 @@ const FONT_LIST = [
 // v4.18.17: Master API Keys (Cloud Fallback)
 let masterKeys = { gemini: null, groq: null };
 
-async function fetchMasterKeys() {
-    try {
-        const configRef = doc(db, "config", "api_keys");
-        const snap = await getDoc(configRef);
-        if (snap.exists()) {
-            const data = snap.data();
-            masterKeys = {
-                gemini: data.gemini_master || null,
-                groq: data.groq_master || null
-            };
-            console.log("System: Master Keys populated.");
-        }
-    } catch (e) { console.warn("Master Key fetch failed (Access Restricted or Network)"); }
-}
-
 fetchMasterKeys(); // Initial fetch
+
+// v5.5.0: Persistent Listener for Global Admin Toggles
+onSnapshot(doc(db, "config", "global_features"), (snap) => {
+    if (snap.exists()) {
+        window.globalConfig = snap.data();
+        console.log("System: Global Features updated ->", window.globalConfig);
+        if (typeof updateUI === 'function') updateUI();
+        if (typeof window.checkPremiumAccess === 'function') window.checkPremiumAccess();
+    }
+});
 
 const ADMIN_EMAILS = ["ibraheemashshuraim@gmail.com", "ibraheemashshuraim.alt@gmail.com", "ibraheemashshuraim-alt@gmail.com"];
 
@@ -249,16 +249,14 @@ window.saveEmailSettings = async () => {
 async function checkAndSaveBestDesign(results, image64) {
     if (!results || results.score < 80) return;
     
-    // v5.4.1: Correct tier check (Lock only for Free, allow Pro/Premium/Business/Agency)
-    const paidTiers = ['Pro', 'Premium', 'Business', 'Agency License'];
-    const userTier = window.userState?.packageType || 'Free';
-    const features = window.userState?.featuresEnabled || {};
+    // v5.5.0: New Bypass - Admin Control
+    const isGlobalBypass = window.globalConfig?.allFeaturesEnabled === true;
     
     // Manual Override bypass (Admin Control)
-    const isSpecialCase = window.userState?.isAdmin || paidTiers.includes(userTier) || features.email === true;
+    const isSpecialCase = window.userState?.isAdmin || paidTiers.includes(userTier) || features.email === true || isGlobalBypass;
     
     if (!isSpecialCase) {
-        console.log("v5.4.1: Best Design feature locked for Free tier.");
+        console.log("v5.5.0: Best Design feature locked (Free tier + Global Toggle Off).");
         return; 
     }
 
@@ -303,9 +301,12 @@ async function handleExpertSuggestion(results) {
     
     if (section) section.classList.add('hidden'); // Reset
 
+    // v5.5.0: New Bypass - Admin Control
+    const isGlobalBypass = window.globalConfig?.allFeaturesEnabled === true;
+    
     // v5.0.0: Package-Based Permission
     // Pro, Premium, Business, and Admin can see suggestions if score < 80
-    const hasPackage = ['Pro', 'Premium', 'Business'].includes(userState.packageType) || userState.isAdmin;
+    const hasPackage = ['Pro', 'Premium', 'Business'].includes(userState.packageType) || userState.isAdmin || isGlobalBypass;
     const isPremium = userState.credits > 0 || userState.licenseStatus === 'approved' || hasPackage;
     
     if (!isPremium || results.score >= 80) return; // Only suggest for < 80 scores
@@ -490,7 +491,15 @@ window.openHistory = async () => {
                 </div>
             `;
         });
+        
+        // Final safeguard Check
+        if (!html) {
+            elements.historyList.innerHTML = "<p style='text-align:center; padding: 20px; opacity:0.5;'>آئٹمز ڈسپلے کرنے میں مسئلہ ہوا۔</p>";
+            return;
+        }
+
         elements.historyList.innerHTML = html;
+        console.log("History rendered successfully.");
     } catch (e) {
         console.error("History fetch error:", e);
         elements.historyList.innerHTML = "<p style='color:red; text-align:center;'>تاریخ لوڈ کرنے میں مسئلہ ہوا۔</p>";
@@ -945,18 +954,21 @@ function updateUI() {
         // v5.4.6: Check featuresEnabled from Firestore to actually unlock features for Free users
         const featEnabled = userState.featuresEnabled || {};
         const isFreeLockedUser = userState.packageType === 'Free' && userState.licenseStatus !== 'approved' && !userState.isAdmin;
+        
+        // v5.5.0: New Bypass - If Admin enabled "All Features" globally, everyone gets access
+        const isGlobalBypass = window.globalConfig?.allFeaturesEnabled === true;
 
         // Logic for Analyzer Sections (Pricing, Impression, Expert Suggestion)
-        // Unlocked if: NOT free user, OR admin granted featuresEnabled.pricing
-        const pricingUnlocked = !isFreeLockedUser || featEnabled.pricing === true;
+        // Unlocked if: NOT free user, OR admin granted featuresEnabled.pricing OR Global Bypass
+        const pricingUnlocked = !isFreeLockedUser || featEnabled.pricing === true || isGlobalBypass;
         if (pricingLock) pricingLock.classList.toggle('hidden', pricingUnlocked);
         if (impressionLock) impressionLock.classList.toggle('hidden', pricingUnlocked);
         if (expertLock) expertLock.classList.toggle('hidden', pricingUnlocked);
         if (expertFootnote) expertFootnote.classList.toggle('hidden', !pricingUnlocked);
 
         // Logic for AI Editor
-        // Unlocked if: Premium/Business/Admin, OR admin granted featuresEnabled.editor
-        const isEditorUnlocked = ['Premium', 'Business'].includes(userState.packageType) || userState.isAdmin || featEnabled.editor === true;
+        // Unlocked if: Premium/Business/Admin, OR admin granted featuresEnabled.editor OR Global Bypass
+        const isEditorUnlocked = ['Premium', 'Business'].includes(userState.packageType) || userState.isAdmin || featEnabled.editor === true || isGlobalBypass;
         if (editGate) {
             editGate.classList.toggle('hidden', isEditorUnlocked);
         }
@@ -1226,31 +1238,26 @@ window.adminEnableAllFeatures = async () => {
     }
 };
 
-// v5.4.6: Global toggle handler (enable or disable 3 features for ALL users)
+// v5.5.0: Refined Global toggle handler (Bypass model - MUCH faster and handles new users)
 window.handleGlobalFeaturesToggle = async (isEnabled) => {
-    const label = isEnabled ? 'سب یوزرز کو 3 فیچرز دیں؟' : 'سب یوزرز سے یہ 3 فیچرز ہٹائیں؟';
+    const label = isEnabled ? 'تمام یوزرز کے لیے یہ 3 فیچرز آن کر دیں؟ (Bypass Mode)' : 'کیا آپ تمام یوزرز سے یہ فیچرز ہٹانا چاہتے ہیں؟';
     if (!confirm(label)) {
-        // Revert toggle if user cancels
         const toggle = document.getElementById('globalFeaturesToggle');
         if (toggle) toggle.checked = !isEnabled;
         return;
     }
     try {
-        showToast(isEnabled ? "Features enable ho rahe hain..." : "Features disable ho rahe hain...", "info");
-        const featureState = { editor: isEnabled, email: isEnabled, pricing: isEnabled };
-        const querySnapshot = await getDocs(collection(db, "users"));
-        const batchPromise = [];
-        querySnapshot.forEach(userDoc => {
-            if (!ADMIN_EMAILS.includes(userDoc.data().email)) {
-                batchPromise.push(updateDoc(doc(db, "users", userDoc.id), {
-                    featuresEnabled: featureState
-                }));
-            }
-        });
-        await Promise.all(batchPromise);
-        // Save global state to config for persistence
-        await setDoc(doc(db, "config", "global_features"), { allFeaturesEnabled: isEnabled }, { merge: true });
-        showToast(isEnabled ? "All Users: 3 Features Enabled!" : "All Users: Features Disabled!", "success");
+        showToast(isEnabled ? "سسٹم آن ہو رہا ہے..." : "سسٹم آف ہو رہا ہے...", "info");
+        
+        // v5.5.0: Instantly update the one central document
+        // All clients listen to this and will update their UI immediately
+        await setDoc(doc(db, "config", "global_features"), { 
+            allFeaturesEnabled: isEnabled,
+            updatedBy: userState.email,
+            updatedAt: serverTimestamp()
+        }, { merge: true });
+        
+        showToast(isEnabled ? "All Users: Features Enabled!" : "Features Disabled!", "success");
     } catch (e) {
         console.error("Global toggle failed:", e);
         showToast("Update failed");
