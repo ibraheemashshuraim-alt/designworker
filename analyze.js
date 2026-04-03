@@ -1,4 +1,4 @@
-/* v5.5.3: Core Sequence Fix & History Stability */
+/* v5.4.6: Admin & Tier Correction (Stable Revert) */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
 import { 
@@ -56,73 +56,6 @@ let userSettings = {
     fontSize: 16
 };
 
-// v5.5.0: Global Bypass State (Admin Controlled)
-window.globalConfig = {
-    allFeaturesEnabled: false
-};
-
-// v5.5.3: UI Elements (Must be declared before any UI-dependent listeners)
-const elements = {
-    loginBtn: document.getElementById('loginBtn'),
-    authContainer: document.getElementById('authContainer'),
-    fileInput: document.getElementById('fileInput'),
-    designPreview: document.getElementById('designPreview'),
-    dropZone: document.getElementById('dropZone'),
-    previewContainer: document.getElementById('previewContainer'),
-    workspaceActions: document.getElementById('workspaceActions'),
-    resultsPanel: document.getElementById('resultsPanel'),
-    initialAnalysisMsg: document.getElementById('initialAnalysisMsg'),
-    runAnalysisBtn: document.getElementById('runAnalysisBtn'),
-    buyCreditsBtn: document.getElementById('buyCreditsBtn'),
-    scanningModal: document.getElementById('scanningModal'),
-    buyCreditsSection: document.getElementById('buyCreditsSection'),
-    overallScoreText: document.getElementById('overallScoreText'),
-    accessOut: document.getElementById('accessOut'),
-    contrastOut: document.getElementById('contrastOut'),
-    reportGoodOut: document.getElementById('reportGoodOut'),
-    reportBadOut: document.getElementById('reportBadOut'),
-    analysisResults: document.getElementById('analysisResults'),
-    apiSettingsModal: document.getElementById('apiSettingsModal'),
-    apiKeyInput: document.getElementById('apiKeyInput'),
-    profileEmail: document.getElementById('profileEmail'),
-    profileEmailVal: document.getElementById('profileEmailVal'),
-    profileCredits: document.getElementById('profileCredits'),
-    profileCreditsModal: document.getElementById('profileCreditsModal'),
-    saveStatusMsg: document.getElementById('saveStatusMsg'),
-    profileAvatar: document.getElementById('profileAvatar'),
-    profileIcon: document.getElementById('profileIcon'),
-    modalAvatar: document.getElementById('modalAvatar'),
-    modalIcon: document.getElementById('modalIcon'),
-    adminPanelSection: document.getElementById('adminPanelSection'),
-    profileDropdown: document.getElementById('profileDropdown'),
-    adminUsersList: document.getElementById('adminUsersList'),
-    colorPaletteOut: document.getElementById('colorPaletteOut'),
-    fontsUsedOut: document.getElementById('fontsUsedOut'),
-    detailedImprovementsOut: document.getElementById('detailedImprovementsOut'),
-    pricingEstimationOut: document.getElementById('pricingEstimationOut'),
-    clientImpressionOut: document.getElementById('clientImpressionOut'),
-    historyList: document.getElementById('historyList'),
-    resultsCard: document.querySelector('.results-card'),
-    statusHeader: document.getElementById('statusHeader'),
-    exportGroup: document.getElementById('exportGroup'),
-    loginGate: document.getElementById('loginGate'),
-    loginLoading: document.getElementById('loginLoading'),
-    loginMain: document.getElementById('loginMain'),
-
-    // v5.5.3: Missing Admin Map
-    adminUsersTable: document.getElementById('adminUsersTable'),
-    adminTotalUsers: document.getElementById('adminTotalUsers'),
-    adminPremiumUsers: document.getElementById('adminPremiumUsers'),
-    adminStatsCards: document.getElementById('adminStatsCards'),
-
-    // v5.5.3: Missing Locks
-    pricingLock: document.getElementById('pricingLock'),
-    impressionLock: document.getElementById('impressionLock'),
-    expertLock: document.getElementById('expertLock'),
-    expertFootnote: document.getElementById('expertSuggestionFootnote'),
-    editorPremiumGate: document.getElementById('editorPremiumGate'),
-};
-
 const FONT_LIST = [
     { name: 'Outfit', family: "'Outfit', sans-serif" },
     { name: 'Inter', family: "'Inter', sans-serif" },
@@ -176,21 +109,56 @@ const FONT_LIST = [
     { name: 'Libre Baskerville', family: "'Libre Baskerville', serif" }
 ];
 
-fetchMasterKeys(); // Initial fetch
+const ADMIN_EMAILS = ["ibraheemashshuraim@gmail.com", "ibraheemashshuraim.alt@gmail.com", "ibraheemashshuraim-alt@gmail.com"];
 
-// v5.5.3: Unified UI Diagnostics & Global Monitor (Safe now because 'elements' is ready)
-onSnapshot(doc(db, "config", "global_features"), (snap) => {
-    try {
-        if (snap.exists()) {
-            window.globalConfig = snap.data();
-            console.log("System: Global Features updated ->", window.globalConfig);
-            if (typeof updateUI === 'function') updateUI();
-            if (typeof window.checkPremiumAccess === 'function') window.checkPremiumAccess();
-        }
-    } catch (e) { console.warn("Snapshot processing error:", e); }
-}, (err) => {
-    console.warn("Global Features access restricted (normal for guests)");
-});
+// DOM Elements
+const elements = {
+    loginBtn: document.getElementById('loginBtn'),
+    authContainer: document.getElementById('authContainer'),
+    fileInput: document.getElementById('fileInput'),
+    designPreview: document.getElementById('designPreview'),
+    dropZone: document.getElementById('dropZone'),
+    previewContainer: document.getElementById('previewContainer'),
+    workspaceActions: document.getElementById('workspaceActions'),
+    resultsPanel: document.getElementById('resultsPanel'),
+    initialAnalysisMsg: document.getElementById('initialAnalysisMsg'),
+    runAnalysisBtn: document.getElementById('runAnalysisBtn'),
+    buyCreditsBtn: document.getElementById('buyCreditsBtn'),
+    scanningModal: document.getElementById('scanningModal'),
+    buyCreditsSection: document.getElementById('buyCreditsSection'),
+    overallScoreText: document.getElementById('overallScoreText'),
+    accessOut: document.getElementById('accessOut'),
+    contrastOut: document.getElementById('contrastOut'),
+    reportGoodOut: document.getElementById('reportGoodOut'),
+    reportBadOut: document.getElementById('reportBadOut'),
+    analysisResults: document.getElementById('analysisResults'),
+    apiSettingsModal: document.getElementById('apiSettingsModal'),
+    apiKeyInput: document.getElementById('apiKeyInput'),
+    profileEmail: document.getElementById('profileEmail'),
+    profileEmailVal: document.getElementById('profileEmailVal'),
+    profileCredits: document.getElementById('profileCredits'),
+    profileCreditsModal: document.getElementById('profileCreditsModal'),
+    saveStatusMsg: document.getElementById('saveStatusMsg'),
+    profileAvatar: document.getElementById('profileAvatar'),
+    profileIcon: document.getElementById('profileIcon'),
+    modalAvatar: document.getElementById('modalAvatar'),
+    modalIcon: document.getElementById('modalIcon'),
+    adminPanelSection: document.getElementById('adminPanelSection'),
+    profileDropdown: document.getElementById('profileDropdown'),
+    adminUsersList: document.getElementById('adminUsersList'),
+    colorPaletteOut: document.getElementById('colorPaletteOut'),
+    fontsUsedOut: document.getElementById('fontsUsedOut'),
+    detailedImprovementsOut: document.getElementById('detailedImprovementsOut'),
+    pricingEstimationOut: document.getElementById('pricingEstimationOut'),
+    clientImpressionOut: document.getElementById('clientImpressionOut'),
+    historyList: document.getElementById('historyList'),
+    resultsCard: document.querySelector('.results-card'),
+    statusHeader: document.getElementById('statusHeader'),
+    exportGroup: document.getElementById('exportGroup'),
+    loginGate: document.getElementById('loginGate'),
+    loginLoading: document.getElementById('loginLoading'),
+    loginMain: document.getElementById('loginMain')
+};
 
 // Ensure session persistence
 setPersistence(auth, browserLocalPersistence);
@@ -260,14 +228,11 @@ window.saveEmailSettings = async () => {
 async function checkAndSaveBestDesign(results, image64) {
     if (!results || results.score < 80) return;
     
-    // v5.5.0: New Bypass - Admin Control
-    const isGlobalBypass = window.globalConfig?.allFeaturesEnabled === true;
-    
     // Manual Override bypass (Admin Control)
-    const isSpecialCase = window.userState?.isAdmin || paidTiers.includes(userTier) || features.email === true || isGlobalBypass;
+    const isSpecialCase = window.userState?.isAdmin || paidTiers.includes(userTier) || features.email === true;
     
     if (!isSpecialCase) {
-        console.log("v5.5.0: Best Design feature locked (Free tier + Global Toggle Off).");
+        console.log("v4.19.0: Best Design feature locked (Free tier).");
         return; 
     }
 
@@ -312,12 +277,9 @@ async function handleExpertSuggestion(results) {
     
     if (section) section.classList.add('hidden'); // Reset
 
-    // v5.5.0: New Bypass - Admin Control
-    const isGlobalBypass = window.globalConfig?.allFeaturesEnabled === true;
-    
     // v5.0.0: Package-Based Permission
     // Pro, Premium, Business, and Admin can see suggestions if score < 80
-    const hasPackage = ['Pro', 'Premium', 'Business'].includes(userState.packageType) || userState.isAdmin || isGlobalBypass;
+    const hasPackage = ['Pro', 'Premium', 'Business'].includes(userState.packageType) || userState.isAdmin;
     const isPremium = userState.credits > 0 || userState.licenseStatus === 'approved' || hasPackage;
     
     if (!isPremium || results.score >= 80) return; // Only suggest for < 80 scores
@@ -966,20 +928,17 @@ function updateUI() {
         const featEnabled = userState.featuresEnabled || {};
         const isFreeLockedUser = userState.packageType === 'Free' && userState.licenseStatus !== 'approved' && !userState.isAdmin;
         
-        // v5.5.0: New Bypass - If Admin enabled "All Features" globally, everyone gets access
-        const isGlobalBypass = window.globalConfig?.allFeaturesEnabled === true;
-
         // Logic for Analyzer Sections (Pricing, Impression, Expert Suggestion)
-        // Unlocked if: NOT free user, OR admin granted featuresEnabled.pricing OR Global Bypass
-        const pricingUnlocked = !isFreeLockedUser || featEnabled.pricing === true || isGlobalBypass;
+        // Unlocked if: NOT free user, OR admin granted featuresEnabled.pricing
+        const pricingUnlocked = !isFreeLockedUser || featEnabled.pricing === true;
         if (pricingLock) pricingLock.classList.toggle('hidden', pricingUnlocked);
         if (impressionLock) impressionLock.classList.toggle('hidden', pricingUnlocked);
         if (expertLock) expertLock.classList.toggle('hidden', pricingUnlocked);
         if (expertFootnote) expertFootnote.classList.toggle('hidden', !pricingUnlocked);
 
         // Logic for AI Editor
-        // Unlocked if: Premium/Business/Admin, OR admin granted featuresEnabled.editor OR Global Bypass
-        const isEditorUnlocked = ['Premium', 'Business'].includes(userState.packageType) || userState.isAdmin || featEnabled.editor === true || isGlobalBypass;
+        // Unlocked if: Premium/Business/Admin, OR admin granted featuresEnabled.editor
+        const isEditorUnlocked = ['Premium', 'Business'].includes(userState.packageType) || userState.isAdmin || featEnabled.editor === true;
         if (editGate) {
             editGate.classList.toggle('hidden', isEditorUnlocked);
         }
@@ -1012,46 +971,20 @@ function updateUI() {
             elements.loginGate.style.opacity = '1';
             elements.loginGate.style.pointerEvents = 'auto';
 
-            // IMPORTANT v5.5.1: Reveal main login UI if Firebase has finished checking
+            // Reveal main login UI if Firebase has finished checking
             if (elements.loginLoading) elements.loginLoading.classList.add('hidden');
             if (elements.loginMain) elements.loginMain.classList.remove('hidden');
         }
     }
 }
 
-// v5.5.1: Safety Kill for Stuck Login Gate
-setTimeout(() => {
-    if (elements.loginLoading && !elements.loginLoading.classList.contains('hidden')) {
-        console.log("System: Safety reveal triggered.");
-        if (elements.loginLoading) elements.loginLoading.classList.add('hidden');
-        if (elements.loginMain) elements.loginMain.classList.remove('hidden');
-    }
-}, 3000); 
-
 // Admin Dashboard Logic (v5.4.1 restructured)
 window.openAdminPanel = async () => {
     const adminView = document.getElementById('adminDashboardView');
     adminView.classList.remove('hidden');
     
+    // VIP data loading message
     elements.adminUsersList.innerHTML = "<div class='loading-spinner-container' style='grid-column: 1/-1; text-align: center; padding: 50px;'><div class='spinner' style='margin: 0 auto;'></div><p style='margin-top:15px;'>VIP ڈیٹا لوڈ ہو رہا ہے...</p></div>";
-    
-    const globalSettingsEl = document.getElementById('adminGlobalSettings');
-    if (globalSettingsEl) {
-        globalSettingsEl.innerHTML = `
-            <button class="action-btn approve" style="padding:5px 15px; font-size:0.75rem; border-radius:5px;" onclick="adminEnableAllFeatures()">
-                <i class="fa-solid fa-bolt"></i> Enable All (Free Users Allowed)
-            </button>
-        `;
-    }
-
-    // v5.4.6: Read global features toggle state from Firestore config
-    try {
-        const cfgSnap = await getDoc(doc(db, "config", "global_features"));
-        const toggle = document.getElementById('globalFeaturesToggle');
-        if (toggle && cfgSnap.exists()) {
-            toggle.checked = cfgSnap.data().allFeaturesEnabled === true;
-        }
-    } catch (e) { console.warn("Config read failed", e); }
 
     try {
         const querySnapshot = await getDocs(collection(db, "users"));
