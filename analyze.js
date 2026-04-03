@@ -263,14 +263,15 @@ window.saveEmailSettings = async () => {
 async function checkAndSaveBestDesign(results, image64) {
     if (!results || results.score < 80) return;
     
-    // v5.6.0: Global Bypass Check
+    // v5.6.1: Global Bypass or Individual Email Toggle Check
     const isGlobalBypass = window.globalConfig?.allFeaturesEnabled === true;
+    const individualEmail = window.userState?.featuresEnabled?.email === true;
     
-    // Manual Override bypass (Admin Control)
-    const isSpecialCase = window.userState?.isAdmin || paidTiers.includes(userTier) || features.email === true || isGlobalBypass;
+    // Manual Override bypass (Admin/Paid/Email Toggle/Global Bypass)
+    const isSpecialCase = window.userState?.isAdmin || paidTiers.includes(userTier) || individualEmail || isGlobalBypass;
     
     if (!isSpecialCase) {
-        console.log("v5.6.0: Best Design feature locked (Free tier + Bypass OFF).");
+        console.log("v5.6.1: Best Design feature locked (Free tier + All Bypasses OFF).");
         return; 
     }
 
@@ -466,14 +467,17 @@ window.openHistory = async () => {
     toggleModal('historyModal', true);
     elements.historyList.innerHTML = "<div class='spinner' style='margin: 30px auto;'></div>";
     
-    if (!userState.uid) {
+    // v5.6.1: Ensure we have a valid UID for the active user (Admin or Regular)
+    const activeUid = userState.uid || auth.currentUser?.uid;
+
+    if (!activeUid) {
         elements.historyList.innerHTML = "<p style='text-align:center; padding: 20px;'>براہ کرم پہلے لاگ ان کریں۔</p>";
         return;
     }
 
     try {
-        // v5.4.6: Use simple getDocs + client-side sort to avoid Firestore index issues
-        const historyRef = collection(db, "users", userState.uid, "history");
+        // v5.4.6: Client-side sort to avoid Firestore index issues
+        const historyRef = collection(db, "users", activeUid, "history");
         const snapshot = await getDocs(historyRef);
         
         if (snapshot.empty) {
@@ -481,8 +485,7 @@ window.openHistory = async () => {
             return;
         }
 
-        // Sort client-side by createdAt descending
-        // Sort client-side by createdAt descending (v5.6.0: robust sort)
+        // Sort client-side by createdAt descending (v5.6.1: robust sort)
         const docs = [];
         snapshot.forEach(docSnap => docs.push({ id: docSnap.id, ...docSnap.data() }));
         docs.sort((a, b) => {
@@ -511,14 +514,7 @@ window.openHistory = async () => {
             `;
         });
         
-        // Final safeguard Check
-        if (!html) {
-            elements.historyList.innerHTML = "<p style='text-align:center; padding: 20px; opacity:0.5;'>آئٹمز ڈسپلے کرنے میں مسئلہ ہوا۔</p>";
-            return;
-        }
-
-        elements.historyList.innerHTML = html;
-        console.log("History rendered successfully.");
+        elements.historyList.innerHTML = html || "<p style='text-align:center; padding: 20px; opacity:0.5;'>آئٹمز ڈسپلے کرنے میں مسئلہ ہوا۔</p>";
     } catch (e) {
         console.error("History fetch error:", e);
         elements.historyList.innerHTML = "<p style='color:red; text-align:center;'>تاریخ لوڈ کرنے میں مسئلہ ہوا۔</p>";
@@ -559,8 +555,8 @@ window.deleteHistoryItem = async (docId) => {
 };
 
 // --- VERSION TAG ---
-window.DESIGN_VERSION = "4.18.15";
-console.log("DesignCheck Engine: v4.18.15 (Dual Provider Analysis) Loaded");
+window.DESIGN_VERSION = "5.6.1";
+console.log("DesignCheck Engine: v5.6.1 (Hierarchy Fix) Loaded");
 
 // v4.18.12: Gemini API Diagnostic Manager
 window.showAiDiagnosticModal = (message, errorRaw) => {

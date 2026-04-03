@@ -566,11 +566,13 @@ function resizeCanvas() {
 window.checkPremiumAccess = () => {
     const gate = document.getElementById('editorPremiumGate');
     const state = window.userState || {};
+    const featEnabled = state.featuresEnabled || {};
     
-    // v5.6.0: Respect Global Bypass
+    // v5.6.1: Respect Global Bypass OR individual Editor toggle
     const isGlobalBypass = window.globalConfig?.allFeaturesEnabled === true;
+    const individualEditor = featEnabled.editor === true;
     
-    // v5.0.0: Only Premium, Business or Admin (Pro can use Suggestions but NOT editor)
-    const hasAccess = ['Premium', 'Business'].includes(state.packageType) || state.isAdmin || (state.featuresEnabled && state.featuresEnabled.editor === true) || isGlobalBypass;
+    // Check access: Premium/Business Tier, Admin status, Individual Toggle, or Global Bypass
+    const hasAccess = ['Premium', 'Business'].includes(state.packageType) || state.isAdmin || individualEditor || isGlobalBypass;
     gate?.classList.toggle('hidden', hasAccess);
 };
