@@ -458,7 +458,8 @@ window.openHistory = async () => {
 
     try {
         const historyRef = collection(db, "users", userState.uid, "history");
-        const q = query(historyRef, orderBy("createdAt", "desc"));
+        // v5.4.5: Limit to 20 most recent items for fast load
+        const q = query(historyRef, orderBy("createdAt", "desc"), limit(20));
         const snapshot = await getDocs(q);
         
         if (snapshot.empty) {
@@ -469,17 +470,19 @@ window.openHistory = async () => {
         let html = "";
         snapshot.forEach(docSnap => {
             const data = docSnap.data();
-            const date = data.createdAt ? new Date(data.createdAt.seconds * 1000).toLocaleDateString() : "Pending";
+            const date = data.createdAt ? new Date(data.createdAt.seconds * 1000).toLocaleDateString('ur-PK') : "زیر التوا";
+            const score = data.score || '--';
+            const scoreColor = score >= 80 ? 'var(--success-green)' : score >= 50 ? '#ffd700' : '#ff5252';
             html += `
                 <div class="history-card">
-                    <img src="${data.image}" class="history-thumb" alt="Preview">
+                    <img src="${data.image || ''}" loading="lazy" class="history-thumb" alt="Preview" onerror="this.style.display='none'">
                     <div class="history-meta">
-                        <span class="history-date">${date}</span>
-                        <span class="history-score">${data.score}</span>
+                        <span style="font-size:0.75rem; color: var(--text-muted);">${date}</span>
+                        <span style="font-size:1rem; font-weight:800; color:${scoreColor};">${score}</span>
                     </div>
                     <div class="history-actions">
-                        <button class="history-btn view-hist-btn" onclick="restoreHistoryItem('${docSnap.id}')">View</button>
-                        <button class="history-btn del-hist-btn" onclick="deleteHistoryItem('${docSnap.id}')">Delete</button>
+                        <button class="history-btn view-hist-btn" onclick="restoreHistoryItem('${docSnap.id}')"><i class="fa-solid fa-eye"></i> View</button>
+                        <button class="history-btn del-hist-btn" onclick="deleteHistoryItem('${docSnap.id}')"><i class="fa-solid fa-trash"></i></button>
                     </div>
                 </div>
             `;

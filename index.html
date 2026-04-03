@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DesignCheck AI Design Studio (v5.4.4 - Admin Fixes)</title>
+    <title>DesignCheck AI Design Studio (v5.4.5 - Final Release)</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="style.css?v=5.4.4">
+    <link rel="stylesheet" href="style.css?v=5.4.5">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
@@ -578,8 +578,8 @@
                     <i class="fa-solid fa-lock" style="font-size: 3rem; color: #ffd700; margin-bottom: 20px;"></i>
                     <h2 style="color: #fff;">Premium ایڈیٹر لاک ہے</h2>
                     <p style="color: var(--text-muted); margin: 15px 0 25px;">یہ فیچر صرف ان ممبرز کے لیے ہے جن کے پاس ڈیزائن چیک پریمیم لائسنس ہے۔</p>
-                    <button class="btn approve" style="padding: 15px 40px; font-size: 1.1rem;" onclick="toggleModal('profileDropdown', true)">
-                        <i class="fa-solid fa-gem"></i> پریمیم میں اپ گریڈ کریں
+                    <button class="btn approve" style="padding: 15px 40px; font-size: 1.1rem;" onclick="toggleModal('packagesModal', true)">
+                        <i class="fa-solid fa-gem"></i> پریمیم پلان دیکھیں (Upgrade)
                     </button>
                 </div>
             </div>
@@ -600,7 +600,12 @@
     <div id="adminDashboardView" class="modal hidden">
         <div class="modal-content admin-modal-content">
             <span class="close-btn" onclick="closeAdminPanel()">&times;</span>
-            <h2 style="color: var(--neon-cyan); margin-bottom: 20px;"><i class="fa-solid fa-users-gear"></i> ایڈمن ڈیش بورڈ</h2>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px; padding: 0 5px;">
+                <h2 style="color: var(--neon-cyan); margin: 0;"><i class="fa-solid fa-users-gear"></i> ایڈمن ڈیش بورڈ</h2>
+                <button class="btn approve" style="padding: 8px 18px; font-size: 0.8rem; border-radius: 8px;" onclick="adminEnableAllFeatures()">
+                    <i class="fa-solid fa-bolt"></i> سب یوزرز کو 3 فیچرز دیں (Free)
+                </button>
+            </div>
             <div id="adminUsersList" class="admin-user-grid"></div>
         </div>
     </div>
@@ -789,12 +794,12 @@
 
     <footer style="padding: 20px; border-top: 1px solid rgba(255,255,255,0.05); text-align: center;">
         <div style="display: flex; align-items: center; justify-content: center; width: 100%;">
-            <div><span id="uiVersion" style="color: var(--neon-cyan); font-family: monospace;">DesignCheck Studio v5.4.4 (Admin Fixes)</span></div>
+            <div><span id="uiVersion" style="color: var(--neon-cyan); font-family: monospace;">DesignCheck Studio v5.4.5 (Final Release)</span></div>
         </div>
     </footer>
 
-    <script type="module" src="analyze.js?v=5.4.4"></script>
-    <script src="editor.js?v=5.4.4"></script>
+    <script type="module" src="analyze.js?v=5.4.5"></script>
+    <script src="editor.js?v=5.4.5"></script>
     <script>
         // *v4.23.1 - The Enhanced Auth Gate Update*
         window.hardResetApp = async function() {
