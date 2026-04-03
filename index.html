@@ -164,6 +164,8 @@
                         <button onclick="toggleModal('packagesModal', true); toggleModal('profileDropdown', false);" class="btn secondary-btn" style="width: 100%; margin-bottom: 10px; border-color: var(--neon-purple); color: var(--neon-purple);">
                             <i class="fa-solid fa-gem"></i> Buy Credits / Upgrade
                         </button>
+                    </div>
+                    <div class="modal-section">
                         <button onclick="toggleModal('licenseModal', true); toggleModal('profileDropdown', false);" class="btn secondary-btn" style="width: 100%; border-color: #ffd700; color: #ffd700;">
                             <i class="fa-solid fa-crown"></i> Agency License (1.5 Lac)
                         </button>
@@ -636,6 +638,31 @@
             <div id="historyList" class="history-grid">
                 <!-- JS populates history items here -->
             </div>
+        </div>
+    </div>
+
+    <!-- v5.4.2: Tool Settings Modal -->
+    <div id="toolSettingsModal" class="modal hidden">
+        <div class="modal-content" style="max-width: 400px; border-color: #ffd700;">
+            <span class="close-btn" onclick="toggleModal('toolSettingsModal', false)">&times;</span>
+            <h3 style="color: #ffd700; margin-bottom: 5px;"><i class="fa-solid fa-sliders"></i> Tool Settings</h3>
+            <p id="tsUserEmail" style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 20px;"></p>
+            
+            <input type="hidden" id="tsUid">
+            <div class="ts-group">
+                <span><i class="fa-solid fa-pen-nib"></i> AI Editor</span>
+                <label class="ts-switch"><input type="checkbox" id="tsEditor"><span class="ts-slider"></span></label>
+            </div>
+            <div class="ts-group">
+                <span><i class="fa-solid fa-envelope"></i> Result Email</span>
+                <label class="ts-switch"><input type="checkbox" id="tsEmail"><span class="ts-slider"></span></label>
+            </div>
+            <div class="ts-group">
+                <span><i class="fa-solid fa-tag"></i> Price Check</span>
+                <label class="ts-switch"><input type="checkbox" id="tsPricing"><span class="ts-slider"></span></label>
+            </div>
+            
+            <button class="btn warning-btn" style="width:100%; margin-top:20px;" onclick="enableAllUserTools()"><i class="fa-solid fa-bolt"></i> Enable All (For this User)</button>
         </div>
     </div>
 

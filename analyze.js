@@ -1025,16 +1025,20 @@ window.openAdminPanel = async () => {
                              .sort((a,b) => (b.lastActive?.seconds || 0) - (a.lastActive?.seconds || 0));
 
         if (pending.length > 0) {
-            const pHeader = document.createElement('h4');
-            pHeader.style.color = "var(--neon-purple)";
-            pHeader.style.margin = "10px 0 15px 20px";
-            pHeader.innerHTML = `<i class="fa-solid fa-clock-rotate-left"></i> پینڈنگ کلیمز (Pending Claims)`;
-            elements.adminUsersList.appendChild(pHeader);
+            const pSectionContainer = document.createElement('details');
+            pSectionContainer.className = "pending-claims-accordion";
+            pSectionContainer.open = true;
+            
+            const pSummary = document.createElement('summary');
+            pSummary.innerHTML = `<i class="fa-solid fa-clock-rotate-left"></i> پینڈنگ کلیمز (Pending Claims) - ${pending.length} New`;
+            pSectionContainer.appendChild(pSummary);
 
             const pSection = document.createElement('div');
             pSection.className = "pending-claims-section";
             pending.forEach(u => pSection.appendChild(createAdminUserCard(u, true)));
-            elements.adminUsersList.appendChild(pSection);
+            pSectionContainer.appendChild(pSection);
+            
+            elements.adminUsersList.appendChild(pSectionContainer);
         }
 
         const aHeader = document.createElement('h4');
@@ -1101,22 +1105,14 @@ function createAdminUserCard(data, isPendingView) {
             <div class="stat-item"><div class="stat-label">Designs Used</div><div class="stat-value">${data.usedCredits || 0}</div></div>
             <div class="stat-item"><div class="stat-label">Member Since</div><div class="stat-value" style="font-size: 0.7rem;">${joinedDate}</div></div>
         </div>
-        <div class="feature-toggles-box">
-            <div class="stat-label" style="margin-bottom:10px; font-size:0.6rem; color: #ffd700;">TOOL FEATURE ACCESS (MANUAL)</div>
-            <div class="toggle-row"><span class="toggle-label">AI Editor</span><button class="toggle-btn-small ${features.editor ? 'on' : ''}" onclick="toggleUserFeature('${data.id}', 'editor', ${!features.editor})">${features.editor ? 'Enabled' : 'Disabled'}</button></div>
-            <div class="toggle-row"><span class="toggle-label">Result Email</span><button class="toggle-btn-small ${features.email ? 'on' : ''}" onclick="toggleUserFeature('${data.id}', 'email', ${!features.email})">${features.email ? 'Enabled' : 'Disabled'}</button></div>
-            <div class="toggle-row"><span class="toggle-label">Price Check</span><button class="toggle-btn-small ${features.pricing ? 'on' : ''}" onclick="toggleUserFeature('${data.id}', 'pricing', ${!features.pricing})">${features.pricing ? 'Enabled' : 'Disabled'}</button></div>
-        </div>
+        <!-- v5.4.2: Tool Settings Integration -->
         <div style="margin-top: 15px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 15px;">
-            <div class="stat-label" style="margin-bottom:10px; font-size:0.6rem;">MANAGE PACKAGE (OVERRIDE)</div>
-            <div class="user-actions-grid">
-                <button class="package-action-btn ${pType === 'Pro' ? 'active' : ''}" onclick="grantPackage('${data.id}', 'Pro', 100)">Pro</button>
-                <button class="package-action-btn ${pType === 'Premium' ? 'active' : ''}" onclick="grantPackage('${data.id}', 'Premium', 1000)">Prem</button>
-                <button class="package-action-btn ${pType === 'Business' ? 'active' : ''}" onclick="grantPackage('${data.id}', 'Business', 10000)">Biz</button>
-            </div>
-            <div style="display:flex; gap:5px; margin-top:8px;">
-                <button class="package-action-btn" style="flex:1; border-color:#ff5252; color:#ff5252;" onclick="adminDeleteUser('${data.id}')">Delete</button>
-                <button class="package-action-btn" style="flex:1;" onclick="adminResetAccount('${data.id}')">Reset Account</button>
+            <button class="package-action-btn" style="width: 100%; border-color: #ffd700; color: #ffd700; margin-bottom: 10px;" onclick="openToolSettings('${data.id}', '${data.email}', ${features.editor}, ${features.email}, ${features.pricing})">
+                <i class="fa-solid fa-sliders"></i> Tool Settings
+            </button>
+            <div style="display:flex; gap:5px;">
+                <button class="package-action-btn" style="flex:1; border-color:#ff5252; color:#ff5252;" onclick="window.deleteUser('${data.id}')">Delete</button>
+                <button class="package-action-btn" style="flex:1;" onclick="window.resetUserCredits('${data.id}')">Reset Account</button>
             </div>
         </div>
     `;
@@ -1140,6 +1136,42 @@ window.toggleUserFeature = async (uid, feature, status) => {
         await updateDoc(userRef, updateData);
         showToast("Feature Updated!", "success");
         openAdminPanel();
+    } catch (e) {
+        console.error(e);
+        showToast("Update Failed");
+    }
+}
+
+// v5.4.2 logic for Tool Settings Modal
+window.openToolSettings = (uid, email, editor, emailF, pricing) => {
+    document.getElementById('tsUid').value = uid;
+    document.getElementById('tsUserEmail').innerText = `Managing tools for: ${email}`;
+    
+    document.getElementById('tsEditor').checked = !!editor;
+    document.getElementById('tsEmail').checked = !!emailF;
+    document.getElementById('tsPricing').checked = !!pricing;
+    
+    // Add real-time update listeners directly to the switches
+    document.getElementById('tsEditor').onchange = (e) => toggleUserFeature(uid, 'editor', e.target.checked);
+    document.getElementById('tsEmail').onchange = (e) => toggleUserFeature(uid, 'email', e.target.checked);
+    document.getElementById('tsPricing').onchange = (e) => toggleUserFeature(uid, 'pricing', e.target.checked);
+    
+    toggleModal('toolSettingsModal', true);
+}
+
+window.enableAllUserTools = async () => {
+    const uid = document.getElementById('tsUid').value;
+    if (!uid) return;
+    try {
+        const userRef = doc(db, "users", uid);
+        await updateDoc(userRef, {
+            featuresEnabled: { editor: true, email: true, pricing: true }
+        });
+        document.getElementById('tsEditor').checked = true;
+        document.getElementById('tsEmail').checked = true;
+        document.getElementById('tsPricing').checked = true;
+        showToast("All User Tools Enabled!", "success");
+        openAdminPanel(); // Refresh UI in background
     } catch (e) {
         console.error(e);
         showToast("Update Failed");
