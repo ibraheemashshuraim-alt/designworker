@@ -243,6 +243,14 @@ function bindSidebarEvents() {
         const obj = canvas.getActiveObject();
         if (obj) { obj.set('opacity', parseFloat(e.target.value)); canvas.renderAll(); }
     });
+    document.getElementById('shapeStrokeWidthSlider')?.addEventListener('input', (e) => {
+        const obj = canvas.getActiveObject();
+        if (obj) { obj.set('strokeWidth', parseInt(e.target.value, 10)); canvas.renderAll(); }
+    });
+    document.getElementById('shapeStrokeColorPicker')?.addEventListener('input', (e) => {
+        const obj = canvas.getActiveObject();
+        if (obj) { obj.set('stroke', e.target.value); canvas.renderAll(); }
+    });
 }
 
 // Element Addition Logic

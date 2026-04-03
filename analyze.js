@@ -1010,8 +1010,7 @@ window.openAdminPanel = async () => {
 
     try {
         const querySnapshot = await getDocs(collection(db, "users"));
-        elements.adminUsersList.innerHTML = "";
-        
+
         const allUsers = [];
         querySnapshot.forEach(doc => {
             const data = doc.data();
@@ -1024,36 +1023,47 @@ window.openAdminPanel = async () => {
         const active = allUsers.filter(u => u.paymentStatus !== 'pending')
                              .sort((a,b) => (b.lastActive?.seconds || 0) - (a.lastActive?.seconds || 0));
 
-        const pSectionContainer = document.createElement('details');
-        pSectionContainer.className = "pending-claims-accordion";
-        pSectionContainer.open = true;
-        
-        const pSummary = document.createElement('summary');
-        pSummary.innerHTML = `<i class="fa-solid fa-clock-rotate-left"></i> پینڈنگ کلیمز (Pending Claims) - ${pending.length > 0 ? pending.length + ' New' : '0'}`;
-        pSectionContainer.appendChild(pSummary);
+        elements.adminUsersList.innerHTML = `
+            <div class="tabs-nav" style="justify-content: flex-start; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; border-radius: 0; background: transparent; padding-bottom: 0;">
+                <button class="tab-btn active" id="adminTabClaims" style="flex: none; min-width: 150px;"><i class="fa-solid fa-clock-rotate-left"></i> Pending (${pending.length})</button>
+                <button class="tab-btn" id="adminTabActive" style="flex: none; min-width: 150px;"><i class="fa-solid fa-users"></i> Active (${active.length})</button>
+            </div>
+            <div id="adminContentClaims"></div>
+            <div id="adminContentActive" class="hidden"></div>
+        `;
 
+        const contentClaims = document.getElementById('adminContentClaims');
+        const contentActive = document.getElementById('adminContentActive');
+
+        // Tab switching logic
+        document.getElementById('adminTabClaims').onclick = (e) => {
+            e.target.classList.add('active');
+            document.getElementById('adminTabActive').classList.remove('active');
+            contentClaims.classList.remove('hidden');
+            contentActive.classList.add('hidden');
+        };
+        document.getElementById('adminTabActive').onclick = (e) => {
+            e.target.classList.add('active');
+            document.getElementById('adminTabClaims').classList.remove('active');
+            contentActive.classList.remove('hidden');
+            contentClaims.classList.add('hidden');
+        };
+
+        // Pending Claims content
         const pSection = document.createElement('div');
         pSection.className = "pending-claims-section";
-        
         if (pending.length > 0) {
             pending.forEach(u => pSection.appendChild(createAdminUserCard(u, true)));
         } else {
             pSection.innerHTML = `<p style="text-align:center; color: var(--text-muted); font-size: 0.8rem; padding: 20px;">کوئی نئی درخواست نہیں ہے۔</p>`;
         }
-        pSectionContainer.appendChild(pSection);
-        
-        elements.adminUsersList.appendChild(pSectionContainer);
+        contentClaims.appendChild(pSection);
 
-        const aHeader = document.createElement('h4');
-        aHeader.style.color = "var(--neon-cyan)";
-        aHeader.style.margin = "30px 0 15px 20px";
-        aHeader.innerHTML = `<i class="fa-solid fa-users"></i> تمام ممبرز (Active Users)`;
-        elements.adminUsersList.appendChild(aHeader);
-
+        // Active Users content
         const aSection = document.createElement('div');
         aSection.className = "active-users-section";
         active.forEach(u => aSection.appendChild(createAdminUserCard(u, false)));
-        elements.adminUsersList.appendChild(aSection);
+        contentActive.appendChild(aSection);
     } catch (e) {
         console.error("Admin Error:", e);
         elements.adminUsersList.innerHTML = "<p style='color:#ff5252; padding:50px;'>ڈیٹا لوڈ کرنے میں مسئلہ ہوا۔</p>";
