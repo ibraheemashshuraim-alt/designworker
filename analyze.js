@@ -169,17 +169,28 @@ const ADMIN_EMAILS = ["ibraheemashshuraim@gmail.com", "ibraheemashshuraim.alt@gm
 // v4.18.17: Master API Keys (Cloud Fallback)
 let masterKeys = { gemini: null, groq: null };
 
-async function fetchMasterKeys() {
+// v5.6.4: Refined Master Key Fetch with Auto-Retry for Guests
+async function fetchMasterKeys(retryCount = 0) {
     try {
         const snap = await getDoc(doc(db, "config", "master_keys"));
         if (snap.exists()) {
             masterKeys = snap.data();
-            console.log("System: Master Keys loaded.");
+            console.log("System: Master Keys loaded successfully (v5.6.4).");
+        } else {
+            console.warn("System Warning: Master Keys document is missing in config/master_keys.");
+            if (retryCount < 3) {
+                console.log(`Retrying fetchMasterKeys (${retryCount + 1})...`);
+                setTimeout(() => fetchMasterKeys(retryCount + 1), 3000); // Wait 3s and retry
+            }
         }
-    } catch (e) { console.error("Master Keys fetch failed:", e); }
+    } catch (e) { 
+        console.error("Master Keys access restricted (Check Firestore Rules for guests):", e); 
+        if (retryCount < 2) {
+            setTimeout(() => fetchMasterKeys(retryCount + 1), 3000);
+        }
+    }
 }
-
-fetchMasterKeys(); // Initial fetch
+fetchMasterKeys();
 
 // v5.6.0: Global Bypass Monitor (Safe now because 'elements' is ready)
 onSnapshot(doc(db, "config", "global_features"), (snap) => {
@@ -562,8 +573,8 @@ window.deleteHistoryItem = async (docId) => {
 };
 
 // --- VERSION TAG ---
-window.DESIGN_VERSION = "5.6.3";
-console.log("DesignCheck Engine: v5.6.3 (API Fix) Loaded");
+window.DESIGN_VERSION = "5.6.4";
+console.log("DesignCheck Engine: v5.6.4 (Master Fix) Loaded");
 
 // v4.18.12: Gemini API Diagnostic Manager
 window.showAiDiagnosticModal = (message, errorRaw) => {
@@ -1737,11 +1748,15 @@ window.runAnalysis = async () => {
         let keyToUse = typedKey || getApiKey() || (masterKeys && masterKeys.gemini);
         let isDefaultKey = false;
         
-        if (!keyToUse) {
-            // v5.6.3: Removed hardcoded Firebase-restricted key that led to "API Blocked" errors.
-            // We now fallback to a message or Groq if available.
-            isDefaultKey = true;
+        if (!keyToUse && !masterKeys.groq) {
+            // v5.6.4: If absolutely no keys are available, show a friendly Urdu message
+            if (scanModal) scanModal.classList.add('hidden');
+            if (runBtn) runBtn.disabled = false;
+            clearTimeout(killSwitch);
+            return alert("سسٹم کیز ابھی تیار نہیں ہیں۔\nبراہ کرم انتظامیہ سے رابطہ کریں یا اپنی API کی سیٹ کریں (پروفائل سیٹنگز میں)۔");
         }
+
+        if (!keyToUse) isDefaultKey = true;
 
         console.log("v4.18.15: Processing (Key: " + (typedKey ? "Typed" : (isDefaultKey ? "Default" : "Saved")) + ")");
         const compressedBase64 = await compressImage(currentImageBase64);
