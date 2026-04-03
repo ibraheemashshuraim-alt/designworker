@@ -1,4 +1,4 @@
-/* v5.3.0: Admin & Credit Refinement Build */
+/* v5.3.7: Premium Evolution & Cache Refined */
 .credits-mini-badge {
     background: rgba(0, 229, 255, 0.1);
     color: var(--neon-cyan);
@@ -15,7 +15,7 @@
     white-space: nowrap;
 }
 
-.admin-hidden { /* Utility class handled by JS toggle */ }
+.admin-hidden { display: none !important; } /* v5.3.7: Utility handled by JS toggle */
 
 /* Admin Dashboard Polish */
 .admin-user-card {
@@ -1783,7 +1783,6 @@ footer { margin-top: 40px; }
 .badge-pro { background: rgba(0, 229, 255, 0.1); color: var(--neon-cyan); }
 .badge-premium { background: rgba(157, 0, 255, 0.1); color: var(--neon-purple); }
 .badge-business { background: rgba(255, 215, 0, 0.1); color: #ffd700; }
-}
 
 /* v5.1.0: Feature Icons & License Styles */
 .package-features li {

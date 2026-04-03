@@ -1,3 +1,4 @@
+/* v5.3.7: Premium Evolution & Cache Refined */
 // ================ EDITOR LOGIC (v4.18.14 - Bug Fix Build) ================
 
 // v4.9.8: GLOBAL NAVIGATION
