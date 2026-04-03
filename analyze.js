@@ -1,4 +1,4 @@
-/* v5.3.7: Premium Evolution & Cache Refined */
+/* v5.3.8: Tier Refinement & UI Fixes */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
 import { 
@@ -915,14 +915,32 @@ function updateUI() {
             }
         }
 
-        // v5.3.5: Results & Editor Gate Logic - Analysis results & Editor are strictly for paid users
+        // v5.3.8: Tier-based Section Locking (Analysis is open, specific features locked)
+        const pricingLock = document.getElementById('pricingLockOverlay');
+        const impressionLock = document.getElementById('impressionLockOverlay');
+        const expertLock = document.getElementById('expertSuggestionLockOverlay');
+        const expertFootnote = document.getElementById('expertLockFootnote');
         const editGate = document.getElementById('editorPremiumGate');
+
+        // Logic for Analyzer Sections (Free vs Pro/Premium)
         if (userState.packageType === 'Free' && userState.licenseStatus !== 'approved' && !userState.isAdmin) {
-            if (resultsGate) resultsGate.classList.remove('hidden');
-            if (editGate) editGate.classList.remove('hidden');
+            if (pricingLock) pricingLock.classList.remove('hidden');
+            if (impressionLock) impressionLock.classList.remove('hidden');
+            if (expertLock) expertLock.classList.remove('hidden');
+            if (expertFootnote) expertFootnote.classList.add('hidden');
         } else {
-            if (resultsGate) resultsGate.classList.add('hidden');
-            if (editGate) editGate.classList.add('hidden');
+            // Unlocked for Pro, Premium, Business, Admin
+            if (pricingLock) pricingLock.classList.add('hidden');
+            if (impressionLock) impressionLock.classList.add('hidden');
+            if (expertLock) expertLock.classList.add('hidden');
+            if (expertFootnote) expertFootnote.classList.remove('hidden');
+        }
+
+        // Logic for AI Editor (Premium/Business/Admin Only)
+        // Pro users can use Suggestions but NOT the editor
+        const isEditorUnlocked = ['Premium', 'Business'].includes(userState.packageType) || userState.isAdmin;
+        if (editGate) {
+            editGate.classList.toggle('hidden', isEditorUnlocked);
         }
 
         // Management Visibility
@@ -1005,19 +1023,24 @@ window.openAdminPanel = async () => {
             else if (pType === 'Business') statusBadge = `<span class="status-badge badge-business">Business Plan</span>`;
             else if (pType === 'Agency License') statusBadge = `<span class="status-badge badge-business" style="border-color:#ffd700; color:#ffd700;">Agency License</span>`;
 
-            // CONTEXTUAL BUTTON FILTERING (v5.3.0)
+            // CONTEXTUAL BUTTON FILTERING (v5.3.8 robust check)
             let approveBtnHtml = "";
             if (isPendingCredit) {
-                if (reqPlan === 'Pro') 
+                const planUpper = reqPlan ? reqPlan.toUpperCase().trim() : '';
+                if (planUpper.includes('PRO')) 
                     approveBtnHtml = `<button class="package-action-btn active" style="width:100%; margin-bottom:8px;" onclick="grantPackage('${data.id}', 'Pro', 100, true)">Approve Pro (100 Credit)</button>`;
-                else if (reqPlan === 'Premium') 
+                else if (planUpper.includes('PREMIUM')) 
                     approveBtnHtml = `<button class="package-action-btn active" style="width:100%; margin-bottom:8px; border-color: var(--neon-purple); color: var(--neon-purple);" onclick="grantPackage('${data.id}', 'Premium', 1000, true)">Approve Premium (1,000 Credit)</button>`;
-                else if (reqPlan === 'Business') 
+                else if (planUpper.includes('BUSINESS')) 
                     approveBtnHtml = `<button class="package-action-btn active" style="width:100%; margin-bottom:8px; border-color: #ffd700; color: #ffd700;" onclick="grantPackage('${data.id}', 'Business', 10000, true)">Approve Business (10,000 Credit)</button>`;
-                else if (reqPlan === 'Agency License') 
+                else if (planUpper.includes('AGENCY')) 
                     approveBtnHtml = `<button class="package-action-btn active" style="width:100%; margin-bottom:8px; border-color: #fff; color: #fff;" onclick="grantPackage('${data.id}', 'Agency License', 99999, true)">Approve Agency License</button>`;
                 else 
-                    approveBtnHtml = `<p style="font-size:0.7rem; color:orange;">Manual Approval Needed</p>`;
+                    approveBtnHtml = `
+                        <div style="display:flex; gap:5px; flex-direction:column;">
+                            <button class="package-action-btn" style="font-size:0.6rem;" onclick="grantPackage('${data.id}', 'Pro', 100, true)">Grant Pro</button>
+                            <button class="package-action-btn" style="font-size:0.6rem;" onclick="grantPackage('${data.id}', 'Premium', 1000, true)">Grant Prem</button>
+                        </div>`;
             }
 
             const card = document.createElement('div');
@@ -1500,10 +1523,11 @@ window.runAnalysis = async () => {
         return;
     }
 
-    // v5.3.5: Access Control - Analysis is strictly Paid
-    if (userState.packageType === 'Free' && userState.licenseStatus !== 'approved' && !userState.isAdmin) {
+    // v5.3.8: Tier-based Access (Free users CAN run analysis)
+    const canRunAnalysis = userState.isAdmin || userState.licenseStatus === 'approved' || (Number(userState.credits || 0) > 0);
+    if (!canRunAnalysis) {
         toggleModal('packagesModal', true);
-        showToast("⚠️ یہ فیچر صرف پریمیم ممبرز کے لیے ہے۔", "info");
+        showToast("تجزیہ شروع کرنے کے لیے کریڈٹس یا پریمیم پلان کی ضرورت ہے", "info");
         return;
     }
 

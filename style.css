@@ -1,4 +1,4 @@
-/* v5.3.7: Premium Evolution & Cache Refined */
+/* v5.3.8: Tier Refinement & UI Fixes */
 .credits-mini-badge {
     background: rgba(0, 229, 255, 0.1);
     color: var(--neon-cyan);
@@ -1836,9 +1836,50 @@ footer { margin-top: 40px; }
 }
 
 /* Expert Suggestion Entrance Animation */
-#expertSuggestionSection:not(.hidden) {
-    animation: suggestFade 0.7s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+/* v5.3.8: Premium Section Locking & Tier Refinement */
+.premium-lock-container {
+    position: relative;
+    overflow: hidden;
+    min-height: 80px;
 }
+.section-lock-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    background: rgba(0,0,0,0.4);
+    backdrop-filter: blur(8px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    border-radius: 12px;
+    border: 1px solid rgba(255,215,0,0.1);
+    transition: all 0.3s ease;
+}
+.section-lock-overlay i {
+    font-size: 1.5rem;
+    color: #ffd700;
+    margin-bottom: 8px;
+}
+.section-lock-overlay p {
+    font-size: 0.75rem !important;
+    color: #fff !important;
+    font-weight: 600;
+    margin: 0 !important;
+}
+.section-lock-overlay .lock-btn-mini {
+    margin-top: 10px;
+    background: var(--neon-cyan);
+    color: #000;
+    border: none;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
 @keyframes suggestFade {
     from { opacity: 0; transform: translateY(30px); }
     to { opacity: 1; transform: translateY(0); }
