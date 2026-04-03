@@ -1,4 +1,4 @@
-/* v5.5.2: Initialization & History Fix */
+/* v5.5.3: Core Sequence Fix & History Stability */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
 import { 
@@ -61,6 +61,68 @@ window.globalConfig = {
     allFeaturesEnabled: false
 };
 
+// v5.5.3: UI Elements (Must be declared before any UI-dependent listeners)
+const elements = {
+    loginBtn: document.getElementById('loginBtn'),
+    authContainer: document.getElementById('authContainer'),
+    fileInput: document.getElementById('fileInput'),
+    designPreview: document.getElementById('designPreview'),
+    dropZone: document.getElementById('dropZone'),
+    previewContainer: document.getElementById('previewContainer'),
+    workspaceActions: document.getElementById('workspaceActions'),
+    resultsPanel: document.getElementById('resultsPanel'),
+    initialAnalysisMsg: document.getElementById('initialAnalysisMsg'),
+    runAnalysisBtn: document.getElementById('runAnalysisBtn'),
+    buyCreditsBtn: document.getElementById('buyCreditsBtn'),
+    scanningModal: document.getElementById('scanningModal'),
+    buyCreditsSection: document.getElementById('buyCreditsSection'),
+    overallScoreText: document.getElementById('overallScoreText'),
+    accessOut: document.getElementById('accessOut'),
+    contrastOut: document.getElementById('contrastOut'),
+    reportGoodOut: document.getElementById('reportGoodOut'),
+    reportBadOut: document.getElementById('reportBadOut'),
+    analysisResults: document.getElementById('analysisResults'),
+    apiSettingsModal: document.getElementById('apiSettingsModal'),
+    apiKeyInput: document.getElementById('apiKeyInput'),
+    profileEmail: document.getElementById('profileEmail'),
+    profileEmailVal: document.getElementById('profileEmailVal'),
+    profileCredits: document.getElementById('profileCredits'),
+    profileCreditsModal: document.getElementById('profileCreditsModal'),
+    saveStatusMsg: document.getElementById('saveStatusMsg'),
+    profileAvatar: document.getElementById('profileAvatar'),
+    profileIcon: document.getElementById('profileIcon'),
+    modalAvatar: document.getElementById('modalAvatar'),
+    modalIcon: document.getElementById('modalIcon'),
+    adminPanelSection: document.getElementById('adminPanelSection'),
+    profileDropdown: document.getElementById('profileDropdown'),
+    adminUsersList: document.getElementById('adminUsersList'),
+    colorPaletteOut: document.getElementById('colorPaletteOut'),
+    fontsUsedOut: document.getElementById('fontsUsedOut'),
+    detailedImprovementsOut: document.getElementById('detailedImprovementsOut'),
+    pricingEstimationOut: document.getElementById('pricingEstimationOut'),
+    clientImpressionOut: document.getElementById('clientImpressionOut'),
+    historyList: document.getElementById('historyList'),
+    resultsCard: document.querySelector('.results-card'),
+    statusHeader: document.getElementById('statusHeader'),
+    exportGroup: document.getElementById('exportGroup'),
+    loginGate: document.getElementById('loginGate'),
+    loginLoading: document.getElementById('loginLoading'),
+    loginMain: document.getElementById('loginMain'),
+
+    // v5.5.3: Missing Admin Map
+    adminUsersTable: document.getElementById('adminUsersTable'),
+    adminTotalUsers: document.getElementById('adminTotalUsers'),
+    adminPremiumUsers: document.getElementById('adminPremiumUsers'),
+    adminStatsCards: document.getElementById('adminStatsCards'),
+
+    // v5.5.3: Missing Locks
+    pricingLock: document.getElementById('pricingLock'),
+    impressionLock: document.getElementById('impressionLock'),
+    expertLock: document.getElementById('expertLock'),
+    expertFootnote: document.getElementById('expertSuggestionFootnote'),
+    editorPremiumGate: document.getElementById('editorPremiumGate'),
+};
+
 const FONT_LIST = [
     { name: 'Outfit', family: "'Outfit', sans-serif" },
     { name: 'Inter', family: "'Inter', sans-serif" },
@@ -114,73 +176,9 @@ const FONT_LIST = [
     { name: 'Libre Baskerville', family: "'Libre Baskerville', serif" }
 ];
 
-const ADMIN_EMAILS = ["ibraheemashshuraim@gmail.com", "ibraheemashshuraim.alt@gmail.com", "ibraheemashshuraim-alt@gmail.com"];
-
-// v5.5.2: Unified UI Registry (Must exist BEFORE listeners)
-const elements = {
-    loginBtn: document.getElementById('loginBtn'),
-    authContainer: document.getElementById('authContainer'),
-    fileInput: document.getElementById('fileInput'),
-    designPreview: document.getElementById('designPreview'),
-    dropZone: document.getElementById('dropZone'),
-    previewContainer: document.getElementById('previewContainer'),
-    workspaceActions: document.getElementById('workspaceActions'),
-    resultsPanel: document.getElementById('resultsPanel'),
-    initialAnalysisMsg: document.getElementById('initialAnalysisMsg'),
-    runAnalysisBtn: document.getElementById('runAnalysisBtn'),
-    buyCreditsBtn: document.getElementById('buyCreditsBtn'),
-    scanningModal: document.getElementById('scanningModal'),
-    buyCreditsSection: document.getElementById('buyCreditsSection'),
-    overallScoreText: document.getElementById('overallScoreText'),
-    accessOut: document.getElementById('accessOut'),
-    contrastOut: document.getElementById('contrastOut'),
-    reportGoodOut: document.getElementById('reportGoodOut'),
-    reportBadOut: document.getElementById('reportBadOut'),
-    analysisResults: document.getElementById('analysisResults'),
-    apiSettingsModal: document.getElementById('apiSettingsModal'),
-    apiKeyInput: document.getElementById('apiKeyInput'),
-    profileEmail: document.getElementById('profileEmail'),
-    profileEmailVal: document.getElementById('profileEmailVal'),
-    profileCredits: document.getElementById('profileCredits'),
-    profileCreditsModal: document.getElementById('profileCreditsModal'),
-    saveStatusMsg: document.getElementById('saveStatusMsg'),
-    profileAvatar: document.getElementById('profileAvatar'),
-    profileIcon: document.getElementById('profileIcon'),
-    modalAvatar: document.getElementById('modalAvatar'),
-    modalIcon: document.getElementById('modalIcon'),
-    adminPanelSection: document.getElementById('adminPanelSection'),
-    profileDropdown: document.getElementById('profileDropdown'),
-    adminUsersList: document.getElementById('adminUsersList'),
-    colorPaletteOut: document.getElementById('colorPaletteOut'),
-    fontsUsedOut: document.getElementById('fontsUsedOut'),
-    detailedImprovementsOut: document.getElementById('detailedImprovementsOut'),
-    pricingEstimationOut: document.getElementById('pricingEstimationOut'),
-    clientImpressionOut: document.getElementById('clientImpressionOut'),
-    historyList: document.getElementById('historyList'),
-    resultsCard: document.querySelector('.results-card'),
-    statusHeader: document.getElementById('statusHeader'),
-    exportGroup: document.getElementById('exportGroup'),
-    loginGate: document.getElementById('loginGate'),
-    loginLoading: document.getElementById('loginLoading'),
-    loginMain: document.getElementById('loginMain'),
-
-    // v5.5.2: Missing Admin Map
-    adminUsersTable: document.getElementById('adminUsersTable'),
-    adminTotalUsers: document.getElementById('adminTotalUsers'),
-    adminPremiumUsers: document.getElementById('adminPremiumUsers'),
-    adminStatsCards: document.getElementById('adminStatsCards'),
-
-    // v5.5.2: Missing Locks
-    pricingLock: document.getElementById('pricingLock'),
-    impressionLock: document.getElementById('impressionLock'),
-    expertLock: document.getElementById('expertLock'),
-    expertFootnote: document.getElementById('expertSuggestionFootnote'),
-    editorPremiumGate: document.getElementById('editorPremiumGate'),
-};
-
 fetchMasterKeys(); // Initial fetch
 
-// v5.5.2: Unified UI Diagnostics & Global Monitor
+// v5.5.3: Unified UI Diagnostics & Global Monitor (Safe now because 'elements' is ready)
 onSnapshot(doc(db, "config", "global_features"), (snap) => {
     try {
         if (snap.exists()) {
