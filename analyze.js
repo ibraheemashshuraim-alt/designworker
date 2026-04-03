@@ -1,4 +1,4 @@
-/* v5.3.8: Tier Refinement & UI Fixes */
+/* v5.3.9: Strict Blur & Payment Update */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
 import { 
@@ -248,6 +248,16 @@ window.saveEmailSettings = async () => {
 
 async function checkAndSaveBestDesign(results, image64) {
     if (!results || results.score < 80) return;
+    
+    // v5.3.9: Lock Best Designs feature to Paid Members only
+    const paidTiers = ['Pro', 'Premium', 'Business', 'Agency License'];
+    const userTier = window.userState?.packageType || 'Free';
+    
+    if (!paidTiers.includes(userTier)) {
+        console.log("v5.3.9: Best Design skipped (Free User tier)");
+        return; 
+    }
+
     try {
         const bestDesignsRef = collection(db, "best_designs");
         await addDoc(bestDesignsRef, {
