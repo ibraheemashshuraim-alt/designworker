@@ -384,7 +384,8 @@ async function setupUserPersistence(user) {
             userState.photoURL = user.photoURL;
             userState.isAdmin = ADMIN_EMAILS.includes(user.email);
             userState.packageType = data.packageType || 'Free';
-            userState.requestedPackage = data.requestedPackage || null; // NEW: Track intent
+            userState.requestedPackage = data.requestedPackage || null;
+            userState.featuresEnabled = data.featuresEnabled || {}; // v5.6.2: Sync Manual Bypasses
 
             // v4.19.2: Globally Load Email Settings (for everyone to use admin keys)
             getDoc(doc(db, "config", "email_settings")).then(snap => {
@@ -468,10 +469,16 @@ window.openHistory = async () => {
     elements.historyList.innerHTML = "<div class='spinner' style='margin: 30px auto;'></div>";
     
     // v5.6.1: Ensure we have a valid UID for the active user (Admin or Regular)
-    const activeUid = userState.uid || auth.currentUser?.uid;
+    // v5.6.2: Added retry-logic for fresh refreshes
+    let activeUid = userState.uid || auth.currentUser?.uid;
 
     if (!activeUid) {
-        elements.historyList.innerHTML = "<p style='text-align:center; padding: 20px;'>براہ کرم پہلے لاگ ان کریں۔</p>";
+        // Fallback: wait 1s and try again if auth is still initializing
+        setTimeout(() => {
+            activeUid = userState.uid || auth.currentUser?.uid;
+            if (activeUid) window.openHistory();
+        }, 1000);
+        elements.historyList.innerHTML = "<p style='text-align:center; padding: 20px;'>لوڈنگ ہو رہی ہے، انتظار کریں...</p>";
         return;
     }
 
@@ -555,8 +562,8 @@ window.deleteHistoryItem = async (docId) => {
 };
 
 // --- VERSION TAG ---
-window.DESIGN_VERSION = "5.6.1";
-console.log("DesignCheck Engine: v5.6.1 (Hierarchy Fix) Loaded");
+window.DESIGN_VERSION = "5.6.2";
+console.log("DesignCheck Engine: v5.6.2 (Sync Fix) Loaded");
 
 // v4.18.12: Gemini API Diagnostic Manager
 window.showAiDiagnosticModal = (message, errorRaw) => {
