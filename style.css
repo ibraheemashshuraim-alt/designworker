@@ -1,4 +1,32 @@
-/* v5.2.4: Forced Side-by-Side Pricing UI */
+/* v5.3.0: Admin & Credit Refinement Build */
+.credits-mini-badge {
+    background: rgba(0, 229, 255, 0.1);
+    color: var(--neon-cyan);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    border: 1px solid rgba(0, 229, 255, 0.2);
+    margin-right: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 0 0 15px rgba(0, 229, 255, 0.05);
+    white-space: nowrap;
+}
+
+.admin-hidden { /* Utility class handled by JS toggle */ }
+
+/* Admin Dashboard Polish */
+.admin-user-card {
+    transition: transform 0.2s ease, border-color 0.3s ease !important;
+}
+.admin-user-card:hover { border-color: var(--neon-cyan); }
+.admin-user-card.pending-highlight {
+    background: rgba(0, 229, 255, 0.02) !important;
+    border: 1px solid rgba(0, 229, 255, 0.3) !important;
+}
+
 .pricing-grid {
     display: flex !important;
     flex-direction: row !important;

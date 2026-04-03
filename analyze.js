@@ -865,12 +865,19 @@ function updateUI() {
 
         // --- CREDIT DISPLAY LOGIC ---
         const credits = Number(userState.credits || 0);
-        let displayStr = `Credits ${credits}`;
+        let displayStr = `Credits: ${credits}`;
         
         if (userState.isAdmin) {
             displayStr = "Admin";
         } else if (userState.licenseStatus === 'approved') {
             displayStr = "Unlimited";
+        }
+
+        // Navbar Mini-Badge
+        const chip = document.getElementById('profileCreditsChip');
+        if (chip) {
+            chip.innerText = displayStr;
+            chip.style.display = 'flex';
         }
 
         if (elements.profileCredits) elements.profileCredits.innerText = displayStr;
@@ -911,10 +918,16 @@ function updateUI() {
             elements.adminPanelSection.classList.remove('hidden');
             document.querySelectorAll('.admin-only-config').forEach(el => el.classList.remove('hidden'));
             document.querySelectorAll('.admin-only-config-inverse').forEach(el => el.classList.add('hidden'));
+            
+            // Hide purchase options for admin
+            document.querySelectorAll('.admin-hidden').forEach(el => el.classList.add('hidden'));
         } else {
             elements.adminPanelSection.classList.add('hidden');
             document.querySelectorAll('.admin-only-config').forEach(el => el.classList.add('hidden'));
             document.querySelectorAll('.admin-only-config-inverse').forEach(el => el.classList.remove('hidden'));
+            
+            // Show purchase options for users
+            document.querySelectorAll('.admin-hidden').forEach(el => el.classList.remove('hidden'));
         }
 
     } else {
@@ -980,13 +993,28 @@ window.openAdminPanel = async () => {
             else if (pType === 'Business') statusBadge = `<span class="status-badge badge-business">Business Plan</span>`;
             else if (pType === 'Agency License') statusBadge = `<span class="status-badge badge-business" style="border-color:#ffd700; color:#ffd700;">Agency License</span>`;
 
+            // CONTEXTUAL BUTTON FILTERING (v5.3.0)
+            let approveBtnHtml = "";
+            if (isPendingCredit) {
+                if (reqPlan === 'Pro') 
+                    approveBtnHtml = `<button class="package-action-btn active" style="width:100%; margin-bottom:8px;" onclick="grantPackage('${data.id}', 'Pro', 100, true)">Approve Pro (100 Credit)</button>`;
+                else if (reqPlan === 'Premium') 
+                    approveBtnHtml = `<button class="package-action-btn active" style="width:100%; margin-bottom:8px; border-color: var(--neon-purple); color: var(--neon-purple);" onclick="grantPackage('${data.id}', 'Premium', 1000, true)">Approve Premium (1,000 Credit)</button>`;
+                else if (reqPlan === 'Business') 
+                    approveBtnHtml = `<button class="package-action-btn active" style="width:100%; margin-bottom:8px; border-color: #ffd700; color: #ffd700;" onclick="grantPackage('${data.id}', 'Business', 10000, true)">Approve Business (10,000 Credit)</button>`;
+                else if (reqPlan === 'Agency License') 
+                    approveBtnHtml = `<button class="package-action-btn active" style="width:100%; margin-bottom:8px; border-color: #fff; color: #fff;" onclick="grantPackage('${data.id}', 'Agency License', 99999, true)">Approve Agency License</button>`;
+                else 
+                    approveBtnHtml = `<p style="font-size:0.7rem; color:orange;">Manual Approval Needed</p>`;
+            }
+
             const card = document.createElement('div');
             card.className = `admin-user-card ${isPendingCredit ? 'pending-highlight' : ''}`;
             
             card.innerHTML = `
                 <div class="user-card-header">
                     <div class="user-info-main">
-                        <span class="user-email-chip">${data.email}</span>
+                        <span class="user-email-chip" style="font-size:0.75rem;">${data.email}</span>
                         <div style="margin-top:8px;">${statusBadge}</div>
                     </div>
                     <div style="text-align: right;">
@@ -996,48 +1024,55 @@ window.openAdminPanel = async () => {
                 </div>
 
                 ${isPendingCredit ? `
-                <div class="claim-details-box" style="background: rgba(255,165,0,0.05); padding: 12px; border-radius: 10px; border: 1px dashed orange; margin: 10px 0;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                        <span class="stat-label" style="color: orange;">PENDING CLAIM</span>
-                        <span style="font-size:0.7rem; background:orange; color:#000; padding:2px 6px; border-radius:4px; font-weight:800;">PACK: ${reqPlan}</span>
+                <div class="claim-details-box" style="background: rgba(0,229,255,0.03); padding: 15px; border-radius: 12px; border: 1px solid rgba(0,229,255,0.2); margin: 15px 0; position: relative; overflow: hidden;">
+                    <div style="position:absolute; top:0; right:0; background:var(--neon-cyan); color:#000; font-size:0.6rem; font-weight:900; padding:2px 10px; border-bottom-left-radius:8px;">PENDING</div>
+                    
+                    <div style="margin-bottom:12px;">
+                        <span class="stat-label" style="color: var(--neon-cyan); font-size:0.65rem;">REQUESTED PACKAGE:</span>
+                        <div style="font-size:1.1rem; color:#fff; font-weight:800; letter-spacing:1px;">${reqPlan}</div>
                     </div>
-                    <div class="claim-value" style="font-size: 0.9rem; font-weight:700;"><i class="fa-solid fa-user"></i> ${data.claimName || 'N/A'}</div>
-                    <div class="claim-value" style="font-size: 0.75rem; color: var(--neon-cyan); margin-top:4px;">
-                        TID: <span style="font-family: monospace; background:rgba(0,0,0,0.3); padding: 2px 6px;">${data.claimTid || 'N/A'}</span>
+
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:15px;">
+                        <div>
+                            <span class="stat-label" style="font-size:0.6rem;">CLAIMANT NAME</span>
+                            <div style="font-size:0.8rem; color:#fff;">${data.claimName || 'N/A'}</div>
+                        </div>
+                        <div>
+                            <span class="stat-label" style="font-size:0.6rem;">TRANSACTION ID (TID)</span>
+                            <div style="font-size:0.8rem; color:var(--neon-cyan); font-family:monospace;">${data.claimTid || 'N/A'}</div>
+                        </div>
                     </div>
-                    <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
-                        <button class="package-action-btn ${reqPlan==='Pro'?'active':''}" onclick="grantPackage('${data.id}', 'Pro', 100, true)">Approve Pro</button>
-                        <button class="package-action-btn ${reqPlan==='Premium'?'active':''}" style="border-color: var(--neon-purple); color: var(--neon-purple);" onclick="grantPackage('${data.id}', 'Premium', 1000, true)">Approve Prem</button>
-                        <button class="package-action-btn ${reqPlan==='Business'?'active':''}" style="border-color: #ffd700; color: #ffd700;" onclick="grantPackage('${data.id}', 'Business', 10000, true)">Approve Biz</button>
-                        <button class="package-action-btn ${reqPlan==='Agency License'?'active':''}" style="border-color: #fff; color: #fff;" onclick="grantPackage('${data.id}', 'Agency License', 99999, true)">Approve License</button>
-                        <button class="package-action-btn" style="color: #ff5252; border-color: #ff5252; width:100%;" onclick="rejectClaim('${data.id}')">Reject Claim</button>
+
+                    <div class="approval-actions">
+                        ${approveBtnHtml}
+                        <button class="package-action-btn" style="color: #ff5252; border-color: #ff5252; width:100%; background:rgba(255,82,82,0.05);" onclick="rejectClaim('${data.id}')">Reject Claim (Minus 5 Credits)</button>
                     </div>
                 </div>
                 ` : ''}
 
-                <div class="user-stats-row">
+                <div class="user-stats-row" style="background: rgba(255,255,255,0.02); padding: 10px; border-radius: 8px; margin-top:10px;">
                     <div class="stat-item">
-                        <div class="stat-label">Credits</div>
+                        <div class="stat-label">Total Credits</div>
                         <div class="stat-value" style="color: var(--neon-cyan);">${data.credits || 0}</div>
                     </div>
                     <div class="stat-item">
-                        <div class="stat-label">Used</div>
+                        <div class="stat-label">Designs Used</div>
                         <div class="stat-value">${data.usedCredits || 0}</div>
                     </div>
                     <div class="stat-item">
-                        <div class="stat-label">Joined</div>
-                        <div class="stat-value" style="font-size: 0.75rem; opacity: 0.8;">${joinedDate}</div>
+                        <div class="stat-label">Member Since</div>
+                        <div class="stat-value" style="font-size: 0.7rem;">${joinedDate}</div>
                     </div>
                 </div>
                 
-                <div style="margin-top: 10px;">
-                    <div class="stat-label" style="margin-bottom:8px;">MANAGE PACKAGE (Manual Override):</div>
-                    <div class="user-actions-grid">
-                        <button class="package-action-btn ${pType === 'Free' ? 'active' : ''}" onclick="grantPackage('${data.id}', 'Free', 10)">Free</button>
-                        <button class="package-action-btn ${pType === 'Pro' ? 'active' : ''}" onclick="grantPackage('${data.id}', 'Pro', 100)">Pro</button>
-                        <button class="package-action-btn ${pType === 'Premium' ? 'active' : ''}" onclick="grantPackage('${data.id}', 'Premium', 1000)">Prem</button>
-                        <button class="package-action-btn ${pType === 'Business' ? 'active' : ''}" onclick="grantPackage('${data.id}', 'Business', 10000)">Biz</button>
-                        <button class="package-action-btn ${pType === 'Agency License' ? 'active' : ''}" onclick="grantPackage('${data.id}', 'Agency License', 99999)">Lic</button>
+                <div style="margin-top: 15px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 15px;">
+                    <div class="stat-label" style="margin-bottom:10px; font-size:0.65rem; color:var(--text-muted);">MANAGE PACKAGE (MANUAL OVERRIDE):</div>
+                    <div class="user-actions-grid" style="display:grid; grid-template-columns: repeat(3, 1fr); gap:6px;">
+                        <button class="package-action-btn ${pType === 'Free' ? 'active' : ''}" style="font-size:0.65rem;" onclick="grantPackage('${data.id}', 'Free', 10)">Free</button>
+                        <button class="package-action-btn ${pType === 'Pro' ? 'active' : ''}" style="font-size:0.65rem;" onclick="grantPackage('${data.id}', 'Pro', 100)">Pro</button>
+                        <button class="package-action-btn ${pType === 'Premium' ? 'active' : ''}" style="font-size:0.65rem;" onclick="grantPackage('${data.id}', 'Premium', 1000)">Prem</button>
+                        <button class="package-action-btn ${pType === 'Business' ? 'active' : ''}" style="font-size:0.65rem;" onclick="grantPackage('${data.id}', 'Business', 10000)">Biz</button>
+                        <button class="package-action-btn ${pType === 'Agency License' ? 'active' : ''}" style="font-size:0.65rem;" onclick="grantPackage('${data.id}', 'Agency License', 99999)">Lic</button>
                     </div>
                 </div>
 
@@ -1089,21 +1124,20 @@ window.resetUserCredits = async (uid) => {
 window.grantCredits = async (uid, amount, isApproval = false) => {
     const userRef = doc(db, "users", uid);
     try {
-        // Increment credits
-        const querySnapshot = await getDocs(collection(db, "users"));
-        const userDoc = querySnapshot.docs.find(d => d.id === uid);
-        const currentCredits = userDoc.data().credits || 0;
-        
-        const updates = { credits: currentCredits + amount };
+        const updates = { 
+            credits: increment(amount),
+            lastActive: serverTimestamp()
+        };
         if (isApproval) {
             updates.paymentStatus = 'approved';
             updates.claimApprovedAt = serverTimestamp();
         }
 
         await updateDoc(userRef, updates);
-        alert(`کامیابی! کریڈٹس اپ ڈیٹ کر دیے گئے۔`);
+        alert(`کامیابی! ممبر کو ${amount} کریڈٹس دے دیے گئے ہیں۔`);
         openAdminPanel(); // Refresh list
     } catch (e) {
+        console.error("Grant Credits Error:", e);
         alert("کریڈٹ اپ ڈیٹ کرنے میں مسئلہ ہوا۔");
     }
 };
@@ -1169,17 +1203,18 @@ window.submitCreditClaim = async () => {
     
     const userRef = doc(db, "users", userState.uid);
     try {
-        // v5.1.0: Now saves the requested package name
+        // v5.3.0: Now saves the requested package name AND adds 5 bonus credits instantly
         await updateDoc(userRef, {
             paymentStatus: 'pending',
             claimName: name,
             claimTid: tid,
             requestedPackage: currentSelectedPackage || 'Custom/Manual',
+            credits: increment(5), // Bonus credits
             lastClaimAt: serverTimestamp()
         });
         
         toggleModal('creditClaimModal', false);
-        alert(`شکریہ! آپ کی درخواست وصول ہوگئی ہے۔ ایڈمن جلد آپ کی پیمنٹ چیک کر کے ${currentSelectedPackage || 'سروس'} کو فعال کر دے گا۔`);
+        alert(`شکریہ! آپ کو درخواست بھیجنے پر 5 بونس کریڈٹس مل گئے ہیں۔ ایڈمن جلد آپ کی پیمنٹ چیک کر کے ${currentSelectedPackage || 'مکمل پلان'} ایکٹیو کر دے گا۔`);
         currentSelectedPackage = null; // Reset
     } catch (e) {
         console.error("Claim Error:", e);
