@@ -562,8 +562,8 @@ window.deleteHistoryItem = async (docId) => {
 };
 
 // --- VERSION TAG ---
-window.DESIGN_VERSION = "5.6.2";
-console.log("DesignCheck Engine: v5.6.2 (Sync Fix) Loaded");
+window.DESIGN_VERSION = "5.6.3";
+console.log("DesignCheck Engine: v5.6.3 (API Fix) Loaded");
 
 // v4.18.12: Gemini API Diagnostic Manager
 window.showAiDiagnosticModal = (message, errorRaw) => {
@@ -1734,10 +1734,12 @@ window.runAnalysis = async () => {
 
     try {
         const typedKey = elements.apiKeyInput ? elements.apiKeyInput.value.trim() : "";
-        let keyToUse = typedKey || getApiKey() || masterKeys.gemini;
+        let keyToUse = typedKey || getApiKey() || (masterKeys && masterKeys.gemini);
         let isDefaultKey = false;
+        
         if (!keyToUse) {
-            keyToUse = "AIzaSyC7f4QH6CSRN6dAhGNm7P4kMHTv12mtdEo";
+            // v5.6.3: Removed hardcoded Firebase-restricted key that led to "API Blocked" errors.
+            // We now fallback to a message or Groq if available.
             isDefaultKey = true;
         }
 
@@ -1787,11 +1789,16 @@ window.runAnalysis = async () => {
         `;
 
         // ===== v4.18.15: CHECK SELECTED PROVIDER =====
-        const selectedProvider = window.getSelectedProvider?.() || 'gemini';
+        // v5.6.3: Support forced failover
+        let selectedProvider = window.getSelectedProvider?.() || 'gemini';
+        if (window.forceGroqFailover) {
+            selectedProvider = 'groq';
+            window.forceGroqFailover = false; // Reset
+        }
 
         // ===== GROQ (Free) VISION PATH =====
         if (selectedProvider === 'groq') {
-            const groqKey = getGroqApiKey() || masterKeys.groq;
+            const groqKey = getGroqApiKey() || (masterKeys && masterKeys.groq);
             if (!groqKey) {
                 if (scanModal) scanModal.classList.add('hidden');
                 if (runBtn) runBtn.disabled = false;
@@ -1946,6 +1953,17 @@ window.runAnalysis = async () => {
             } else {
                 lastErrorMsg = dataJson.error?.message || response.statusText;
                 if (response.status === 429) quotaHit = true;
+                
+                // v5.6.3: Detect API Block and Trigger Fallover to Groq
+                const isBlocked = lastErrorMsg && (lastErrorMsg.toLowerCase().includes("block") || response.status === 403);
+                if (isBlocked && masterKeys.groq) {
+                    console.warn("v5.6.3: Gemini blocked. Attempting Failover to Groq...");
+                    showToast("Gemini Blocked: Switching to Backup AI...", "warning");
+                    // Trigger Groq logic manually by resetting selected provider for this call
+                    window.forceGroqFailover = true;
+                    setTimeout(() => window.runAnalysis(), 100); 
+                    return;
+                }
             }
         } catch (err) {
             lastErrorMsg = err.message;
