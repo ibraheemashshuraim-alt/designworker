@@ -890,6 +890,7 @@ function updateUI() {
         
         const rBtn = document.getElementById('runAnalysisBtn');
         const bBtn = document.getElementById('buyCreditsBtn');
+        const resultsGate = document.getElementById('resultsPremiumGate');
 
         if (isOutOfCredits) {
             if (elements.buyCreditsSection) elements.buyCreditsSection.classList.remove('hidden');
@@ -911,6 +912,16 @@ function updateUI() {
                 bBtn.style.display = 'none';
                 bBtn.classList.add('hidden');
             }
+        }
+
+        // v5.3.5: Results & Editor Gate Logic - Analysis results & Editor are strictly for paid users
+        const editGate = document.getElementById('editorPremiumGate');
+        if (userState.packageType === 'Free' && userState.licenseStatus !== 'approved' && !userState.isAdmin) {
+            if (resultsGate) resultsGate.classList.remove('hidden');
+            if (editGate) editGate.classList.remove('hidden');
+        } else {
+            if (resultsGate) resultsGate.classList.add('hidden');
+            if (editGate) editGate.classList.add('hidden');
         }
 
         // Management Visibility
@@ -1091,10 +1102,20 @@ window.openAdminPanel = async () => {
 
 window.grantPackage = async (uid, type, credits, isApproval = false) => {
     const userRef = doc(db, "users", uid);
+    
+    // v5.3.5: Auto-Credit Resolution based on Plan Name
+    let finalCredits = credits;
+    if (isApproval) {
+        if (type === 'Pro') finalCredits = 100;
+        else if (type === 'Premium') finalCredits = 1000;
+        else if (type === 'Business') finalCredits = 10000;
+        else if (type === 'Agency License') finalCredits = 99999;
+    }
+
     try {
         const updates = { 
             packageType: type,
-            credits: credits,
+            credits: finalCredits,
             lastActive: serverTimestamp()
         };
         if (isApproval) {
@@ -1102,9 +1123,10 @@ window.grantPackage = async (uid, type, credits, isApproval = false) => {
             updates.claimApprovedAt = serverTimestamp();
         }
         await updateDoc(userRef, updates);
-        alert(`کامیابی! ممبر کو ${type} پلان دے دیا گیا ہے۔`);
+        alert(`کامیابی! ممبر کو ${type} پلان (${finalCredits} کریڈٹس) دے دیا گیا ہے۔`);
         openAdminPanel(); // Refresh list
     } catch (e) {
+        console.error("Grant Package Error:", e);
         alert("پلان اپ ڈیٹ کرنے میں مسئلہ ہوا۔");
     }
 };
@@ -1474,6 +1496,13 @@ window.runAnalysis = async () => {
 
     if (!currentImageBase64) {
         alert("پہلے ڈیزائن اپلوڈ کریں۔");
+        return;
+    }
+
+    // v5.3.5: Access Control - Analysis is strictly Paid
+    if (userState.packageType === 'Free' && userState.licenseStatus !== 'approved' && !userState.isAdmin) {
+        toggleModal('packagesModal', true);
+        showToast("⚠️ یہ فیچر صرف پریمیم ممبرز کے لیے ہے۔", "info");
         return;
     }
 

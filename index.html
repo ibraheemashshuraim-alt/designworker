@@ -330,6 +330,18 @@
             </div>
 
             <div class="card-content" id="resultsPanel">
+                <!-- Premium Gate Overlay -->
+                <div id="resultsPremiumGate" class="premium-gate hidden" style="position: absolute; inset: 0; z-index: 100; border-radius: 24px;">
+                    <div class="gate-content">
+                        <i class="fa-solid fa-lock" style="font-size: 3rem; color: #ffd700; margin-bottom: 20px;"></i>
+                        <h2 style="color: #fff;">نتائج صرف پریمیم ممبرز کے لیے ہیں</h2>
+                        <p style="color: var(--text-muted); margin: 15px 0 25px;">تفصیلی تجزیہ، پرائسنگ اور امپریشن دیکھنے کے لیے پریمیم پلان حاصل کریں۔</p>
+                        <button class="btn approve" style="padding: 15px 40px; font-size: 1.1rem;" onclick="toggleModal('packagesModal', true)">
+                            <i class="fa-solid fa-gem"></i> پریمیم میں اپ گریڈ کریں
+                        </button>
+                    </div>
+                </div>
+
                 <div id="initialAnalysisMsg" class="empty-state">
                     <p>Upload a design to see analysis</p>
                 </div>
