@@ -1,4 +1,4 @@
-/* v5.4.6: Admin & Tier Correction (Stable Revert) */
+/* v5.6.0: Global Bypass & Stable History */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
 import { 
@@ -56,6 +56,61 @@ let userSettings = {
     fontSize: 16
 };
 
+// v5.6.0: Global Bypass State (Admin Controlled)
+window.globalConfig = {
+    allFeaturesEnabled: false
+};
+
+// ================ UI REGISTRY (v5.6.0 SAFETY) ================
+// These MUST be declared at the top before any listeners use them to prevent ReferenceError.
+const elements = {
+    loginBtn: document.getElementById('loginBtn'),
+    authContainer: document.getElementById('authContainer'),
+    fileInput: document.getElementById('fileInput'),
+    designPreview: document.getElementById('designPreview'),
+    dropZone: document.getElementById('dropZone'),
+    previewContainer: document.getElementById('previewContainer'),
+    workspaceActions: document.getElementById('workspaceActions'),
+    resultsPanel: document.getElementById('resultsPanel'),
+    initialAnalysisMsg: document.getElementById('initialAnalysisMsg'),
+    runAnalysisBtn: document.getElementById('runAnalysisBtn'),
+    buyCreditsBtn: document.getElementById('buyCreditsBtn'),
+    scanningModal: document.getElementById('scanningModal'),
+    buyCreditsSection: document.getElementById('buyCreditsSection'),
+    overallScoreText: document.getElementById('overallScoreText'),
+    accessOut: document.getElementById('accessOut'),
+    contrastOut: document.getElementById('contrastOut'),
+    reportGoodOut: document.getElementById('reportGoodOut'),
+    reportBadOut: document.getElementById('reportBadOut'),
+    analysisResults: document.getElementById('analysisResults'),
+    apiSettingsModal: document.getElementById('apiSettingsModal'),
+    apiKeyInput: document.getElementById('apiKeyInput'),
+    profileEmail: document.getElementById('profileEmail'),
+    profileEmailVal: document.getElementById('profileEmailVal'),
+    profileCredits: document.getElementById('profileCredits'),
+    profileCreditsModal: document.getElementById('profileCreditsModal'),
+    saveStatusMsg: document.getElementById('saveStatusMsg'),
+    profileAvatar: document.getElementById('profileAvatar'),
+    profileIcon: document.getElementById('profileIcon'),
+    modalAvatar: document.getElementById('modalAvatar'),
+    modalIcon: document.getElementById('modalIcon'),
+    adminPanelSection: document.getElementById('adminPanelSection'),
+    profileDropdown: document.getElementById('profileDropdown'),
+    adminUsersList: document.getElementById('adminUsersList'),
+    colorPaletteOut: document.getElementById('colorPaletteOut'),
+    fontsUsedOut: document.getElementById('fontsUsedOut'),
+    detailedImprovementsOut: document.getElementById('detailedImprovementsOut'),
+    pricingEstimationOut: document.getElementById('pricingEstimationOut'),
+    clientImpressionOut: document.getElementById('clientImpressionOut'),
+    historyList: document.getElementById('historyList'),
+    resultsCard: document.querySelector('.results-card'),
+    statusHeader: document.getElementById('statusHeader'),
+    exportGroup: document.getElementById('exportGroup'),
+    loginGate: document.getElementById('loginGate'),
+    loginLoading: document.getElementById('loginLoading'),
+    loginMain: document.getElementById('loginMain')
+};
+
 const FONT_LIST = [
     { name: 'Outfit', family: "'Outfit', sans-serif" },
     { name: 'Inter', family: "'Inter', sans-serif" },
@@ -111,54 +166,34 @@ const FONT_LIST = [
 
 const ADMIN_EMAILS = ["ibraheemashshuraim@gmail.com", "ibraheemashshuraim.alt@gmail.com", "ibraheemashshuraim-alt@gmail.com"];
 
-// DOM Elements
-const elements = {
-    loginBtn: document.getElementById('loginBtn'),
-    authContainer: document.getElementById('authContainer'),
-    fileInput: document.getElementById('fileInput'),
-    designPreview: document.getElementById('designPreview'),
-    dropZone: document.getElementById('dropZone'),
-    previewContainer: document.getElementById('previewContainer'),
-    workspaceActions: document.getElementById('workspaceActions'),
-    resultsPanel: document.getElementById('resultsPanel'),
-    initialAnalysisMsg: document.getElementById('initialAnalysisMsg'),
-    runAnalysisBtn: document.getElementById('runAnalysisBtn'),
-    buyCreditsBtn: document.getElementById('buyCreditsBtn'),
-    scanningModal: document.getElementById('scanningModal'),
-    buyCreditsSection: document.getElementById('buyCreditsSection'),
-    overallScoreText: document.getElementById('overallScoreText'),
-    accessOut: document.getElementById('accessOut'),
-    contrastOut: document.getElementById('contrastOut'),
-    reportGoodOut: document.getElementById('reportGoodOut'),
-    reportBadOut: document.getElementById('reportBadOut'),
-    analysisResults: document.getElementById('analysisResults'),
-    apiSettingsModal: document.getElementById('apiSettingsModal'),
-    apiKeyInput: document.getElementById('apiKeyInput'),
-    profileEmail: document.getElementById('profileEmail'),
-    profileEmailVal: document.getElementById('profileEmailVal'),
-    profileCredits: document.getElementById('profileCredits'),
-    profileCreditsModal: document.getElementById('profileCreditsModal'),
-    saveStatusMsg: document.getElementById('saveStatusMsg'),
-    profileAvatar: document.getElementById('profileAvatar'),
-    profileIcon: document.getElementById('profileIcon'),
-    modalAvatar: document.getElementById('modalAvatar'),
-    modalIcon: document.getElementById('modalIcon'),
-    adminPanelSection: document.getElementById('adminPanelSection'),
-    profileDropdown: document.getElementById('profileDropdown'),
-    adminUsersList: document.getElementById('adminUsersList'),
-    colorPaletteOut: document.getElementById('colorPaletteOut'),
-    fontsUsedOut: document.getElementById('fontsUsedOut'),
-    detailedImprovementsOut: document.getElementById('detailedImprovementsOut'),
-    pricingEstimationOut: document.getElementById('pricingEstimationOut'),
-    clientImpressionOut: document.getElementById('clientImpressionOut'),
-    historyList: document.getElementById('historyList'),
-    resultsCard: document.querySelector('.results-card'),
-    statusHeader: document.getElementById('statusHeader'),
-    exportGroup: document.getElementById('exportGroup'),
-    loginGate: document.getElementById('loginGate'),
-    loginLoading: document.getElementById('loginLoading'),
-    loginMain: document.getElementById('loginMain')
-};
+// v4.18.17: Master API Keys (Cloud Fallback)
+let masterKeys = { gemini: null, groq: null };
+
+async function fetchMasterKeys() {
+    try {
+        const snap = await getDoc(doc(db, "config", "master_keys"));
+        if (snap.exists()) {
+            masterKeys = snap.data();
+            console.log("System: Master Keys loaded.");
+        }
+    } catch (e) { console.error("Master Keys fetch failed:", e); }
+}
+
+fetchMasterKeys(); // Initial fetch
+
+// v5.6.0: Global Bypass Monitor (Safe now because 'elements' is ready)
+onSnapshot(doc(db, "config", "global_features"), (snap) => {
+    try {
+        if (snap.exists()) {
+            window.globalConfig = snap.data();
+            console.log("System: Global Features updated ->", window.globalConfig);
+            if (typeof updateUI === 'function') updateUI();
+            if (typeof window.checkPremiumAccess === 'function') window.checkPremiumAccess();
+        }
+    } catch (e) { console.warn("Snapshot processing error:", e); }
+}, (err) => {
+    console.warn("Global Features access restricted (normal for guests)");
+});
 
 // Ensure session persistence
 setPersistence(auth, browserLocalPersistence);
@@ -228,11 +263,14 @@ window.saveEmailSettings = async () => {
 async function checkAndSaveBestDesign(results, image64) {
     if (!results || results.score < 80) return;
     
+    // v5.6.0: Global Bypass Check
+    const isGlobalBypass = window.globalConfig?.allFeaturesEnabled === true;
+    
     // Manual Override bypass (Admin Control)
-    const isSpecialCase = window.userState?.isAdmin || paidTiers.includes(userTier) || features.email === true;
+    const isSpecialCase = window.userState?.isAdmin || paidTiers.includes(userTier) || features.email === true || isGlobalBypass;
     
     if (!isSpecialCase) {
-        console.log("v4.19.0: Best Design feature locked (Free tier).");
+        console.log("v5.6.0: Best Design feature locked (Free tier + Bypass OFF).");
         return; 
     }
 
@@ -277,9 +315,12 @@ async function handleExpertSuggestion(results) {
     
     if (section) section.classList.add('hidden'); // Reset
 
+    // v5.6.0: Global Bypass Check
+    const isGlobalBypass = window.globalConfig?.allFeaturesEnabled === true;
+    
     // v5.0.0: Package-Based Permission
     // Pro, Premium, Business, and Admin can see suggestions if score < 80
-    const hasPackage = ['Pro', 'Premium', 'Business'].includes(userState.packageType) || userState.isAdmin;
+    const hasPackage = ['Pro', 'Premium', 'Business'].includes(userState.packageType) || userState.isAdmin || isGlobalBypass;
     const isPremium = userState.credits > 0 || userState.licenseStatus === 'approved' || hasPackage;
     
     if (!isPremium || results.score >= 80) return; // Only suggest for < 80 scores
@@ -441,9 +482,14 @@ window.openHistory = async () => {
         }
 
         // Sort client-side by createdAt descending
+        // Sort client-side by createdAt descending (v5.6.0: robust sort)
         const docs = [];
         snapshot.forEach(docSnap => docs.push({ id: docSnap.id, ...docSnap.data() }));
-        docs.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+        docs.sort((a, b) => {
+            const timeA = a.createdAt?.seconds || (Date.now() / 1000);
+            const timeB = b.createdAt?.seconds || (Date.now() / 1000);
+            return timeB - timeA;
+        });
 
         let html = "";
         docs.forEach(data => {
@@ -928,17 +974,20 @@ function updateUI() {
         const featEnabled = userState.featuresEnabled || {};
         const isFreeLockedUser = userState.packageType === 'Free' && userState.licenseStatus !== 'approved' && !userState.isAdmin;
         
+        // v5.6.0: New Bypass - If Admin enabled "All Features" globally, everyone gets access
+        const isGlobalBypass = window.globalConfig?.allFeaturesEnabled === true;
+
         // Logic for Analyzer Sections (Pricing, Impression, Expert Suggestion)
-        // Unlocked if: NOT free user, OR admin granted featuresEnabled.pricing
-        const pricingUnlocked = !isFreeLockedUser || featEnabled.pricing === true;
+        // Unlocked if: NOT free user, OR admin granted featuresEnabled.pricing OR Global Bypass
+        const pricingUnlocked = !isFreeLockedUser || featEnabled.pricing === true || isGlobalBypass;
         if (pricingLock) pricingLock.classList.toggle('hidden', pricingUnlocked);
         if (impressionLock) impressionLock.classList.toggle('hidden', pricingUnlocked);
         if (expertLock) expertLock.classList.toggle('hidden', pricingUnlocked);
         if (expertFootnote) expertFootnote.classList.toggle('hidden', !pricingUnlocked);
 
         // Logic for AI Editor
-        // Unlocked if: Premium/Business/Admin, OR admin granted featuresEnabled.editor
-        const isEditorUnlocked = ['Premium', 'Business'].includes(userState.packageType) || userState.isAdmin || featEnabled.editor === true;
+        // Unlocked if: Premium/Business/Admin, OR admin granted featuresEnabled.editor OR Global Bypass
+        const isEditorUnlocked = ['Premium', 'Business'].includes(userState.packageType) || userState.isAdmin || featEnabled.editor === true || isGlobalBypass;
         if (editGate) {
             editGate.classList.toggle('hidden', isEditorUnlocked);
         }
@@ -978,13 +1027,35 @@ function updateUI() {
     }
 }
 
-// Admin Dashboard Logic (v5.4.1 restructured)
+// Admin Dashboard Logic (v5.6.0 Global Toggle)
 window.openAdminPanel = async () => {
     const adminView = document.getElementById('adminDashboardView');
     adminView.classList.remove('hidden');
     
     // VIP data loading message
     elements.adminUsersList.innerHTML = "<div class='loading-spinner-container' style='grid-column: 1/-1; text-align: center; padding: 50px;'><div class='spinner' style='margin: 0 auto;'></div><p style='margin-top:15px;'>VIP ڈیٹا لوڈ ہو رہا ہے...</p></div>";
+
+    // v5.6.0: Global Bypass Controls
+    const globalSettingsEl = document.getElementById('adminGlobalSettings');
+    if (globalSettingsEl) {
+        globalSettingsEl.innerHTML = `
+            <div style="display:flex; align-items:center; gap:15px; background:rgba(0,229,255,0.05); padding:10px 15px; border-radius:10px; border:1px solid rgba(0,229,255,0.2);">
+                <span style="font-size:0.8rem; color:var(--neon-cyan); font-weight:700;">GLOBAL BYPASS (Unlock All Features):</span>
+                <label class="switch" style="transform: scale(0.8);">
+                    <input type="checkbox" id="globalFeaturesToggle" onchange="handleGlobalFeaturesToggle(this.checked)">
+                    <span class="slider round"></span>
+                </label>
+            </div>
+        `;
+    }
+
+    // Set initial toggle state
+    try {
+        const toggle = document.getElementById('globalFeaturesToggle');
+        if (toggle) {
+            toggle.checked = window.globalConfig?.allFeaturesEnabled === true;
+        }
+    } catch (e) {}
 
     try {
         const querySnapshot = await getDocs(collection(db, "users"));
@@ -1317,6 +1388,22 @@ window.rejectClaim = async (uid) => {
         openAdminPanel();
     } catch (e) {
         alert("Error rejecting claim.");
+    }
+};
+
+window.handleGlobalFeaturesToggle = async (isEnabled) => {
+    try {
+        const configRef = doc(db, "config", "global_features");
+        await setDoc(configRef, { 
+            allFeaturesEnabled: isEnabled,
+            lastUpdated: serverTimestamp(),
+            updatedBy: userState.email
+        }, { merge: true });
+        
+        showToast(`Global Bypass: ${isEnabled ? 'ENABLED' : 'DISABLED'}`, isEnabled ? 'success' : 'warning');
+    } catch (e) {
+        console.error("Global toggle failed:", e);
+        showToast("Error updating global bypass.");
     }
 };
 

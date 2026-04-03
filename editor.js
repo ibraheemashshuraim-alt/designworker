@@ -567,7 +567,10 @@ window.checkPremiumAccess = () => {
     const gate = document.getElementById('editorPremiumGate');
     const state = window.userState || {};
     
+    // v5.6.0: Respect Global Bypass
+    const isGlobalBypass = window.globalConfig?.allFeaturesEnabled === true;
+    
     // v5.0.0: Only Premium, Business or Admin (Pro can use Suggestions but NOT editor)
-    const hasAccess = ['Premium', 'Business'].includes(state.packageType) || state.isAdmin || (state.featuresEnabled && state.featuresEnabled.editor === true);
+    const hasAccess = ['Premium', 'Business'].includes(state.packageType) || state.isAdmin || (state.featuresEnabled && state.featuresEnabled.editor === true) || isGlobalBypass;
     gate?.classList.toggle('hidden', hasAccess);
 };
