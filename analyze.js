@@ -119,15 +119,19 @@ let masterKeys = { gemini: null, groq: null };
 
 fetchMasterKeys(); // Initial fetch
 
-// v5.5.0: Persistent Listener for Global Admin Toggles
-onSnapshot(doc(db, "config", "global_features"), (snap) => {
-    if (snap.exists()) {
-        window.globalConfig = snap.data();
-        console.log("System: Global Features updated ->", window.globalConfig);
-        if (typeof updateUI === 'function') updateUI();
-        if (typeof window.checkPremiumAccess === 'function') window.checkPremiumAccess();
-    }
-});
+// v5.5.1: Safer Persistent Listener for Global Admin Toggles (Handles locked permissions)
+try {
+    onSnapshot(doc(db, "config", "global_features"), (snap) => {
+        if (snap.exists()) {
+            window.globalConfig = snap.data();
+            console.log("System: Global Features updated ->", window.globalConfig);
+            if (typeof updateUI === 'function') updateUI();
+            if (typeof window.checkPremiumAccess === 'function') window.checkPremiumAccess();
+        }
+    }, (err) => {
+        console.warn("Global Features access restricted (expected if logged out)");
+    });
+} catch (e) { console.warn("Snapshot attach failed", e); }
 
 const ADMIN_EMAILS = ["ibraheemashshuraim@gmail.com", "ibraheemashshuraim.alt@gmail.com", "ibraheemashshuraim-alt@gmail.com"];
 
@@ -1001,12 +1005,21 @@ function updateUI() {
             elements.loginGate.style.opacity = '1';
             elements.loginGate.style.pointerEvents = 'auto';
 
-            // Toggle between loading and main login form
+            // IMPORTANT v5.5.1: Reveal main login UI if Firebase has finished checking
             if (elements.loginLoading) elements.loginLoading.classList.add('hidden');
             if (elements.loginMain) elements.loginMain.classList.remove('hidden');
         }
     }
 }
+
+// v5.5.1: Safety Kill for Stuck Login Gate
+setTimeout(() => {
+    if (elements.loginLoading && !elements.loginLoading.classList.contains('hidden')) {
+        console.log("System: Safety reveal triggered.");
+        if (elements.loginLoading) elements.loginLoading.classList.add('hidden');
+        if (elements.loginMain) elements.loginMain.classList.remove('hidden');
+    }
+}, 3000); 
 
 // Admin Dashboard Logic (v5.4.1 restructured)
 window.openAdminPanel = async () => {
