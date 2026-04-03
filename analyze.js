@@ -1,4 +1,4 @@
-/* v5.4.0: Admin & Tier Correction */
+/* v5.5.2: Initialization & History Fix */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
 import { 
@@ -114,28 +114,9 @@ const FONT_LIST = [
     { name: 'Libre Baskerville', family: "'Libre Baskerville', serif" }
 ];
 
-// v4.18.17: Master API Keys (Cloud Fallback)
-let masterKeys = { gemini: null, groq: null };
-
-fetchMasterKeys(); // Initial fetch
-
-// v5.5.1: Safer Persistent Listener for Global Admin Toggles (Handles locked permissions)
-try {
-    onSnapshot(doc(db, "config", "global_features"), (snap) => {
-        if (snap.exists()) {
-            window.globalConfig = snap.data();
-            console.log("System: Global Features updated ->", window.globalConfig);
-            if (typeof updateUI === 'function') updateUI();
-            if (typeof window.checkPremiumAccess === 'function') window.checkPremiumAccess();
-        }
-    }, (err) => {
-        console.warn("Global Features access restricted (expected if logged out)");
-    });
-} catch (e) { console.warn("Snapshot attach failed", e); }
-
 const ADMIN_EMAILS = ["ibraheemashshuraim@gmail.com", "ibraheemashshuraim.alt@gmail.com", "ibraheemashshuraim-alt@gmail.com"];
 
-// DOM Elements
+// v5.5.2: Unified UI Registry (Must exist BEFORE listeners)
 const elements = {
     loginBtn: document.getElementById('loginBtn'),
     authContainer: document.getElementById('authContainer'),
@@ -168,7 +149,6 @@ const elements = {
     modalAvatar: document.getElementById('modalAvatar'),
     modalIcon: document.getElementById('modalIcon'),
     adminPanelSection: document.getElementById('adminPanelSection'),
-    buyCreditsSection: document.getElementById('buyCreditsSection'),
     profileDropdown: document.getElementById('profileDropdown'),
     adminUsersList: document.getElementById('adminUsersList'),
     colorPaletteOut: document.getElementById('colorPaletteOut'),
@@ -182,8 +162,37 @@ const elements = {
     exportGroup: document.getElementById('exportGroup'),
     loginGate: document.getElementById('loginGate'),
     loginLoading: document.getElementById('loginLoading'),
-    loginMain: document.getElementById('loginMain')
+    loginMain: document.getElementById('loginMain'),
+
+    // v5.5.2: Missing Admin Map
+    adminUsersTable: document.getElementById('adminUsersTable'),
+    adminTotalUsers: document.getElementById('adminTotalUsers'),
+    adminPremiumUsers: document.getElementById('adminPremiumUsers'),
+    adminStatsCards: document.getElementById('adminStatsCards'),
+
+    // v5.5.2: Missing Locks
+    pricingLock: document.getElementById('pricingLock'),
+    impressionLock: document.getElementById('impressionLock'),
+    expertLock: document.getElementById('expertLock'),
+    expertFootnote: document.getElementById('expertSuggestionFootnote'),
+    editorPremiumGate: document.getElementById('editorPremiumGate'),
 };
+
+fetchMasterKeys(); // Initial fetch
+
+// v5.5.2: Unified UI Diagnostics & Global Monitor
+onSnapshot(doc(db, "config", "global_features"), (snap) => {
+    try {
+        if (snap.exists()) {
+            window.globalConfig = snap.data();
+            console.log("System: Global Features updated ->", window.globalConfig);
+            if (typeof updateUI === 'function') updateUI();
+            if (typeof window.checkPremiumAccess === 'function') window.checkPremiumAccess();
+        }
+    } catch (e) { console.warn("Snapshot processing error:", e); }
+}, (err) => {
+    console.warn("Global Features access restricted (normal for guests)");
+});
 
 // Ensure session persistence
 setPersistence(auth, browserLocalPersistence);
