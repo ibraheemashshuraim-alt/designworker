@@ -1840,7 +1840,7 @@ window.runAnalysis = async () => {
             let groqVisionModel = 'llama-3.2-11b-vision-preview';
             try {
                 const listRes = await fetch('https://api.groq.com/openai/v1/models', {
-                    headers: { 'Authorization': \`Bearer \${groqKey}\` }
+                    headers: { 'Authorization': `Bearer ${groqKey}` }
                 });
                 if (listRes.ok) {
                     const listData = await listRes.json();
@@ -1860,7 +1860,7 @@ window.runAnalysis = async () => {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': \`Bearer \${groqKey}\`
+                    'Authorization': `Bearer ${groqKey}`
                 },
                 body: JSON.stringify({
                     model: groqVisionModel,
@@ -1878,7 +1878,7 @@ window.runAnalysis = async () => {
 
             const groqData = await groqRes.json();
             if (!groqRes.ok || groqData.error) {
-                throw new Error(\`Groq API خطا (\${groqRes.status}): \${groqData.error?.message || groqData.message || "Error"}\`);
+                throw new Error(`Groq API خطا (${groqRes.status}): ${groqData.error?.message || groqData.message || "Error"}`);
             }
             const groqText = groqData.choices?.[0]?.message?.content;
             if (!groqText) throw new Error("Groq نے کوئی جواب نہیں دیا۔");
@@ -1913,7 +1913,7 @@ window.runAnalysis = async () => {
         let modelToUse = "gemini-1.5-flash";
 
         try {
-            const listRes = await fetch(\`https://generativelanguage.googleapis.com/v1beta/models?key=\${keyToUse}\`);
+            const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${keyToUse}`);
             const listData = await listRes.json();
             if (listData.models && listData.models.length > 0) {
                 const bestModel = listData.models.find(m => m.supportedGenerationMethods.includes("generateContent") && m.name.includes("flash") && !m.name.includes("exp")) || listData.models.find(m => m.supportedGenerationMethods.includes("generateContent"));
@@ -1924,7 +1924,7 @@ window.runAnalysis = async () => {
         }
 
         const controller = new AbortController();
-        const url = \`https://generativelanguage.googleapis.com/v1beta/models/\${modelToUse}:generateContent?key=\${keyToUse}\`;
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelToUse}:generateContent?key=${keyToUse}`;
         
         try {
             const fetchSignal = AbortSignal.timeout ? AbortSignal.timeout(45000) : controller.signal;
@@ -1945,7 +1945,7 @@ window.runAnalysis = async () => {
             
             dataJson = await response.json();
             if (response.ok) {
-                console.log(\`v4.5.0 SUCCESS: \${modelToUse}\`);
+                console.log(`v4.5.0 SUCCESS: ${modelToUse}`);
             } else {
                 lastErrorMsg = dataJson.error?.message || response.statusText;
                 if (response.status === 429) quotaHit = true;
@@ -1969,7 +1969,7 @@ window.runAnalysis = async () => {
                 window.showAiDiagnosticModal(lastErrorMsg, lastErrorMsg);
                 return;
             }
-            throw new Error(\`تجزیہ میں ایرر: \${lastErrorMsg || "رابطہ سست ہے"}\`);
+            throw new Error(`تجزیہ میں ایرر: ${lastErrorMsg || "رابطہ سست ہے"}`);
         }
 
         if (scanStatusText) scanStatusText.innerText = "نتائج دکھائے جا رہے ہیں...";
@@ -2005,6 +2005,7 @@ window.runAnalysis = async () => {
         if (runBtn) runBtn.disabled = false;
         console.timeEnd("AnalysisPhase");
     }
+};
 
 
 async function deductCredit() {
