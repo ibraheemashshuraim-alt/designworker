@@ -169,7 +169,7 @@ const ADMIN_EMAILS = ["ibraheemashshuraim@gmail.com", "ibraheemashshuraim.alt@gm
 // v4.18.17: Master API Keys (Cloud Fallback)
 let masterKeys = { gemini: null, groq: null };
 
-// v5.6.4: Refined Master Key Fetch with Auto-Retry for Guests
+// v5.6.5: Refined Master Key Fetch with Auto-Retry and Faster Guest Access
 async function fetchMasterKeys(retryCount = 0) {
     try {
         const snap = await getDoc(doc(db, "config", "api_keys"));
@@ -179,20 +179,33 @@ async function fetchMasterKeys(retryCount = 0) {
                 gemini: data.gemini || data.gemini_master || null,
                 groq: data.groq || data.groq_master || null
             };
-            console.log("System: Master Keys loaded from config/api_keys (v5.6.5).");
+            console.log("System: Master Keys loaded (v5.6.6).");
         } else {
-            console.warn("System Warning: Master Keys document is missing in config/api_keys.");
-            if (retryCount < 3) {
-                console.log(`Retrying fetchMasterKeys (${retryCount + 1})...`);
-                setTimeout(() => fetchMasterKeys(retryCount + 1), 3000);
+            if (retryCount < 5) {
+                console.log(`Master keys not found, Retrying (${retryCount + 1})...`);
+                setTimeout(() => fetchMasterKeys(retryCount + 1), 2000);
             }
         }
     } catch (e) { 
-        console.error("Master Keys access restricted (Check Firestore Rules):", e); 
-        if (retryCount < 2) {
+        console.error("Master Keys access restricted:", e); 
+        if (retryCount < 3) {
             setTimeout(() => fetchMasterKeys(retryCount + 1), 3000);
         }
     }
+}
+async function waitForKeySync() {
+    if (masterKeys.gemini || masterKeys.groq) return true;
+    await fetchMasterKeys();
+    return new Promise(resolve => {
+        let attempts = 0;
+        const interval = setInterval(() => {
+            attempts++;
+            if (masterKeys.gemini || masterKeys.groq || attempts > 20) {
+                clearInterval(interval);
+                resolve(true);
+            }
+        }, 500);
+    });
 }
 fetchMasterKeys();
 
@@ -586,27 +599,40 @@ window.showAiDiagnosticModal = (message, errorRaw) => {
     const title = document.getElementById('diagTitle');
     const body = document.getElementById('diagBody');
     const fixBtn = document.getElementById('diagFixBtn');
+    const diagAction = document.getElementById('diagAction');
     
     if (!modal) return;
 
-    // Detect technical details
-    let projectID = "YOUR_PROJECT_ID";
-    const projectMatch = errorRaw?.match(/project ([0-9]+)/i);
-    if (projectMatch) projectID = projectMatch[1];
-    
-    const isBlocked = errorRaw?.toLowerCase().includes("blocked");
     const isQuota = errorRaw?.includes("429") || errorRaw?.toLowerCase().includes("quota");
-    const fixLink = isQuota ? "https://aistudio.google.com/app/apikey" : `https://console.developers.google.com/apis/api/generativelanguage.googleapis.com/overview?project=${projectID}`;
+    const isBlocked = errorRaw?.toLowerCase().includes("blocked");
     
+    // v5.6.6: Add Failover Button
+    let failoverBtnHtml = '';
+    if (window.masterKeys.groq) {
+        failoverBtnHtml = `
+            <button onclick="toggleModal('diagnosticModal', false); setProvider('groq'); runAnalysis();" class="btn primary-btn" style="background: var(--neon-purple); border-color: var(--neon-purple); padding: 15px;">
+                <i class="fa-solid fa-bolt"></i> Switch to Groq (Backup AI)
+            </button>
+        `;
+    }
+
     title.innerText = isQuota ? "Gemini Quota ختم ہو گیا ہے" : (isBlocked ? "API رسائی بلاک ہے" : "Gemini API ایکٹیویشن ضروری ہے");
     body.innerHTML = `
         <p style="margin-bottom:10px;"><b>وجہ:</b> ${isQuota ? "آپ کا فری ٹائر کوٹہ ختم ہو گیا ہے۔" : (isBlocked ? "آپ کی API Key یا پراجیکٹ سے ریکوئسٹس بلاک ہو رہی ہیں۔" : "گوگل پراجیکٹ میں ابھی Gemini API فعال نہیں کی گئی ہے۔")}</p>
-        <p><b>حل:</b> ${isQuota ? "اپنی ذاتی Google AI Studio API Key استعمال کریں یا تھوڑی دیر انتظار کریں۔" : "نیچے دیے گئے بٹن پر کلک کریں اور API کو 'Enable' کریں یا سیٹنگز چیک کریں۔"}</p>
+        <p><b>حل:</b> ${isQuota ? "اپنی ذاتی Google AI Studio API Key استعمال کریں یا Groq (Backup) استعمال کریں۔" : "نیچے دیے گئے بٹن پر کلک کریں اور بیک اپ AI استعمال کریں۔"}</p>
         <div class="diag-error-box">ERROR: ${message}</div>
     `;
     
-    fixBtn.href = fixLink;
-    fixBtn.innerHTML = isQuota ? "<i class='fa-solid fa-key'></i> Get Personal API Key" : "<i class='fa-solid fa-bolt'></i> Enable API Now (Fix)";
+    // Update diagAction with failover option
+    diagAction.innerHTML = `
+        ${failoverBtnHtml}
+        <a id="diagFixBtn" href="https://aistudio.google.com/app/apikey" target="_blank" class="btn warning-btn" style="text-decoration: none; text-align: center; padding: 12px; font-size: 0.8rem; opacity: 0.7;">
+            <i class="fa-solid fa-key"></i> Get Personal API Key
+        </a>
+        <button onclick="toggleModal('diagnosticModal', false)" class="btn" style="background: transparent; border: 1px solid rgba(255,255,255,0.1); color: var(--text-muted); font-size: 0.8rem;">
+            Cancel
+        </button>
+    `;
     
     modal.classList.remove('hidden');
     modal.style.display = 'flex';
@@ -1763,13 +1789,10 @@ window.runAnalysis = async () => {
         const typedKey = elements.apiKeyInput ? elements.apiKeyInput.value.trim() : "";
         let keyToUse = typedKey || getApiKey();
         
-        // v5.6.5: Fallback to Master Key if no personal key is found
+        // v5.6.6: Fallback to Master Key if no personal key is found (Wait for sync if needed)
         if (!keyToUse) {
-            if (!masterKeys || !masterKeys.gemini) {
-                console.log("Master key missing in memory, attempting fresh fetch...");
-                await fetchMasterKeys();
-            }
-            keyToUse = masterKeys && masterKeys.gemini;
+            await waitForKeySync();
+            keyToUse = masterKeys && (selectedProvider === 'groq' ? masterKeys.groq : masterKeys.gemini);
         }
         
         if (!keyToUse && selectedProvider === 'gemini') {
@@ -2000,7 +2023,16 @@ window.runAnalysis = async () => {
     } catch (err) {
         console.error("ANALYSIS ERROR:", err);
         const errLower = (err.message || "").toLowerCase();
-        if (errLower.includes("blocked") || errLower.includes("generativeservice")) {
+        
+        // v5.6.6: Automatic Failover from Gemini to Groq
+        if (selectedProvider === 'gemini' && masterKeys.groq) {
+            showToast("Gemini مصروف ہے، بیک اپ AI سے چیک کیا جا رہا ہے...", "info");
+            console.log("v5.6.6: Gemini Failed. Attempting Auto-Failover to Groq.");
+            window.forceGroqFailover = true;
+            return runAnalysis(); 
+        }
+
+        if (errLower.includes("blocked") || errLower.includes("generativeservice") || errLower.includes("quota")) {
             window.showAiDiagnosticModal(err.message, err.message);
         } else {
             alert("مسلہ: " + err.message);
