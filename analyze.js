@@ -1789,20 +1789,26 @@ window.runAnalysis = async () => {
             You are a World-Class Creative Director and Senior UI/Graphic Designer from a top Design Agency.
             Objective: Analyze the provided design with surgical precision and artistic depth.
 
-            ### ANALYSIS CRITERIA:
-            1. Visual Hierarchy: Is the focal point clear?
-            2. Typography: Legibility, pairing, and spacing of fonts.
-            3. Color Theory: Harmony, contrast, and accessibility.
-            4. Layout: Grid alignment, white space usage, and balance.
+            ### STEP 1: CONTEXT & MEDIUM IDENTIFICATION
+            - Identify the **Sector**: (e.g., Religious, Educational, Commercial, Medical, Corporate).
+            - Identify the **Medium**: (e.g., Print: Flex/Banner/Poster/Card OR Digital: Social Media Ad/Web Banner/UI).
 
-            ### OUTPUT SPECIFICATIONS:
-            - Language: ${userSettings.language} (Strictly). Do NOT include non-${userSettings.language} scripts.
+            ### STEP 2: ANALYSIS RULES
+            1. **Cultural & Religious Sensitivity**: 
+               - If the design is for a Religious or Traditional institution (e.g., Madrasa, Masjid, Islamic Event), do NOT suggest using human or animal imagery. This is intentional. Instead, focus on improving Typography, Calligraphy, Color Harmony, and Geometric Patterns.
+            2. **Medium-Specific Feedback**:
+               - If the Medium is **Print**: Do NOT mention "clickable links" or "website navigation buttons". Instead, focus on the readability of Phone Numbers, Physical Addresses, and QR codes.
+               - If the Medium is **Digital**: Focus on CTA (Call to Action) clarity and user experience.
+            3. **Visual Hierarchy & Typography**: Standard professional audit of layout balance and font pairing.
+
+            ### STEP 3: OUTPUT SPECIFICATIONS
+            - **Logical Consistency**: Ensure the 'score' (0-100) logically matches the feedback. If the score is >70, do NOT give critical contradictory errors like "Content is illegible" unless it is very specific. 
+            - Language: ${userSettings.language} (Strictly).
             - Format: Valid JSON only.
-            - Length: Provide detail for every field (Minimum 5 strengths and 5 improvements).
 
             {
                 "score": Number (0-100),
-                "category": "ڈیزائن کی قسم (e.g. Logo, Business Card)",
+                "category": "Identify Sectors and Medium (e.g. Islamic School Print Flex)",
                 "accessibility": "ایکسیسبلٹی اور پڑھائی (اردو تفصیل)",
                 "contrast": "کلر تضاد اور توازن (اردو تفصیل)",
                 "strengths": ["خوبی 1 (تفصیلی)", "خوبی 2", "خوبی 3", "خوبی 4", "خوبی 5"],
