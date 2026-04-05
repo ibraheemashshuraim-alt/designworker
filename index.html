@@ -304,7 +304,7 @@
                     <img id="designPreview" alt="Design Preview">
                     <div id="workspaceActions" style="margin-top: 20px; width: 100%;">
                         <!-- Normal Analyze Button -->
-                        <button id="runAnalysisBtn" class="btn primary-btn" style="width: 100%; font-size: 1.1rem; padding: 15px;" onclick="runAnalysis()">
+                        <button id="runAnalysisBtn" class="btn primary-btn" style="width: 100%; font-size: 1.1rem; padding: 15px;" onclick="showAuditSelection()">
                             <i class="fa-solid fa-wand-magic-sparkles"></i> AI کے ساتھ تجزیہ کریں
                         </button>
                         <!-- Premium Buy Credits Button -->
@@ -609,6 +609,63 @@
     </div>
 
     <!-- Modals -->
+
+    <!-- v5.7.0: Audit Selection Modal -->
+    <div id="auditSelectionModal" class="modal hidden">
+        <div class="modal-content" style="max-width: 450px; border-color: var(--neon-cyan); padding: 30px;">
+            <span class="close-btn" onclick="toggleModal('auditSelectionModal', false)">&times;</span>
+            <div style="text-align: center; margin-bottom: 20px;">
+                <i class="fa-solid fa-magnifying-glass-chart" style="font-size: 2.5rem; color: var(--neon-cyan); margin-bottom: 10px;"></i>
+                <h2 style="color: #fff; margin: 0;">تجزیہ شروع کریں</h2>
+                <p style="color: var(--text-muted); font-size: 0.85rem;">ماڈل اور زبان منتخب کریں</p>
+            </div>
+
+            <div class="modal-section" style="margin-bottom: 20px;">
+                <label style="display: block; font-size: 0.85rem; color: var(--neon-cyan); margin-bottom: 8px; font-weight: 600;">
+                    <i class="fa-solid fa-robot"></i> AI ماڈل منتخب کریں:
+                </label>
+                <div class="model-selection-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div class="model-option active" data-model="gemini" onclick="selectAuditModel('gemini')">
+                        <i class="fa-solid fa-gem"></i>
+                        <span>Gemini</span>
+                        <div class="model-badge">Recommended</div>
+                    </div>
+                    <div class="model-option" data-model="groq" onclick="selectAuditModel('groq')">
+                        <i class="fa-solid fa-bolt"></i>
+                        <span>Groq</span>
+                        <div class="model-badge">Fast</div>
+                    </div>
+                    <div class="model-option" data-model="openai" onclick="selectAuditModel('openai')">
+                        <i class="fa-brands fa-openai"></i>
+                        <span>ChatGPT</span>
+                        <div class="model-badge">Pro</div>
+                    </div>
+                    <div class="model-option" data-model="deepseek" onclick="selectAuditModel('deepseek')">
+                        <i class="fa-solid fa-brain"></i>
+                        <span>DeepSeek</span>
+                        <div class="model-badge">New</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-section" style="margin-bottom: 25px;">
+                <label style="display: block; font-size: 0.85rem; color: var(--neon-cyan); margin-bottom: 8px; font-weight: 600;">
+                    <i class="fa-solid fa-language"></i> نتائج کی زبان:
+                </label>
+                <select id="auditLanguageSelect" class="custom-input" style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(157,0,255,0.3); color: #fff; border-radius: 10px;">
+                    <option value="Urdu" selected>Urdu (اردو)</option>
+                    <option value="English">English</option>
+                    <option value="Arabic">Arabic (العربية)</option>
+                    <option value="Pashto">Pashto (پښتو)</option>
+                </select>
+            </div>
+
+            <button onclick="startAuditProcess()" class="btn primary-btn" style="width: 100%; padding: 15px; font-size: 1rem; border-radius: 12px; box-shadow: 0 0 20px rgba(0, 229, 255, 0.2);">
+                <i class="fa-solid fa-play"></i> تجزیہ شروع کریں (Start Audit)
+            </button>
+        </div>
+    </div>
+
 
     <div id="creditClaimModal" class="modal hidden">
         <div class="modal-content" style="max-width: 400px; border-color: var(--neon-purple);">
