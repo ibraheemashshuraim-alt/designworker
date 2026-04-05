@@ -887,6 +887,18 @@
                 }
             });
         }
+
+        // v5.7.2: Safety Timeout for Login Gate
+        // If the JS takes > 8 seconds to hide the "Checking Access" loader, reveal the Login UI as fallback
+        setTimeout(() => {
+            const loading = document.getElementById('loginLoading');
+            const main = document.getElementById('loginMain');
+            if (loading && !loading.classList.contains('hidden')) {
+                console.warn("Gate Safety Timeout: Force revealing login UI.");
+                loading.classList.add('hidden');
+                if (main) main.classList.remove('hidden');
+            }
+        }, 8000);
     </script>
 
     <!-- ====== v4.22.3: PERSONALIZATION MODAL (Dedicated Popup) ====== -->

@@ -194,6 +194,8 @@ async function fetchMasterKeys(retryCount = 0) {
         if (retryCount < 3) {
             setTimeout(() => fetchMasterKeys(retryCount + 1), 3000);
         }
+        // v5.7.1: Ensure UI reveals login gate even on failure/retry
+        updateUI();
     }
 }
 async function waitForKeySync() {
@@ -937,32 +939,35 @@ window.openPersonalization = function() {
 
 // ================ UI UPDATES ================
 function updateUI() {
-    const hasLocalKey = !!getApiKey();
     if (userState.loggedIn) {
-        elements.loginBtn.classList.add('hidden');
-        elements.authContainer.classList.remove('hidden');
+        if (elements.loginBtn) elements.loginBtn.classList.add('hidden');
+        if (elements.authContainer) elements.authContainer.classList.remove('hidden');
 
         // Hide login gate if logged in
         if (elements.loginGate) {
             elements.loginGate.style.opacity = '0';
             elements.loginGate.style.pointerEvents = 'none';
             setTimeout(() => {
-                if (userState.loggedIn) elements.loginGate.style.display = 'none';
+                if (userState.loggedIn && elements.loginGate) elements.loginGate.style.display = 'none';
             }, 500); // match transition time
         }
         
-        const emailDisplay = userState.email.split('@')[0];
-        elements.profileEmail.innerText = emailDisplay;
-        elements.profileEmailVal.innerText = userState.email;
+        const emailDisplay = userState.email ? userState.email.split('@')[0] : 'User';
+        if (elements.profileEmail) elements.profileEmail.innerText = emailDisplay;
+        if (elements.profileEmailVal) elements.profileEmailVal.innerText = userState.email || '';
 
         // Avatar Handling
         if (userState.photoURL) {
-            elements.profileAvatar.src = userState.photoURL;
-            elements.profileAvatar.classList.remove('hidden');
-            elements.profileIcon.classList.add('hidden');
-            elements.modalAvatar.src = userState.photoURL;
-            elements.modalAvatar.classList.remove('hidden');
-            elements.modalIcon.classList.add('hidden');
+            if (elements.profileAvatar) {
+                elements.profileAvatar.src = userState.photoURL;
+                elements.profileAvatar.classList.remove('hidden');
+            }
+            if (elements.profileIcon) elements.profileIcon.classList.add('hidden');
+            if (elements.modalAvatar) {
+                elements.modalAvatar.src = userState.photoURL;
+                elements.modalAvatar.classList.remove('hidden');
+            }
+            if (elements.modalIcon) elements.modalIcon.classList.add('hidden');
         }
 
         // --- CREDIT DISPLAY LOGIC ---
@@ -986,9 +991,7 @@ function updateUI() {
         if (elements.profileCreditsModal) elements.profileCreditsModal.innerText = displayStr;
 
         // Upgrade Prompt Visibility (v3.5 Unified)
-        // If credits <= 0, we show BUY button even if they have a local key or are admin (for testing)
         const isOutOfCredits = (credits <= 0 && userState.licenseStatus !== 'approved' && !userState.isAdmin);
-        console.log("v3.5 Logic - Credits:", credits, "OutOfCredits:", isOutOfCredits);
         
         const rBtn = document.getElementById('runAnalysisBtn');
         const bBtn = document.getElementById('buyCreditsBtn');
@@ -1016,30 +1019,23 @@ function updateUI() {
             }
         }
 
-        // v5.3.8: Tier-based Section Locking (Analysis is open, specific features locked)
+        // v5.3.8: Tier-based Section Locking
         const pricingLock = document.getElementById('pricingLockOverlay');
         const impressionLock = document.getElementById('impressionLockOverlay');
         const expertLock = document.getElementById('expertSuggestionLockOverlay');
         const expertFootnote = document.getElementById('expertLockFootnote');
         const editGate = document.getElementById('editorPremiumGate');
 
-        // v5.4.6: Check featuresEnabled from Firestore to actually unlock features for Free users
         const featEnabled = userState.featuresEnabled || {};
         const isFreeLockedUser = userState.packageType === 'Free' && userState.licenseStatus !== 'approved' && !userState.isAdmin;
-        
-        // v5.6.0: New Bypass - If Admin enabled "All Features" globally, everyone gets access
         const isGlobalBypass = window.globalConfig?.allFeaturesEnabled === true;
 
-        // Logic for Analyzer Sections (Pricing, Impression, Expert Suggestion)
-        // Unlocked if: NOT free user, OR admin granted featuresEnabled.pricing OR Global Bypass
         const pricingUnlocked = !isFreeLockedUser || featEnabled.pricing === true || isGlobalBypass;
         if (pricingLock) pricingLock.classList.toggle('hidden', pricingUnlocked);
         if (impressionLock) impressionLock.classList.toggle('hidden', pricingUnlocked);
         if (expertLock) expertLock.classList.toggle('hidden', pricingUnlocked);
         if (expertFootnote) expertFootnote.classList.toggle('hidden', !pricingUnlocked);
 
-        // Logic for AI Editor
-        // Unlocked if: Premium/Business/Admin, OR admin granted featuresEnabled.editor OR Global Bypass
         const isEditorUnlocked = ['Premium', 'Business'].includes(userState.packageType) || userState.isAdmin || featEnabled.editor === true || isGlobalBypass;
         if (editGate) {
             editGate.classList.toggle('hidden', isEditorUnlocked);
@@ -1047,18 +1043,14 @@ function updateUI() {
 
         // Management Visibility
         if (userState.isAdmin) {
-            elements.adminPanelSection.classList.remove('hidden');
+            if (elements.adminPanelSection) elements.adminPanelSection.classList.remove('hidden');
             document.querySelectorAll('.admin-only-config').forEach(el => el.classList.remove('hidden'));
             document.querySelectorAll('.admin-only-config-inverse').forEach(el => el.classList.add('hidden'));
-            
-            // Hide purchase options for admin
             document.querySelectorAll('.admin-hidden').forEach(el => el.classList.add('hidden'));
         } else {
-            elements.adminPanelSection.classList.add('hidden');
+            if (elements.adminPanelSection) elements.adminPanelSection.classList.add('hidden');
             document.querySelectorAll('.admin-only-config').forEach(el => el.classList.add('hidden'));
             document.querySelectorAll('.admin-only-config-inverse').forEach(el => el.classList.remove('hidden'));
-            
-            // Show purchase options for users
             document.querySelectorAll('.admin-hidden').forEach(el => el.classList.remove('hidden'));
         }
 
@@ -1996,96 +1988,6 @@ async function callDeepSeekAPI(key, prompt, imageBase64) {
     if (!res.ok) throw new Error(data.error?.message || "DeepSeek Error");
     return data.choices?.[0]?.message?.content;
 }
-        
-        try {
-            const fetchSignal = AbortSignal.timeout ? AbortSignal.timeout(45000) : controller.signal;
-            if (!AbortSignal.timeout) setTimeout(() => controller.abort(), 45000);
-
-            const payload = {
-                contents: [{ parts: [{ text: prompt }, { inline_data: { mime_type: mimeType, data: base64Data } }] }],
-                generationConfig: { response_mime_type: "application/json" },
-                safetySettings: safetySettings
-            };
-
-            response = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload),
-                signal: fetchSignal
-            });
-            
-            dataJson = await response.json();
-            if (response.ok) {
-                console.log(`v4.5.0 SUCCESS: ${modelToUse}`);
-            } else {
-                lastErrorMsg = dataJson.error?.message || response.statusText;
-                if (response.status === 429) quotaHit = true;
-                if ((lastErrorMsg && (lastErrorMsg.toLowerCase().includes("block") || response.status === 403)) && masterKeys.groq) {
-                    showToast("Gemini Blocked: Switching to Backup AI...", "warning");
-                    window.forceGroqFailover = true;
-                    setTimeout(() => window.runAnalysis(), 100); 
-                    return;
-                }
-            }
-        } catch (err) {
-            lastErrorMsg = err.message;
-        }
-
-        if (!response?.ok) {
-            const errLower = (lastErrorMsg || "").toLowerCase();
-            if (errLower.includes("blocked") || errLower.includes("generativeservice")) {
-                if (scanModal) scanModal.classList.add('hidden');
-                if (runBtn) runBtn.disabled = false;
-                clearTimeout(killSwitch);
-                window.showAiDiagnosticModal(lastErrorMsg, lastErrorMsg);
-                return;
-            }
-            throw new Error(`تجزیہ میں ایرر: ${lastErrorMsg || "رابطہ سست ہے"}`);
-        }
-
-        if (scanStatusText) scanStatusText.innerText = "نتائج دکھائے جا رہے ہیں...";
-        const text = dataJson.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (!text) throw new Error("AI نے کوئی جواب نہیں دیا۔");
-        
-        const parsedResults = JSON.parse(text);
-        lastAnalysisData = parsedResults;
-        displayResults(parsedResults);
-
-        if (userState.loggedIn) {
-            saveAnalysisToHistory(parsedResults, compressedBase64);
-            checkAndSaveBestDesign(parsedResults, compressedBase64);
-            handleExpertSuggestion(parsedResults);
-        }
-
-        if (userState.loggedIn && !userState.isAdmin && userState.licenseStatus !== 'approved') {
-            deductCredit().catch(e => console.log("Credit deduction failed."));
-        }
-        console.log("v4.5.1: Success - Credit deduction active.");
-
-    } catch (err) {
-        console.error("ANALYSIS ERROR:", err);
-        const errLower = (err.message || "").toLowerCase();
-        
-        // v5.6.6: Automatic Failover from Gemini to Groq
-        if (selectedProvider === 'gemini' && masterKeys.groq) {
-            showToast("Gemini مصروف ہے، بیک اپ AI سے چیک کیا جا رہا ہے...", "info");
-            console.log("v5.6.6: Gemini Failed. Attempting Auto-Failover to Groq.");
-            window.forceGroqFailover = true;
-            return runAnalysis(); 
-        }
-
-        if (errLower.includes("blocked") || errLower.includes("generativeservice") || errLower.includes("quota")) {
-            window.showAiDiagnosticModal(err.message, err.message);
-        } else {
-            alert("مسلہ: " + err.message);
-        }
-    } finally {
-        clearTimeout(killSwitch);
-        if (scanModal) scanModal.classList.add('hidden');
-        if (runBtn) runBtn.disabled = false;
-        console.timeEnd("AnalysisPhase");
-    }
-};
 
 
 async function deductCredit() {
