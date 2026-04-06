@@ -2029,8 +2029,14 @@ window.runAnalysis = async (overrideProvider = null) => {
                 }
             } catch (err) {
                 console.warn(`Provider ${provider} failed:`, err);
-                if (provider === 'gemini' && (err.message.includes("429") || err.message.toLowerCase().includes("quota"))) {
+                const msg = err.message.toLowerCase();
+                
+                if (provider === 'gemini' && (msg.includes("429") || msg.includes("quota"))) {
                     showToast("Gemini کوٹہ ختم، دوسرے AI پر منتقل ہو رہے ہیں...", "warning");
+                } else if (provider === 'openai' && (msg.includes("quota") || msg.includes("balance") || msg.includes("insufficient"))) {
+                    showToast("OpenAI کوٹہ یا بیلنس ختم، بیک اپ AI سے چیک کیا جا رہا ہے...", "warning");
+                } else if (provider === 'groq' && (msg.includes("429") || msg.includes("rate_limit"))) {
+                    showToast("Groq بزی ہے، دوسرے AI پر منتقل ہو رہے ہیں...", "info");
                 }
             }
         }
