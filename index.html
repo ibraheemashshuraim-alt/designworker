@@ -173,13 +173,19 @@
 
                     <div class="modal-section">
                         <h4><i class="fa-solid fa-robot" style="color:var(--neon-cyan);"></i> AI Provider سلیکٹ کریں</h4>
-                        <!-- Provider Tabs -->
-                        <div style="display: flex; gap: 8px; margin-bottom: 14px;">
-                            <button id="tab-gemini" class="provider-tab active-tab" onclick="setProvider('gemini')" style="flex:1; padding: 8px; border-radius: 8px; border: 1px solid var(--neon-cyan); background: rgba(0,229,255,0.1); color: var(--neon-cyan); font-size: 0.8rem; cursor: pointer; font-weight: 700;">
+                        <!-- Provider Tabs (Updated v5.7.2 for OpenAI/DeepSeek) -->
+                        <div style="display: flex; gap: 4px; margin-bottom: 14px;">
+                            <button id="tab-gemini" class="provider-tab active-tab" onclick="setProvider('gemini')" style="flex:1; padding: 6px; border-radius: 8px; border: 1px solid var(--neon-cyan); background: rgba(0,229,255,0.1); color: var(--neon-cyan); font-size: 0.75rem; cursor: pointer; font-weight: 700;">
                                 <i class="fa-solid fa-gem"></i> Gemini
                             </button>
-                            <button id="tab-groq" class="provider-tab" onclick="setProvider('groq')" style="flex:1; padding: 8px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.03); color: var(--text-muted); font-size: 0.8rem; cursor: pointer; font-weight: 700;">
-                                <i class="fa-solid fa-bolt"></i> Groq (Free)
+                            <button id="tab-groq" class="provider-tab" onclick="setProvider('groq')" style="flex:1; padding: 6px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.03); color: var(--text-muted); font-size: 0.75rem; cursor: pointer; font-weight: 700;">
+                                <i class="fa-solid fa-bolt"></i> Groq
+                            </button>
+                            <button id="tab-openai" class="provider-tab" onclick="setProvider('openai')" style="flex:1; padding: 6px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.03); color: var(--text-muted); font-size: 0.75rem; cursor: pointer; font-weight: 700;">
+                                <i class="fa-solid fa-robot"></i> GPT-4o
+                            </button>
+                            <button id="tab-deepseek" class="provider-tab" onclick="setProvider('deepseek')" style="flex:1; padding: 6px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.03); color: var(--text-muted); font-size: 0.75rem; cursor: pointer; font-weight: 700;">
+                                <i class="fa-solid fa-brain"></i> DeepSeek
                             </button>
                         </div>
 
@@ -202,18 +208,46 @@
                                 <p id="apiVerifyStatus" style="font-size: 0.7rem; margin-top: 5px; display: none;"></p>
                             </div>
 
-                            <!-- Groq API Key (Free Alternative) -->
+                            <!-- Groq API Key -->
                             <div id="groq-section" style="margin-top: 14px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.06);">
-                                <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 6px;">Groq Cloud API Key (<a href="https://console.groq.com" target="_blank" style="color:var(--neon-cyan);">console.groq.com</a> سے حاصل کریں):</div>
+                                <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 6px;">Groq Cloud API Key:</div>
                                 <input type="password" id="groqKeyInput" class="custom-input" placeholder="gsk_...">
                                 <div style="display: flex; gap: 5px; margin-top:5px;">
-                                    <button onclick="saveGroqApiKey()" class="btn secondary-btn" style="flex: 1; padding: 10px;">Groq Key سیو کریں</button>
+                                    <button onclick="saveGroqApiKey()" class="btn secondary-btn" style="flex: 1; padding: 10px;">سیو کریں</button>
                                     <button onclick="verifyGroqApiKey()" class="btn warning-btn" style="flex: 1; padding: 10px; font-size: 0.8rem; background: rgba(255,165,0,0.1); border: 1px solid orange; color: orange;">
                                         <i class="fa-solid fa-satellite-dish"></i> ٹیسٹ
                                     </button>
                                 </div>
                                 <p id="groqSaveStatusMsg" style="color: var(--success-green); font-size: 0.7rem; margin-top: 5px; display: none;">Groq Key محفوظ!</p>
                                 <p id="groqVerifyStatus" style="font-size: 0.7rem; margin-top: 5px; display: none;"></p>
+                            </div>
+
+                            <!-- OpenAI API Key -->
+                            <div id="openai-section" style="margin-top: 14px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.06);">
+                                <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 6px;">OpenAI (ChatGPT-4o) API Key:</div>
+                                <input type="password" id="openaiKeyInput" class="custom-input" placeholder="sk-...">
+                                <div style="display: flex; gap: 5px; margin-top:5px;">
+                                    <button onclick="saveOpenAIApiKey()" class="btn secondary-btn" style="flex: 1; padding: 10px;">سیو کریں</button>
+                                    <button onclick="verifyOpenAIApiKey()" class="btn warning-btn" style="flex: 1; padding: 10px; font-size: 0.8rem; background: rgba(0,255,157,0.1); border: 1px solid #00ff9d; color: #00ff9d;">
+                                        <i class="fa-solid fa-satellite-dish"></i> ٹیسٹ
+                                    </button>
+                                </div>
+                                <p id="openaiSaveStatusMsg" style="color: var(--success-green); font-size: 0.7rem; margin-top: 5px; display: none;">OpenAI Key محفوظ!</p>
+                                <p id="openaiVerifyStatus" style="font-size: 0.7rem; margin-top: 5px; display: none;"></p>
+                            </div>
+
+                            <!-- DeepSeek API Key -->
+                            <div id="deepseek-section" style="margin-top: 14px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.06);">
+                                <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 6px;">DeepSeek V3 API Key:</div>
+                                <input type="password" id="deepseekKeyInput" class="custom-input" placeholder="sk-...">
+                                <div style="display: flex; gap: 5px; margin-top:5px;">
+                                    <button onclick="saveDeepSeekApiKey()" class="btn secondary-btn" style="flex: 1; padding: 10px;">سیو کریں</button>
+                                    <button onclick="verifyDeepSeekApiKey()" class="btn warning-btn" style="flex: 1; padding: 10px; font-size: 0.8rem; background: rgba(157,0,255,0.1); border: 1px solid #9d00ff; color: #9d00ff;">
+                                        <i class="fa-solid fa-satellite-dish"></i> ٹیسٹ
+                                    </button>
+                                </div>
+                                <p id="deepseekSaveStatusMsg" style="color: var(--success-green); font-size: 0.7rem; margin-top: 5px; display: none;">DeepSeek Key محفوظ!</p>
+                                <p id="deepseekVerifyStatus" style="font-size: 0.7rem; margin-top: 5px; display: none;"></p>
                             </div>
                         </div>
 

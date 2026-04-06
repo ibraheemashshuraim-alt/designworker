@@ -1651,6 +1651,128 @@ window.verifyGroqApiKey = async () => {
     }
 };
 
+// ================ OPENAI API MANAGEMENT ================
+function getOpenAIApiKey() {
+    return localStorage.getItem('openai_api_key');
+}
+
+window.saveOpenAIApiKey = () => {
+    const key = document.getElementById('openaiKeyInput')?.value.trim();
+    if (!key) return;
+    localStorage.setItem('openai_api_key', key);
+    
+    if (userState.isAdmin) {
+        const configRef = doc(db, "config", "api_keys");
+        setDoc(configRef, { openai: key }, { merge: true }).then(() => {
+            console.log("Master OpenAI Key updated in Cloud.");
+            masterKeys.openai = key;
+        }).catch(e => console.error("Cloud Master Sync Error:", e));
+    }
+
+    const msg = document.getElementById('openaiSaveStatusMsg');
+    if (msg) { msg.style.display = 'block'; setTimeout(() => msg.style.display = 'none', 3000); }
+    verifyOpenAIApiKey();
+};
+
+window.verifyOpenAIApiKey = async () => {
+    const key = document.getElementById('openaiKeyInput')?.value.trim() || getOpenAIApiKey();
+    const statusEl = document.getElementById('openaiVerifyStatus');
+    if (!statusEl) return;
+
+    if (!key) {
+        statusEl.innerHTML = "<span style='color:var(--warning-orange);'>براہ کرم OpenAI API Key درج کریں۔</span>";
+        statusEl.style.display = 'block';
+        return;
+    }
+
+    statusEl.innerHTML = "<span style='color:var(--warning-orange);'><i class='fa-solid fa-spinner fa-spin'></i> OpenAI ٹیسٹ ہو رہا ہے...</span>";
+    statusEl.style.display = 'block';
+
+    try {
+        const res = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${key}` 
+            },
+            body: JSON.stringify({
+                model: 'gpt-4o-mini',
+                messages: [{ role: 'user', content: 'Hi' }],
+                max_tokens: 1
+            })
+        });
+        if (res.ok) {
+            statusEl.innerHTML = "<span style='color:var(--success-green);'><i class='fa-solid fa-check-circle'></i> OpenAI کنکشن کامیاب!</span>";
+        } else {
+            const data = await res.json();
+            statusEl.innerHTML = `<span style='color:#ff5252;'><i class='fa-solid fa-ban'></i> ${data.error?.message || 'Key غلط ہے۔'}</span>`;
+        }
+    } catch (e) {
+        statusEl.innerHTML = `<span style='color:#ff5252;'><i class='fa-solid fa-xmark'></i> نیٹ ورک مسئلہ: ${e.message}</span>`;
+    }
+};
+
+// ================ DEEPSEEK API MANAGEMENT ================
+function getDeepSeekApiKey() {
+    return localStorage.getItem('deepseek_api_key');
+}
+
+window.saveDeepSeekApiKey = () => {
+    const key = document.getElementById('deepseekKeyInput')?.value.trim();
+    if (!key) return;
+    localStorage.setItem('deepseek_api_key', key);
+    
+    if (userState.isAdmin) {
+        const configRef = doc(db, "config", "api_keys");
+        setDoc(configRef, { deepseek: key }, { merge: true }).then(() => {
+            console.log("Master DeepSeek Key updated in Cloud.");
+            masterKeys.deepseek = key;
+        }).catch(e => console.error("Cloud Master Sync Error:", e));
+    }
+
+    const msg = document.getElementById('deepseekSaveStatusMsg');
+    if (msg) { msg.style.display = 'block'; setTimeout(() => msg.style.display = 'none', 3000); }
+    verifyDeepSeekApiKey();
+};
+
+window.verifyDeepSeekApiKey = async () => {
+    const key = document.getElementById('deepseekKeyInput')?.value.trim() || getDeepSeekApiKey();
+    const statusEl = document.getElementById('deepseekVerifyStatus');
+    if (!statusEl) return;
+
+    if (!key) {
+        statusEl.innerHTML = "<span style='color:var(--warning-orange);'>براہ کرم DeepSeek API Key درج کریں۔</span>";
+        statusEl.style.display = 'block';
+        return;
+    }
+
+    statusEl.innerHTML = "<span style='color:var(--warning-orange);'><i class='fa-solid fa-spinner fa-spin'></i> DeepSeek ٹیسٹ ہو رہا ہے...</span>";
+    statusEl.style.display = 'block';
+
+    try {
+        const res = await fetch('https://api.deepseek.com/v1/chat/completions', {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${key}` 
+            },
+            body: JSON.stringify({
+                model: 'deepseek-chat',
+                messages: [{ role: 'user', content: 'Hi' }],
+                max_tokens: 1
+            })
+        });
+        if (res.ok) {
+            statusEl.innerHTML = "<span style='color:var(--success-green);'><i class='fa-solid fa-check-circle'></i> DeepSeek کنکشن کامیاب!</span>";
+        } else {
+            const data = await res.json();
+            statusEl.innerHTML = `<span style='color:#ff5252;'><i class='fa-solid fa-ban'></i> ${data.error?.message || 'Key غلط ہے۔'}</span>`;
+        }
+    } catch (e) {
+        statusEl.innerHTML = `<span style='color:#ff5252;'><i class='fa-solid fa-xmark'></i> نیٹ ورک مسئلہ: ${e.message}</span>`;
+    }
+};
+
 window.getSelectedProvider = () => {
     return localStorage.getItem('ai_provider') || 'gemini';
 };
@@ -1662,10 +1784,24 @@ function updateProviderBadge(p) {
 
     if (p === 'groq') {
         label.innerHTML = "<i class='fa-solid fa-bolt'></i> Groq (Free)";
-        label.style.color = 'var(--neon-cyan)';
+        label.style.color = 'var(--neon-purple)';
+        if (badge) {
+            badge.style.background = 'rgba(157,0,255,0.08)';
+            badge.style.borderColor = 'rgba(157,0,255,0.3)';
+        }
+    } else if (p === 'openai') {
+        label.innerHTML = "<i class='fa-solid fa-robot'></i> OpenAI (GPT-4o)";
+        label.style.color = '#00ff9d';
         if (badge) {
             badge.style.background = 'rgba(0,255,157,0.08)';
             badge.style.borderColor = 'rgba(0,255,157,0.3)';
+        }
+    } else if (p === 'deepseek') {
+        label.innerHTML = "<i class='fa-solid fa-brain'></i> DeepSeek V3";
+        label.style.color = '#9d00ff';
+        if (badge) {
+            badge.style.background = 'rgba(157,0,255,0.08)';
+            badge.style.borderColor = 'rgba(157,0,255,0.3)';
         }
     } else {
         label.innerHTML = "<i class='fa-solid fa-gem'></i> Gemini";
@@ -2205,6 +2341,18 @@ const savedGroq = getGroqApiKey();
 if (savedGroq) {
     const groqInput = document.getElementById('groqKeyInput');
     if (groqInput) groqInput.value = savedGroq;
+}
+
+const savedOpenAI = getOpenAIApiKey();
+if (savedOpenAI) {
+    const openaiInput = document.getElementById('openaiKeyInput');
+    if (openaiInput) openaiInput.value = savedOpenAI;
+}
+
+const savedDeepSeek = getDeepSeekApiKey();
+if (savedDeepSeek) {
+    const deepseekInput = document.getElementById('deepseekKeyInput');
+    if (deepseekInput) deepseekInput.value = savedDeepSeek;
 }
 
 // v4.20.0: Personalization Core Logic
