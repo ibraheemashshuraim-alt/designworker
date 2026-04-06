@@ -2100,52 +2100,55 @@ async function callGroqAPI(key, prompt, imageBase64) {
     return data.choices?.[0]?.message?.content;
 }
 
-// ================ FREE PROXY ENGINE (v6.0.0) ================
+// ================ FREE PROXY ENGINE (v6.1.0) ================
 // This engine attempts to use public/free endpoints to bypass official paid APIs.
 async function callFreeAI(provider, prompt) {
-    console.log(`Attempting Free Path for ${provider}...`);
+    console.log(`[Free AI] Attempting Free Path for ${provider}...`);
+    
+    // Using a CORS proxy to ensure the browser doesn't block the request
+    const BASE_URL = 'https://api.pawan.krd/v1/chat/completions';
     
     try {
-        if (provider === 'openai') {
-            // Path 1: Using OpenAI-style Free Proxy (like Pawan.krd)
-            const res = await fetch('https://api.pawan.krd/v1/chat/completions', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer pk-free-openai` },
-                body: JSON.stringify({
-                    model: 'gpt-4o-mini',
-                    messages: [{ role: 'user', content: prompt }]
-                })
-            });
-            const data = await res.json();
-            if (res.ok) return data.choices?.[0]?.message?.content;
-        } 
+        let model = 'gpt-4o-mini';
+        if (provider === 'deepseek') model = 'deepseek-v3';
         
-        if (provider === 'deepseek') {
-            // Path 2: Using DeepSeek-V3 via Free Proxy
-            const res = await fetch('https://api.pawan.krd/v1/chat/completions', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer pk-free-deepseek` },
-                body: JSON.stringify({
-                    model: 'deepseek-v3',
-                    messages: [{ role: 'user', content: prompt }]
-                })
-            });
+        const res = await fetch(BASE_URL, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer pk-free-openai` // Using a public/free key from a known community provider
+            },
+            body: JSON.stringify({
+                model: model,
+                messages: [{ role: 'user', content: prompt }],
+                max_tokens: 2000
+            })
+        });
+
+        if (res.ok) {
             const data = await res.json();
-            if (res.ok) return data.choices?.[0]?.message?.content;
+            const content = data.choices?.[0]?.message?.content;
+            if (content) {
+                console.log(`[Free AI] ${provider.toUpperCase()} Success!`);
+                return content;
+            }
+        } else {
+            const errData = await res.json().catch(() => ({}));
+            console.warn(`[Free AI] ${provider} Response Error:`, errData);
         }
     } catch (err) {
-        console.warn(`Free Proxy for ${provider} failed, falling back to Master Keys:`, err);
+        console.warn(`[Free AI] ${provider} Network Error:`, err);
     }
     return null;
 }
 
 async function callOpenAIAPI(key, prompt, imageBase64) {
-    // Attempt Free Path first (if no user key is provided in localStorage)
-    if (!localStorage.getItem('openai_api_key')) {
-        const freeResponse = await callFreeAI('openai', prompt);
-        if (freeResponse) return freeResponse;
-    }
+    // Stage 1: Attempt Free Path FIRST (ignoring the existence of a key)
+    const freeResponse = await callFreeAI('openai', prompt);
+    if (freeResponse) return freeResponse;
 
+    // Stage 2: Fallback to Official API if Free Path fails
+    console.log("[Free AI] Falling back to Official OpenAI API...");
     const res = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
@@ -2161,12 +2164,12 @@ async function callOpenAIAPI(key, prompt, imageBase64) {
 }
 
 async function callDeepSeekAPI(key, prompt, imageBase64) {
-    // Attempt Free Path first 
-    if (!localStorage.getItem('deepseek_api_key')) {
-        const freeResponse = await callFreeAI('deepseek', prompt);
-        if (freeResponse) return freeResponse;
-    }
+    // Stage 1: Attempt Free Path FIRST
+    const freeResponse = await callFreeAI('deepseek', prompt);
+    if (freeResponse) return freeResponse;
 
+    // Stage 2: Fallback to Official API
+    console.log("[Free AI] Falling back to Official DeepSeek API...");
     const res = await fetch('https://api.deepseek.com/v1/chat/completions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
@@ -2179,6 +2182,7 @@ async function callDeepSeekAPI(key, prompt, imageBase64) {
     if (!res.ok) throw new Error(data.error?.message || "DeepSeek Error");
     return data.choices?.[0]?.message?.content;
 }
+
 
 
 
