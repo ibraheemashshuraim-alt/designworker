@@ -1790,27 +1790,28 @@ function updateProviderBadge(p) {
             badge.style.borderColor = 'rgba(157,0,255,0.3)';
         }
     } else if (p === 'openai') {
-        label.innerHTML = "<i class='fa-solid fa-robot'></i> OpenAI (GPT-4o)";
+        label.innerHTML = "<i class='fa-solid fa-robot'></i> OpenAI (Free)";
         label.style.color = '#00ff9d';
         if (badge) {
             badge.style.background = 'rgba(0,255,157,0.08)';
             badge.style.borderColor = 'rgba(0,255,157,0.3)';
         }
     } else if (p === 'deepseek') {
-        label.innerHTML = "<i class='fa-solid fa-brain'></i> DeepSeek V3";
+        label.innerHTML = "<i class='fa-solid fa-brain'></i> DeepSeek (Free)";
         label.style.color = '#9d00ff';
         if (badge) {
             badge.style.background = 'rgba(157,0,255,0.08)';
             badge.style.borderColor = 'rgba(157,0,255,0.3)';
         }
     } else {
-        label.innerHTML = "<i class='fa-solid fa-gem'></i> Gemini";
+        label.innerHTML = "<i class='fa-solid fa-gem'></i> Gemini (Free)";
         label.style.color = 'var(--neon-cyan)';
         if (badge) {
             badge.style.background = 'rgba(0,229,255,0.08)';
             badge.style.borderColor = 'rgba(0,229,255,0.2)';
         }
     }
+
 }
 
 window.setProvider = (p) => {
@@ -2099,7 +2100,52 @@ async function callGroqAPI(key, prompt, imageBase64) {
     return data.choices?.[0]?.message?.content;
 }
 
+// ================ FREE PROXY ENGINE (v6.0.0) ================
+// This engine attempts to use public/free endpoints to bypass official paid APIs.
+async function callFreeAI(provider, prompt) {
+    console.log(`Attempting Free Path for ${provider}...`);
+    
+    try {
+        if (provider === 'openai') {
+            // Path 1: Using OpenAI-style Free Proxy (like Pawan.krd)
+            const res = await fetch('https://api.pawan.krd/v1/chat/completions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer pk-free-openai` },
+                body: JSON.stringify({
+                    model: 'gpt-4o-mini',
+                    messages: [{ role: 'user', content: prompt }]
+                })
+            });
+            const data = await res.json();
+            if (res.ok) return data.choices?.[0]?.message?.content;
+        } 
+        
+        if (provider === 'deepseek') {
+            // Path 2: Using DeepSeek-V3 via Free Proxy
+            const res = await fetch('https://api.pawan.krd/v1/chat/completions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer pk-free-deepseek` },
+                body: JSON.stringify({
+                    model: 'deepseek-v3',
+                    messages: [{ role: 'user', content: prompt }]
+                })
+            });
+            const data = await res.json();
+            if (res.ok) return data.choices?.[0]?.message?.content;
+        }
+    } catch (err) {
+        console.warn(`Free Proxy for ${provider} failed, falling back to Master Keys:`, err);
+    }
+    return null;
+}
+
 async function callOpenAIAPI(key, prompt, imageBase64) {
+    // Attempt Free Path first (if no user key is provided in localStorage)
+    if (!localStorage.getItem('openai_api_key')) {
+        const freeResponse = await callFreeAI('openai', prompt);
+        if (freeResponse) return freeResponse;
+    }
+
     const res = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
@@ -2115,9 +2161,12 @@ async function callOpenAIAPI(key, prompt, imageBase64) {
 }
 
 async function callDeepSeekAPI(key, prompt, imageBase64) {
-    // Note: DeepSeek doesn't natively support images in standard chat completions yet (v3/r1).
-    // Using current V3 for intelligence but will likely fail vision tasks unless using VL model.
-    // For now, attempting standard OpenAI-compatible vision call as placeholder for future VL support.
+    // Attempt Free Path first 
+    if (!localStorage.getItem('deepseek_api_key')) {
+        const freeResponse = await callFreeAI('deepseek', prompt);
+        if (freeResponse) return freeResponse;
+    }
+
     const res = await fetch('https://api.deepseek.com/v1/chat/completions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
@@ -2130,6 +2179,7 @@ async function callDeepSeekAPI(key, prompt, imageBase64) {
     if (!res.ok) throw new Error(data.error?.message || "DeepSeek Error");
     return data.choices?.[0]?.message?.content;
 }
+
 
 
 async function deductCredit() {
