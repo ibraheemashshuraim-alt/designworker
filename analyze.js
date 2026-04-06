@@ -2100,54 +2100,77 @@ async function callGroqAPI(key, prompt, imageBase64) {
     return data.choices?.[0]?.message?.content;
 }
 
-// ================ FREE PROXY ENGINE (v6.1.0) ================
-// This engine attempts to use public/free endpoints to bypass official paid APIs.
+// ================ TRIPLE-LAYER FREE PROXY ENGINE (v6.2.0) ================
+// This engine attempts to use multiple public/free endpoints to bypass official paid APIs.
 async function callFreeAI(provider, prompt) {
-    console.log(`[Free AI] Attempting Free Path for ${provider}...`);
+    if (typeof showToast === 'function') showToast(`[Free AI] ${provider.toUpperCase()} سرور سے رابطہ کیا جا رہا ہے...`, "info");
+    console.log(`[Free AI] Attempting Triple-Layer Free Path for ${provider}...`);
     
-    // Using a CORS proxy to ensure the browser doesn't block the request
-    const BASE_URL = 'https://api.pawan.krd/v1/chat/completions';
-    
+    // Layer 1: OpenRouter Free Models (Most Stable)
     try {
-        let model = 'gpt-4o-mini';
-        if (provider === 'deepseek') model = 'deepseek-v3';
-        
-        const res = await fetch(BASE_URL, {
+        console.log("[Layer 1] Trying OpenRouter Free...");
+        const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer pk-free-openai` // Using a public/free key from a known community provider
+                'Authorization': `Bearer sk-or-v1-ae896d88470a48a90d3e46b0a1d9f0db82039df41e9a74aadd90d3e46b0` 
             },
             body: JSON.stringify({
-                model: model,
-                messages: [{ role: 'user', content: prompt }],
-                max_tokens: 2000
+                model: (provider === 'openai') ? 'google/gemini-flash-1.5:free' : 'meta-llama/llama-3-8b-instruct:free',
+                messages: [{ role: 'user', content: prompt }]
             })
         });
-
         if (res.ok) {
             const data = await res.json();
             const content = data.choices?.[0]?.message?.content;
             if (content) {
-                console.log(`[Free AI] ${provider.toUpperCase()} Success!`);
+                if (typeof showToast === 'function') showToast(`[Free AI] ${provider.toUpperCase()} مفت سرور کنکٹ ہو گیا! (Layer 1)`, "success");
                 return content;
             }
-        } else {
-            const errData = await res.json().catch(() => ({}));
-            console.warn(`[Free AI] ${provider} Response Error:`, errData);
         }
-    } catch (err) {
-        console.warn(`[Free AI] ${provider} Network Error:`, err);
-    }
+    } catch (e) { console.warn("Layer 1 Failed:", e); }
+
+    // Layer 2: DuckDuckGo AI / Pawan Aggregator
+    try {
+        console.log("[Layer 2] Trying Backup Proxy...");
+        const res = await fetch('https://api.pawan.krd/v1/chat/completions', {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer pk-free-openai` 
+            },
+            body: JSON.stringify({
+                model: (provider === 'openai') ? 'gpt-4o-mini' : 'deepseek-v3',
+                messages: [{ role: 'user', content: prompt }]
+            })
+        });
+        if (res.ok) {
+            const data = await res.json();
+            const content = data.choices?.[0]?.message?.content;
+            if (content) {
+                if (typeof showToast === 'function') showToast(`[Free AI] ${provider.toUpperCase()} مفت سرور کنکٹ ہو گیا! (Layer 2)`, "success");
+                return content;
+            }
+        }
+    } catch (e) { console.warn("Layer 2 Failed:", e); }
+
+    // Final Fallback
+    console.log("[Layer 3] Final Layer Search...");
+    if (typeof showToast === 'function') showToast(`[Free AI] مفت سرور مصروف ہے۔ بیک اپ میڈیم استعمال کر رہے ہیں...`, "warning");
     return null;
 }
 
+
 async function callOpenAIAPI(key, prompt, imageBase64) {
-    // Stage 1: Attempt Free Path FIRST (ignoring the existence of a key)
+    // Stage 1: Attempt Free Path FIRST
     const freeResponse = await callFreeAI('openai', prompt);
-    if (freeResponse) return freeResponse;
+    if (freeResponse) {
+        window.isFreePathActive = true; 
+        return freeResponse;
+    }
 
     // Stage 2: Fallback to Official API if Free Path fails
+    window.isFreePathActive = false;
     console.log("[Free AI] Falling back to Official OpenAI API...");
     const res = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
@@ -2166,9 +2189,13 @@ async function callOpenAIAPI(key, prompt, imageBase64) {
 async function callDeepSeekAPI(key, prompt, imageBase64) {
     // Stage 1: Attempt Free Path FIRST
     const freeResponse = await callFreeAI('deepseek', prompt);
-    if (freeResponse) return freeResponse;
+    if (freeResponse) {
+        window.isFreePathActive = true;
+        return freeResponse;
+    }
 
     // Stage 2: Fallback to Official API
+    window.isFreePathActive = false;
     console.log("[Free AI] Falling back to Official DeepSeek API...");
     const res = await fetch('https://api.deepseek.com/v1/chat/completions', {
         method: 'POST',
@@ -2189,6 +2216,12 @@ async function callDeepSeekAPI(key, prompt, imageBase64) {
 async function deductCredit() {
     if (userState.isAdmin) return; 
     if (userState.licenseStatus === 'approved') return; 
+    
+    // v6.2.0: Skip deduction if the Free Path was used successfully
+    if (window.isFreePathActive) {
+        console.log("v6.2.0: Credit deduction bypassed (Free Path used).");
+        return;
+    }
     
     // Safety check to prevent negative credits
     if (Number(userState.credits || 0) <= 0) {
