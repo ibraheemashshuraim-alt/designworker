@@ -1705,13 +1705,7 @@ window.verifyOpenAIApiKey = async () => {
             statusEl.innerHTML = "<span style='color:var(--success-green);'><i class='fa-solid fa-check-circle'></i> OpenAI کنکشن کامیاب!</span>";
         } else {
             const data = await res.json();
-            const msg = (data.error?.message || '').toLowerCase();
-            
-            if (msg.includes("quota") || msg.includes("balance") || msg.includes("insufficient")) {
-                statusEl.innerHTML = "<span style='color:var(--neon-cyan);'><i class='fa-solid fa-shield-halved'></i> کوٹہ ختم، لیکن فری بیک اپ فعال ہے!</span>";
-            } else {
-                statusEl.innerHTML = `<span style='color:#ff5252;'><i class='fa-solid fa-ban'></i> ${data.error?.message || 'Key غلط ہے۔'}</span>`;
-            }
+            statusEl.innerHTML = `<span style='color:#ff5252;'><i class='fa-solid fa-ban'></i> ${data.error?.message || 'Key غلط ہے۔'}</span>`;
         }
     } catch (e) {
         statusEl.innerHTML = `<span style='color:#ff5252;'><i class='fa-solid fa-xmark'></i> نیٹ ورک مسئلہ: ${e.message}</span>`;
@@ -1772,13 +1766,7 @@ window.verifyDeepSeekApiKey = async () => {
             statusEl.innerHTML = "<span style='color:var(--success-green);'><i class='fa-solid fa-check-circle'></i> DeepSeek کنکشن کامیاب!</span>";
         } else {
             const data = await res.json();
-            const msg = (data.error?.message || '').toLowerCase();
-            
-            if (msg.includes("quota") || msg.includes("balance") || msg.includes("insufficient")) {
-                statusEl.innerHTML = "<span style='color:var(--neon-cyan);'><i class='fa-solid fa-shield-halved'></i> کوٹہ ختم، لیکن فری بیک اپ فعال ہے!</span>";
-            } else {
-                statusEl.innerHTML = `<span style='color:#ff5252;'><i class='fa-solid fa-ban'></i> ${data.error?.message || 'Key غلط ہے۔'}</span>`;
-            }
+            statusEl.innerHTML = `<span style='color:#ff5252;'><i class='fa-solid fa-ban'></i> ${data.error?.message || 'Key غلط ہے۔'}</span>`;
         }
     } catch (e) {
         statusEl.innerHTML = `<span style='color:#ff5252;'><i class='fa-solid fa-xmark'></i> نیٹ ورک مسئلہ: ${e.message}</span>`;
@@ -1802,28 +1790,27 @@ function updateProviderBadge(p) {
             badge.style.borderColor = 'rgba(157,0,255,0.3)';
         }
     } else if (p === 'openai') {
-        label.innerHTML = "<i class='fa-solid fa-robot'></i> OpenAI (Free)";
+        label.innerHTML = "<i class='fa-solid fa-robot'></i> OpenAI (GPT-4o)";
         label.style.color = '#00ff9d';
         if (badge) {
             badge.style.background = 'rgba(0,255,157,0.08)';
             badge.style.borderColor = 'rgba(0,255,157,0.3)';
         }
     } else if (p === 'deepseek') {
-        label.innerHTML = "<i class='fa-solid fa-brain'></i> DeepSeek (Free)";
+        label.innerHTML = "<i class='fa-solid fa-brain'></i> DeepSeek V3";
         label.style.color = '#9d00ff';
         if (badge) {
             badge.style.background = 'rgba(157,0,255,0.08)';
             badge.style.borderColor = 'rgba(157,0,255,0.3)';
         }
     } else {
-        label.innerHTML = "<i class='fa-solid fa-gem'></i> Gemini (Free)";
+        label.innerHTML = "<i class='fa-solid fa-gem'></i> Gemini";
         label.style.color = 'var(--neon-cyan)';
         if (badge) {
             badge.style.background = 'rgba(0,229,255,0.08)';
             badge.style.borderColor = 'rgba(0,229,255,0.2)';
         }
     }
-
 }
 
 window.setProvider = (p) => {
@@ -2015,46 +2002,42 @@ window.runAnalysis = async (overrideProvider = null) => {
 
         for (const provider of attemptOrder) {
             try {
-                // v6.3.0: Silent UI - Don't flicker model names
-                if (scanStatusText) scanStatusText.innerText = `اے آئی آپ کے ڈیزائن کا تجزیہ کر رہا ہے...`;
-                console.log(`v6.3.0: Trying ${provider} (Silent Path)...`);
+                if (scanStatusText) scanStatusText.innerText = `${provider.toUpperCase()} AI تجزیہ کر رہا ہے...`;
+                console.log(`v5.7.0: Trying ${provider}...`);
                 
                 let responseText = "";
                 let keyToUse = (elements.apiKeyInput ? elements.apiKeyInput.value.trim() : "") || masterKeys[provider];
 
                 if (provider === 'gemini') {
                     if (!keyToUse) throw new Error("Gemini Key Missing");
-                    // v6.6.0: Use COMPRESSED image for Gemini too (Fixes payload size errors)
-                    responseText = await callGeminiAPI(keyToUse, prompt, compressedBase64, 'image/jpeg');
+                    responseText = await callGeminiAPI(keyToUse, prompt, base64Data, mimeType);
                 } else if (provider === 'groq') {
                     if (!keyToUse) throw new Error("Groq Key Missing");
                     responseText = await callGroqAPI(keyToUse, prompt, compressedBase64);
                 } else if (provider === 'openai') {
-                    // v6.5.0: Proceed even without key (callOpenAIAPI handles internal free-path + key check)
+                    if (!keyToUse) throw new Error("OpenAI Key Missing");
                     responseText = await callOpenAIAPI(keyToUse, prompt, compressedBase64);
                 } else if (provider === 'deepseek') {
-                    // v6.5.0: Proceed even without key
+                    if (!keyToUse) throw new Error("DeepSeek Key Missing");
                     responseText = await callDeepSeekAPI(keyToUse, prompt, compressedBase64);
                 }
 
                 if (responseText) {
-                    // v6.4.0: Robust JSON Extraction
-                    const cleanedResponse = responseText.replace(/```json|```/g, '').trim();
-                    const jsonMatch = cleanedResponse.match(/\{[\s\S]*\}/);
-                    
-                    if (jsonMatch) {
-                        resultData = JSON.parse(jsonMatch[0]);
-                        success = true;
-                        break;
-                    } else {
-                        throw new Error("Invalid JSON from AI");
-                    }
+                    resultData = JSON.parse(responseText.replace(/\`\`\`json|\`\`\`/g, '').trim());
+                    success = true;
+                    break;
                 }
             } catch (err) {
-                console.warn(`Provider ${provider} failed (Silent Failover):`, err);
-                // v6.6.0: Add 1-second deliberate delay before trying next provider
-                // This prevents "rapid switching" UI flickering and gives the system breathing room.
-                await new Promise(r => setTimeout(r, 1000));
+                console.warn(`Provider ${provider} failed:`, err);
+                const msg = err.message.toLowerCase();
+                
+                if (provider === 'gemini' && (msg.includes("429") || msg.includes("quota"))) {
+                    showToast("Gemini کوٹہ ختم، دوسرے AI پر منتقل ہو رہے ہیں...", "warning");
+                } else if (provider === 'openai' && (msg.includes("quota") || msg.includes("balance") || msg.includes("insufficient"))) {
+                    showToast("OpenAI کوٹہ یا بیلنس ختم، بیک اپ AI سے چیک کیا جا رہا ہے...", "warning");
+                } else if (provider === 'groq' && (msg.includes("429") || msg.includes("rate_limit"))) {
+                    showToast("Groq بزی ہے، دوسرے AI پر منتقل ہو رہے ہیں...", "info");
+                }
             }
         }
 
@@ -2089,13 +2072,10 @@ window.runAnalysis = async (overrideProvider = null) => {
 };
 
 async function callGeminiAPI(key, prompt, base64Data, mimeType) {
-    // v6.6.0: Ensure we only send the raw base64 string, stripping any Data URL prefix
-    const cleanBase64 = base64Data.includes(',') ? base64Data.split(',')[1] : base64Data;
-    
     const modelToUse = "gemini-1.5-flash";
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelToUse}:generateContent?key=${key}`;
     const payload = {
-        contents: [{ parts: [{ text: prompt }, { inline_data: { mime_type: mimeType, data: cleanBase64 } }] }],
+        contents: [{ parts: [{ text: prompt }, { inline_data: { mime_type: mimeType, data: base64Data } }] }],
         generationConfig: { response_mime_type: "application/json" }
     };
     const res = await fetch(url, { method: 'POST', body: JSON.stringify(payload) });
@@ -2119,99 +2099,7 @@ async function callGroqAPI(key, prompt, imageBase64) {
     return data.choices?.[0]?.message?.content;
 }
 
-// ================ TRIPLE-LAYER FREE PROXY ENGINE (v6.2.0) ================
-// This engine attempts to use multiple public/free endpoints to bypass official paid APIs.
-async function callFreeAI(provider, prompt, imageBase64 = null) {
-    // v6.5.0: Removed initial showToast for silent operation
-    console.log(`[Free AI] Attempting Vision-Ready Free Path for ${provider}...`);
-    
-    // Layer 1: OpenRouter Multi-Model Vision Fallback (Ultra Robust)
-    const freeModels = [
-        'google/gemini-flash-1.5:free',
-        'meta-llama/llama-3.2-11b-vision-instruct:free',
-        'mistralai/pixtral-12b:free'
-    ];
-
-    for (const model of freeModels) {
-        try {
-            console.log(`[Layer 1] Trying OpenRouter Vision Free (${model})...`);
-            
-            const messages = [{
-                role: 'user',
-                content: imageBase64 ? [
-                    { type: 'text', text: prompt },
-                    { type: 'image_url', image_url: { url: imageBase64 } }
-                ] : prompt
-            }];
-
-            const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer sk-or-v1-ae896d88470a48a90d3e46b0a1d9f0db82039df41e9a74aadd90d3e46b0` 
-                },
-                body: JSON.stringify({ model: model, messages: messages })
-            });
-
-            if (res.ok) {
-                const data = await res.json();
-                const content = data.choices?.[0]?.message?.content;
-                if (content && content.includes('{')) {
-                    if (typeof showToast === 'function') showToast(`[Free AI] مفت سرور کنکٹ ہو گیا!`, "success");
-                    return content;
-                }
-            }
-        } catch (e) { console.warn(`Model ${model} failed:`, e); }
-        // Small delay between model switches
-        await new Promise(r => setTimeout(r, 300));
-    }
-
-    // v6.3.0: Tiny delay before fallback to Layer 2
-    await new Promise(r => setTimeout(r, 400));
-
-    // Layer 2: DuckDuckGo AI / Pawan Aggregator (Text Only Fallback)
-    try {
-        console.log("[Layer 2] Trying Backup Proxy...");
-        const res = await fetch('https://api.pawan.krd/v1/chat/completions', {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer pk-free-openai` 
-            },
-            body: JSON.stringify({
-                model: (provider === 'openai') ? 'gpt-4o-mini' : 'deepseek-v3',
-                messages: [{ role: 'user', content: prompt }]
-            })
-        });
-        if (res.ok) {
-            const data = await res.json();
-            const content = data.choices?.[0]?.message?.content;
-            if (content) {
-                if (typeof showToast === 'function') showToast(`[Free AI] ${provider.toUpperCase()} مفت سرور کنکٹ ہو گیا! (Layer 2)`, "success");
-                return content;
-            }
-        }
-    } catch (e) { console.warn("Layer 2 Failed:", e); }
-
-    // Final Fallback
-    console.log("[Layer 3] Final Layer Search...");
-    if (typeof showToast === 'function') showToast(`[Free AI] مفت سرور مصروف ہے۔ بیک اپ میڈیم استعمال کر رہے ہیں...`, "warning");
-    return null;
-}
-
-
 async function callOpenAIAPI(key, prompt, imageBase64) {
-    // Stage 1: Attempt Free Path FIRST
-    const freeResponse = await callFreeAI('openai', prompt, imageBase64);
-    if (freeResponse) {
-        window.isFreePathActive = true; 
-        return freeResponse;
-    }
-
-    // Stage 2: Fallback to Official API if Free Path fails
-    window.isFreePathActive = false;
-    if (!key) throw new Error("OpenAI Key Missing"); 
-    console.log("[Free AI] Falling back to Official OpenAI API...");
     const res = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
@@ -2227,17 +2115,9 @@ async function callOpenAIAPI(key, prompt, imageBase64) {
 }
 
 async function callDeepSeekAPI(key, prompt, imageBase64) {
-    // Stage 1: Attempt Free Path FIRST
-    const freeResponse = await callFreeAI('deepseek', prompt, imageBase64);
-    if (freeResponse) {
-        window.isFreePathActive = true;
-        return freeResponse;
-    }
-
-    // Stage 2: Fallback to Official API
-    window.isFreePathActive = false;
-    if (!key) throw new Error("DeepSeek Key Missing");
-    console.log("[Free AI] Falling back to Official DeepSeek API...");
+    // Note: DeepSeek doesn't natively support images in standard chat completions yet (v3/r1).
+    // Using current V3 for intelligence but will likely fail vision tasks unless using VL model.
+    // For now, attempting standard OpenAI-compatible vision call as placeholder for future VL support.
     const res = await fetch('https://api.deepseek.com/v1/chat/completions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
@@ -2252,17 +2132,9 @@ async function callDeepSeekAPI(key, prompt, imageBase64) {
 }
 
 
-
-
 async function deductCredit() {
     if (userState.isAdmin) return; 
     if (userState.licenseStatus === 'approved') return; 
-    
-    // v6.2.0: Skip deduction if the Free Path was used successfully
-    if (window.isFreePathActive) {
-        console.log("v6.2.0: Credit deduction bypassed (Free Path used).");
-        return;
-    }
     
     // Safety check to prevent negative credits
     if (Number(userState.credits || 0) <= 0) {
