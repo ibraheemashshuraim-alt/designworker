@@ -16,6 +16,8 @@
 }
 
 .admin-hidden { display: none !important; } /* v5.3.7: Utility handled by JS toggle */
+.hidden { display: none !important; }
+
 
 /* Admin Dashboard Polish */
 .admin-user-card {
