@@ -2024,7 +2024,8 @@ window.runAnalysis = async (overrideProvider = null) => {
 
                 if (provider === 'gemini') {
                     if (!keyToUse) throw new Error("Gemini Key Missing");
-                    responseText = await callGeminiAPI(keyToUse, prompt, base64Data, mimeType);
+                    // v6.6.0: Use COMPRESSED image for Gemini too (Fixes payload size errors)
+                    responseText = await callGeminiAPI(keyToUse, prompt, compressedBase64, 'image/jpeg');
                 } else if (provider === 'groq') {
                     if (!keyToUse) throw new Error("Groq Key Missing");
                     responseText = await callGroqAPI(keyToUse, prompt, compressedBase64);
@@ -2051,17 +2052,9 @@ window.runAnalysis = async (overrideProvider = null) => {
                 }
             } catch (err) {
                 console.warn(`Provider ${provider} failed (Silent Failover):`, err);
-                // v6.3.0: Silenced failover toasts to reduce UI noise
-                /*
-                const msg = err.message.toLowerCase();
-                if (provider === 'gemini' && (msg.includes("429") || msg.includes("quota"))) {
-                    showToast("Gemini کوٹہ ختم، دوسرے AI پر منتقل ہو رہے ہیں...", "warning");
-                } else if (provider === 'openai' && (msg.includes("quota") || msg.includes("balance") || msg.includes("insufficient"))) {
-                    showToast("OpenAI کوٹہ یا بیلنس ختم، بیک اپ AI سے چیک کیا جا رہا ہے...", "warning");
-                } else if (provider === 'groq' && (msg.includes("429") || msg.includes("rate_limit"))) {
-                    showToast("Groq بزی ہے، دوسرے AI پر منتقل ہو رہے ہیں...", "info");
-                }
-                */
+                // v6.6.0: Add 1-second deliberate delay before trying next provider
+                // This prevents "rapid switching" UI flickering and gives the system breathing room.
+                await new Promise(r => setTimeout(r, 1000));
             }
         }
 
@@ -2096,10 +2089,13 @@ window.runAnalysis = async (overrideProvider = null) => {
 };
 
 async function callGeminiAPI(key, prompt, base64Data, mimeType) {
+    // v6.6.0: Ensure we only send the raw base64 string, stripping any Data URL prefix
+    const cleanBase64 = base64Data.includes(',') ? base64Data.split(',')[1] : base64Data;
+    
     const modelToUse = "gemini-1.5-flash";
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelToUse}:generateContent?key=${key}`;
     const payload = {
-        contents: [{ parts: [{ text: prompt }, { inline_data: { mime_type: mimeType, data: base64Data } }] }],
+        contents: [{ parts: [{ text: prompt }, { inline_data: { mime_type: mimeType, data: cleanBase64 } }] }],
         generationConfig: { response_mime_type: "application/json" }
     };
     const res = await fetch(url, { method: 'POST', body: JSON.stringify(payload) });
