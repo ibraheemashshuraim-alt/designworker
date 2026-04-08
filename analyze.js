@@ -1808,6 +1808,26 @@ window.confirmAnalysis = () => {
     executeAnalysis();
 };
 
+// v5.7.1: Robust JSON Cleanup for AI Responses
+function cleanAndParseAIJSON(text) {
+    if (!text) return null;
+    try {
+        // Remove markdown code block markers
+        const cleaned = text.replace(/\`\`\`json|\`\`\`/g, '').trim();
+        return JSON.parse(cleaned);
+    } catch (e) {
+        console.warn("Direct JSON parse failed, attempting regex extraction...");
+        try {
+            // Attempt to extract anything between the first { and last }
+            const match = text.match(/\{[\s\S]*\}/);
+            if (match) return JSON.parse(match[0]);
+        } catch (e2) {
+            console.error("Critical JSON Parsing Error:", e2);
+        }
+        return null;
+    }
+}
+
 // ================ ACTUAL AI ANALYSIS EXECUTION ================
 async function executeAnalysis() {
     console.time("AnalysisPhase");
@@ -1861,48 +1881,44 @@ async function executeAnalysis() {
         const base64Data = compressedBase64.split(',')[1];
 
         const prompt = `
-            You are a World-Class Creative Director and Senior UI/Graphic Designer from a top Design Agency.
+            You are a World-Class Creative Director and Senior UI/Graphic Designer.
             Objective: Analyze the provided design with surgical precision and artistic depth.
 
             ### STEP 1: CONTEXT & MEDIUM IDENTIFICATION
-            - Identify the **Sector**: (e.g., Religious, Educational, Commercial, Medical, Corporate).
-            - Identify the **Medium**: (e.g., Print: Flex/Banner/Poster/Card OR Digital: Social Media Ad/Web Banner/UI).
+            - Sector: (e.g., Religious, Educational, Commercial, Corporate).
+            - Medium: (e.g., Print: Flex/Banner OR Digital: UI/Social Media).
 
             ### STEP 2: ANALYSIS RULES
-            1. **Cultural & Religious Sensitivity**: 
-               - If the design is for a Religious or Traditional institution (e.g., Madrasa, Masjid, Islamic Event), do NOT suggest using human or animal imagery. This is intentional. Instead, focus on improving Typography, Calligraphy, Color Harmony, and Geometric Patterns.
-            2. **Medium-Specific Feedback**:
-               - If the Medium is **Print**: Do NOT mention "clickable links" or "website navigation buttons". Instead, focus on the readability of Phone Numbers, Physical Addresses, and QR codes.
-               - If the Medium is **Digital**: Focus on CTA (Call to Action) clarity and user experience.
-            3. **Visual Hierarchy & Typography**: Standard professional audit of layout balance and font pairing.
+            1. **Religious Sensitivity**: If the design is for an Islamic/Traditional institution, do NOT suggest human/animal imagery. Focus on Calligraphy, Colors, and Patterns.
+            2. **Medium-Specific**: If Print, do NOT suggest links. If Digital, focus on CTAs.
+            3. **Language Requirement**: All feedback text values (descriptions, lists, strengths, etc.) MUST be strictly in ${userSettings.language}.
 
             ### STEP 3: OUTPUT SPECIFICATIONS
-            - **Logical Consistency**: Ensure the 'score' (0-100) logically matches the feedback. If the score is >70, do NOT give critical contradictory errors like "Content is illegible" unless it is very specific. 
-            - Language: ${userSettings.language} (Strictly).
-            - Format: Valid JSON only.
+            - Format: Valid JSON.
+            - Language: ${userSettings.language} only.
 
             {
-                "score": Number (0-100),
-                "category": "Identify Sectors and Medium (e.g. Islamic School Print Flex)",
-                "accessibility": "ایکسیسبلٹی اور پڑھائی (اردو تفصیل)",
-                "contrast": "کلر تضاد اور توازن (اردو تفصیل)",
-                "strengths": ["خوبی 1 (تفصیلی)", "خوبی 2", "خوبی 3", "خوبی 4", "خوبی 5"],
-                "improvements": ["بہتری 1 (تفصیلی)", "بہتری 2", "بہتری 3", "بہتری 4", "بہتری 5"],
+                "score": 85,
+                "category": "Sector and Medium description in ${userSettings.language}",
+                "accessibility": "Detailed feedback on accessibility in ${userSettings.language}",
+                "contrast": "Color balance feedback in ${userSettings.language}",
+                "strengths": ["Trait 1 in ${userSettings.language}", "Trait 2", "Trait 3"],
+                "improvements": ["Issue 1 in ${userSettings.language}", "Issue 2", "Issue 3"],
                 "detailed_improvements": [
-                    { "text": "ایک لازمی بہتری کا نکتہ (تفصیلی)", "priority": "mandatory" },
-                    { "text": "ڈیزائن کو بہتر بنانے کا ایک اور مشورہ", "priority": "optional" }
+                    { "text": "Mandatory improvement in ${userSettings.language}", "priority": "mandatory" },
+                    { "text": "Optional suggestion in ${userSettings.language}", "priority": "optional" }
                 ],
                 "pricing": {
-                    "current": "موجودہ مارکیٹ ریٹ (PKR/USD)",
-                    "improved": "بہتری کے بعد ممکنہ ریٹ (PKR/USD)"
+                    "current": "Current market rate (Local Currency)",
+                    "improved": "Improved market rate (Local Currency)"
                 },
                 "client_impression": {
-                    "level": "پروفیشنل / مارکیٹ لیول",
-                    "feedback": "کلائنٹ پر ڈیزائن کا گہرا نفسیاتی اثر (اردو)",
-                    "warning": "اگر کوئی سنگین غلطی ہے تو یہاں لکھیں"
+                    "level": "Experience Level (e.g. Amateur, Professional)",
+                    "feedback": "Deep psychological impact on client in ${userSettings.language}",
+                    "warning": "Critical errors or red flags in ${userSettings.language} (if any, else null)"
                 },
-                "colors": ["#hex1", "#hex2", "#hex3", "#hex4", "#hex5"],
-                "fonts": ["FontName1", "FontName2", "FontName3"]
+                "colors": ["#hex1", "#hex2", "#hex3"],
+                "fonts": ["Font 1", "Font 2"]
             }
         `;
 
@@ -1964,7 +1980,9 @@ async function executeAnalysis() {
             const groqText = groqData.choices?.[0]?.message?.content;
             if (!groqText) throw new Error("Groq نے کوئی جواب نہیں دیا۔");
             
-            const resultData = JSON.parse(groqText.replace(/\`\`\`json|\`\`\`/g, '').trim());
+            const resultData = cleanAndParseAIJSON(groqText);
+            if (!resultData) throw new Error("Groq نے غلط ڈیٹا فارمیٹ بھیجا ہے۔");
+            
             if (scanStatusText) scanStatusText.innerText = "نتائج دکھائے جا رہے ہیں...";
             displayResults(resultData);
             
@@ -2057,7 +2075,9 @@ async function executeAnalysis() {
         const text = dataJson.candidates?.[0]?.content?.parts?.[0]?.text;
         if (!text) throw new Error("AI نے کوئی جواب نہیں دیا۔");
         
-        const parsedResults = JSON.parse(text);
+        const parsedResults = cleanAndParseAIJSON(text);
+        if (!parsedResults) throw new Error("AI نے غلط ڈیٹا فارمیٹ بھیجا ہے (JSON Error)۔");
+        
         lastAnalysisData = parsedResults;
         displayResults(parsedResults);
 
