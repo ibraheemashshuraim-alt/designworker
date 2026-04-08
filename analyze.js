@@ -167,8 +167,7 @@ const FONT_LIST = [
 const ADMIN_EMAILS = ["ibraheemashshuraim@gmail.com", "ibraheemashshuraim.alt@gmail.com", "ibraheemashshuraim-alt@gmail.com"];
 
 // v4.18.17: Master API Keys (Cloud Fallback)
-// v5.7.0: Master API Keys (Multi-Model Support)
-let masterKeys = { gemini: null, groq: null, openai: null, deepseek: null };
+let masterKeys = { gemini: null, groq: null };
 
 // v5.6.5: Refined Master Key Fetch with Auto-Retry and Faster Guest Access
 async function fetchMasterKeys(retryCount = 0) {
@@ -178,9 +177,7 @@ async function fetchMasterKeys(retryCount = 0) {
             const data = snap.data();
             masterKeys = {
                 gemini: data.gemini || data.gemini_master || null,
-                groq: data.groq || data.groq_master || null,
-                openai: data.openai || data.openai_master || null,
-                deepseek: data.deepseek || data.deepseek_master || null
+                groq: data.groq || data.groq_master || null
             };
             console.log("System: Master Keys loaded (v5.6.6).");
         } else {
@@ -194,8 +191,6 @@ async function fetchMasterKeys(retryCount = 0) {
         if (retryCount < 3) {
             setTimeout(() => fetchMasterKeys(retryCount + 1), 3000);
         }
-        // v5.7.1: Ensure UI reveals login gate even on failure/retry
-        updateUI();
     }
 }
 async function waitForKeySync() {
@@ -939,35 +934,32 @@ window.openPersonalization = function() {
 
 // ================ UI UPDATES ================
 function updateUI() {
+    const hasLocalKey = !!getApiKey();
     if (userState.loggedIn) {
-        if (elements.loginBtn) elements.loginBtn.classList.add('hidden');
-        if (elements.authContainer) elements.authContainer.classList.remove('hidden');
+        elements.loginBtn.classList.add('hidden');
+        elements.authContainer.classList.remove('hidden');
 
         // Hide login gate if logged in
         if (elements.loginGate) {
             elements.loginGate.style.opacity = '0';
             elements.loginGate.style.pointerEvents = 'none';
             setTimeout(() => {
-                if (userState.loggedIn && elements.loginGate) elements.loginGate.style.display = 'none';
+                if (userState.loggedIn) elements.loginGate.style.display = 'none';
             }, 500); // match transition time
         }
         
-        const emailDisplay = userState.email ? userState.email.split('@')[0] : 'User';
-        if (elements.profileEmail) elements.profileEmail.innerText = emailDisplay;
-        if (elements.profileEmailVal) elements.profileEmailVal.innerText = userState.email || '';
+        const emailDisplay = userState.email.split('@')[0];
+        elements.profileEmail.innerText = emailDisplay;
+        elements.profileEmailVal.innerText = userState.email;
 
         // Avatar Handling
         if (userState.photoURL) {
-            if (elements.profileAvatar) {
-                elements.profileAvatar.src = userState.photoURL;
-                elements.profileAvatar.classList.remove('hidden');
-            }
-            if (elements.profileIcon) elements.profileIcon.classList.add('hidden');
-            if (elements.modalAvatar) {
-                elements.modalAvatar.src = userState.photoURL;
-                elements.modalAvatar.classList.remove('hidden');
-            }
-            if (elements.modalIcon) elements.modalIcon.classList.add('hidden');
+            elements.profileAvatar.src = userState.photoURL;
+            elements.profileAvatar.classList.remove('hidden');
+            elements.profileIcon.classList.add('hidden');
+            elements.modalAvatar.src = userState.photoURL;
+            elements.modalAvatar.classList.remove('hidden');
+            elements.modalIcon.classList.add('hidden');
         }
 
         // --- CREDIT DISPLAY LOGIC ---
@@ -991,7 +983,9 @@ function updateUI() {
         if (elements.profileCreditsModal) elements.profileCreditsModal.innerText = displayStr;
 
         // Upgrade Prompt Visibility (v3.5 Unified)
+        // If credits <= 0, we show BUY button even if they have a local key or are admin (for testing)
         const isOutOfCredits = (credits <= 0 && userState.licenseStatus !== 'approved' && !userState.isAdmin);
+        console.log("v3.5 Logic - Credits:", credits, "OutOfCredits:", isOutOfCredits);
         
         const rBtn = document.getElementById('runAnalysisBtn');
         const bBtn = document.getElementById('buyCreditsBtn');
@@ -1019,23 +1013,30 @@ function updateUI() {
             }
         }
 
-        // v5.3.8: Tier-based Section Locking
+        // v5.3.8: Tier-based Section Locking (Analysis is open, specific features locked)
         const pricingLock = document.getElementById('pricingLockOverlay');
         const impressionLock = document.getElementById('impressionLockOverlay');
         const expertLock = document.getElementById('expertSuggestionLockOverlay');
         const expertFootnote = document.getElementById('expertLockFootnote');
         const editGate = document.getElementById('editorPremiumGate');
 
+        // v5.4.6: Check featuresEnabled from Firestore to actually unlock features for Free users
         const featEnabled = userState.featuresEnabled || {};
         const isFreeLockedUser = userState.packageType === 'Free' && userState.licenseStatus !== 'approved' && !userState.isAdmin;
+        
+        // v5.6.0: New Bypass - If Admin enabled "All Features" globally, everyone gets access
         const isGlobalBypass = window.globalConfig?.allFeaturesEnabled === true;
 
+        // Logic for Analyzer Sections (Pricing, Impression, Expert Suggestion)
+        // Unlocked if: NOT free user, OR admin granted featuresEnabled.pricing OR Global Bypass
         const pricingUnlocked = !isFreeLockedUser || featEnabled.pricing === true || isGlobalBypass;
         if (pricingLock) pricingLock.classList.toggle('hidden', pricingUnlocked);
         if (impressionLock) impressionLock.classList.toggle('hidden', pricingUnlocked);
         if (expertLock) expertLock.classList.toggle('hidden', pricingUnlocked);
         if (expertFootnote) expertFootnote.classList.toggle('hidden', !pricingUnlocked);
 
+        // Logic for AI Editor
+        // Unlocked if: Premium/Business/Admin, OR admin granted featuresEnabled.editor OR Global Bypass
         const isEditorUnlocked = ['Premium', 'Business'].includes(userState.packageType) || userState.isAdmin || featEnabled.editor === true || isGlobalBypass;
         if (editGate) {
             editGate.classList.toggle('hidden', isEditorUnlocked);
@@ -1043,14 +1044,18 @@ function updateUI() {
 
         // Management Visibility
         if (userState.isAdmin) {
-            if (elements.adminPanelSection) elements.adminPanelSection.classList.remove('hidden');
+            elements.adminPanelSection.classList.remove('hidden');
             document.querySelectorAll('.admin-only-config').forEach(el => el.classList.remove('hidden'));
             document.querySelectorAll('.admin-only-config-inverse').forEach(el => el.classList.add('hidden'));
+            
+            // Hide purchase options for admin
             document.querySelectorAll('.admin-hidden').forEach(el => el.classList.add('hidden'));
         } else {
-            if (elements.adminPanelSection) elements.adminPanelSection.classList.add('hidden');
+            elements.adminPanelSection.classList.add('hidden');
             document.querySelectorAll('.admin-only-config').forEach(el => el.classList.add('hidden'));
             document.querySelectorAll('.admin-only-config-inverse').forEach(el => el.classList.remove('hidden'));
+            
+            // Show purchase options for users
             document.querySelectorAll('.admin-hidden').forEach(el => el.classList.remove('hidden'));
         }
 
@@ -1651,128 +1656,6 @@ window.verifyGroqApiKey = async () => {
     }
 };
 
-// ================ OPENAI API MANAGEMENT ================
-function getOpenAIApiKey() {
-    return localStorage.getItem('openai_api_key');
-}
-
-window.saveOpenAIApiKey = () => {
-    const key = document.getElementById('openaiKeyInput')?.value.trim();
-    if (!key) return;
-    localStorage.setItem('openai_api_key', key);
-    
-    if (userState.isAdmin) {
-        const configRef = doc(db, "config", "api_keys");
-        setDoc(configRef, { openai: key }, { merge: true }).then(() => {
-            console.log("Master OpenAI Key updated in Cloud.");
-            masterKeys.openai = key;
-        }).catch(e => console.error("Cloud Master Sync Error:", e));
-    }
-
-    const msg = document.getElementById('openaiSaveStatusMsg');
-    if (msg) { msg.style.display = 'block'; setTimeout(() => msg.style.display = 'none', 3000); }
-    verifyOpenAIApiKey();
-};
-
-window.verifyOpenAIApiKey = async () => {
-    const key = document.getElementById('openaiKeyInput')?.value.trim() || getOpenAIApiKey();
-    const statusEl = document.getElementById('openaiVerifyStatus');
-    if (!statusEl) return;
-
-    if (!key) {
-        statusEl.innerHTML = "<span style='color:var(--warning-orange);'>براہ کرم OpenAI API Key درج کریں۔</span>";
-        statusEl.style.display = 'block';
-        return;
-    }
-
-    statusEl.innerHTML = "<span style='color:var(--warning-orange);'><i class='fa-solid fa-spinner fa-spin'></i> OpenAI ٹیسٹ ہو رہا ہے...</span>";
-    statusEl.style.display = 'block';
-
-    try {
-        const res = await fetch('https://api.openai.com/v1/chat/completions', {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${key}` 
-            },
-            body: JSON.stringify({
-                model: 'gpt-4o-mini',
-                messages: [{ role: 'user', content: 'Hi' }],
-                max_tokens: 1
-            })
-        });
-        if (res.ok) {
-            statusEl.innerHTML = "<span style='color:var(--success-green);'><i class='fa-solid fa-check-circle'></i> OpenAI کنکشن کامیاب!</span>";
-        } else {
-            const data = await res.json();
-            statusEl.innerHTML = `<span style='color:#ff5252;'><i class='fa-solid fa-ban'></i> ${data.error?.message || 'Key غلط ہے۔'}</span>`;
-        }
-    } catch (e) {
-        statusEl.innerHTML = `<span style='color:#ff5252;'><i class='fa-solid fa-xmark'></i> نیٹ ورک مسئلہ: ${e.message}</span>`;
-    }
-};
-
-// ================ DEEPSEEK API MANAGEMENT ================
-function getDeepSeekApiKey() {
-    return localStorage.getItem('deepseek_api_key');
-}
-
-window.saveDeepSeekApiKey = () => {
-    const key = document.getElementById('deepseekKeyInput')?.value.trim();
-    if (!key) return;
-    localStorage.setItem('deepseek_api_key', key);
-    
-    if (userState.isAdmin) {
-        const configRef = doc(db, "config", "api_keys");
-        setDoc(configRef, { deepseek: key }, { merge: true }).then(() => {
-            console.log("Master DeepSeek Key updated in Cloud.");
-            masterKeys.deepseek = key;
-        }).catch(e => console.error("Cloud Master Sync Error:", e));
-    }
-
-    const msg = document.getElementById('deepseekSaveStatusMsg');
-    if (msg) { msg.style.display = 'block'; setTimeout(() => msg.style.display = 'none', 3000); }
-    verifyDeepSeekApiKey();
-};
-
-window.verifyDeepSeekApiKey = async () => {
-    const key = document.getElementById('deepseekKeyInput')?.value.trim() || getDeepSeekApiKey();
-    const statusEl = document.getElementById('deepseekVerifyStatus');
-    if (!statusEl) return;
-
-    if (!key) {
-        statusEl.innerHTML = "<span style='color:var(--warning-orange);'>براہ کرم DeepSeek API Key درج کریں۔</span>";
-        statusEl.style.display = 'block';
-        return;
-    }
-
-    statusEl.innerHTML = "<span style='color:var(--warning-orange);'><i class='fa-solid fa-spinner fa-spin'></i> DeepSeek ٹیسٹ ہو رہا ہے...</span>";
-    statusEl.style.display = 'block';
-
-    try {
-        const res = await fetch('https://api.deepseek.com/v1/chat/completions', {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${key}` 
-            },
-            body: JSON.stringify({
-                model: 'deepseek-chat',
-                messages: [{ role: 'user', content: 'Hi' }],
-                max_tokens: 1
-            })
-        });
-        if (res.ok) {
-            statusEl.innerHTML = "<span style='color:var(--success-green);'><i class='fa-solid fa-check-circle'></i> DeepSeek کنکشن کامیاب!</span>";
-        } else {
-            const data = await res.json();
-            statusEl.innerHTML = `<span style='color:#ff5252;'><i class='fa-solid fa-ban'></i> ${data.error?.message || 'Key غلط ہے۔'}</span>`;
-        }
-    } catch (e) {
-        statusEl.innerHTML = `<span style='color:#ff5252;'><i class='fa-solid fa-xmark'></i> نیٹ ورک مسئلہ: ${e.message}</span>`;
-    }
-};
-
 window.getSelectedProvider = () => {
     return localStorage.getItem('ai_provider') || 'gemini';
 };
@@ -1784,24 +1667,10 @@ function updateProviderBadge(p) {
 
     if (p === 'groq') {
         label.innerHTML = "<i class='fa-solid fa-bolt'></i> Groq (Free)";
-        label.style.color = 'var(--neon-purple)';
-        if (badge) {
-            badge.style.background = 'rgba(157,0,255,0.08)';
-            badge.style.borderColor = 'rgba(157,0,255,0.3)';
-        }
-    } else if (p === 'openai') {
-        label.innerHTML = "<i class='fa-solid fa-robot'></i> OpenAI (GPT-4o)";
-        label.style.color = '#00ff9d';
+        label.style.color = 'var(--neon-cyan)';
         if (badge) {
             badge.style.background = 'rgba(0,255,157,0.08)';
             badge.style.borderColor = 'rgba(0,255,157,0.3)';
-        }
-    } else if (p === 'deepseek') {
-        label.innerHTML = "<i class='fa-solid fa-brain'></i> DeepSeek V3";
-        label.style.color = '#9d00ff';
-        if (badge) {
-            badge.style.background = 'rgba(157,0,255,0.08)';
-            badge.style.borderColor = 'rgba(157,0,255,0.3)';
         }
     } else {
         label.innerHTML = "<i class='fa-solid fa-gem'></i> Gemini";
@@ -1874,44 +1743,10 @@ async function compressImage(base64Str, maxWidth = 500, maxHeight = 500) {
     });
 }
 
-// v5.7.0: Audit Selection UI Helpers
-window.showAuditSelection = () => {
-    if (!currentImageBase64) {
-        showToast("پہلے ڈیزائن اپلوڈ کریں", "warning");
-        return;
-    }
-    // Pre-select current settings
-    const langSelect = document.getElementById('auditLanguageSelect');
-    if (langSelect) langSelect.value = userSettings.language || 'Urdu';
-    
-    toggleModal('auditSelectionModal', true);
-};
-
-window.selectAuditModel = (model) => {
-    document.querySelectorAll('.model-option').forEach(opt => {
-        opt.classList.remove('active');
-        if (opt.dataset.model === model) opt.classList.add('active');
-    });
-};
-
-window.startAuditProcess = () => {
-    const activeModel = document.querySelector('.model-option.active')?.dataset.model || 'gemini';
-    const selectedLang = document.getElementById('auditLanguageSelect').value;
-    
-    // Update global settings
-    userSettings.language = selectedLang;
-    saveSettings();
-    
-    toggleModal('auditSelectionModal', false);
-    
-    // Run core analysis with the selected model
-    window.runAnalysis(activeModel);
-};
-
-// ================ AI ANALYSIS (v5.7.0 - Multi-Model & Unified Failover) ================
-window.runAnalysis = async (overrideProvider = null) => {
+// ================ AI ANALYSIS (v5.6.5 - Master Key Fixed) ================
+window.runAnalysis = async () => {
     console.time("AnalysisPhase");
-    console.log("v5.7.0: Analysis started...");
+    console.log("v5.6.5: Analysis started...");
 
     if (!currentImageBase64) {
         alert("پہلے ڈیزائن اپلوڈ کریں۔");
@@ -1940,16 +1775,39 @@ window.runAnalysis = async (overrideProvider = null) => {
         if (scanModal) scanModal.classList.add('hidden');
         if (runBtn) runBtn.disabled = false;
         alert("تجزیہ بہت دیر لے رہا ہے۔ براہ کرم انٹرنیٹ چیک کریں اور دوبارہ کوشش کریں۔");
-    }, 60000); // 1-minute timeout for multi-step
+    }, 45000);
 
     try {
-        // v5.7.0: Multi-Model Loop for Failover
-        const providersOrder = ['gemini', 'groq', 'openai', 'deepseek'];
-        let currentProvider = overrideProvider || window.getSelectedProvider?.() || 'gemini';
+
+        // v5.6.5: Robust Master Key Retrieval (Crucial for Mobile/Guest users)
+        let selectedProvider = window.getSelectedProvider?.() || 'gemini';
+        if (window.forceGroqFailover) {
+            selectedProvider = 'groq';
+            window.forceGroqFailover = false; // Reset
+        }
+
+        const typedKey = elements.apiKeyInput ? elements.apiKeyInput.value.trim() : "";
+        let keyToUse = typedKey || getApiKey();
         
+        // v5.6.6: Fallback to Master Key if no personal key is found (Wait for sync if needed)
+        if (!keyToUse) {
+            await waitForKeySync();
+            keyToUse = masterKeys && (selectedProvider === 'groq' ? masterKeys.groq : masterKeys.gemini);
+        }
+        
+        if (!keyToUse && selectedProvider === 'gemini') {
+            if (scanModal) scanModal.classList.add('hidden');
+            if (runBtn) runBtn.disabled = false;
+            clearTimeout(killSwitch);
+            return alert("سسٹم ابھی دستیاب نہیں ہے (Gemini Key Missing)۔\nبراہ کرم پروفائل سیٹنگز میں اپنی API Key درج کریں۔");
+        }
+
+        console.log("v4.18.15: Processing (Key: " + (typedKey ? "Typed" : "Stored/Master") + ")");
+
         const compressedBase64 = await compressImage(currentImageBase64);
         const mimeType = "image/jpeg";
         const base64Data = compressedBase64.split(',')[1];
+
         const prompt = `
             You are a World-Class Creative Director and Senior UI/Graphic Designer from a top Design Agency.
             Objective: Analyze the provided design with surgical precision and artistic depth.
@@ -1996,73 +1854,189 @@ window.runAnalysis = async (overrideProvider = null) => {
             }
         `;
 
-        let success = false;
-        let resultData = null;
-        let attemptOrder = [currentProvider, ...providersOrder.filter(p => p !== currentProvider)];
+        if (selectedProvider === 'groq') {
+            const groqKey = getGroqApiKey() || (masterKeys && masterKeys.groq);
+            if (!groqKey) {
+                if (scanModal) scanModal.classList.add('hidden');
+                if (runBtn) runBtn.disabled = false;
+                clearTimeout(killSwitch);
+                return alert("آپ نے Groq provider select کیا ہے لیکن Groq API Key سیو نہیں کی ہے۔\nبراہ کرم پروفائل > Groq Key درج کر کے سیو کریں۔");
+            }
 
-        for (const provider of attemptOrder) {
+            console.log("v4.18.15: Using Groq AI for analysis...");
+            if (scanStatusText) scanStatusText.innerText = "AI ڈیزائن کا جائزہ لے رہا ہے...";
+
+            let groqVisionModel = 'llama-3.2-11b-vision-preview';
             try {
-                if (scanStatusText) scanStatusText.innerText = `${provider.toUpperCase()} AI تجزیہ کر رہا ہے...`;
-                console.log(`v5.7.0: Trying ${provider}...`);
-                
-                let responseText = "";
-                let keyToUse = (elements.apiKeyInput ? elements.apiKeyInput.value.trim() : "") || masterKeys[provider];
-
-                if (provider === 'gemini') {
-                    if (!keyToUse) throw new Error("Gemini Key Missing");
-                    responseText = await callGeminiAPI(keyToUse, prompt, base64Data, mimeType);
-                } else if (provider === 'groq') {
-                    if (!keyToUse) throw new Error("Groq Key Missing");
-                    responseText = await callGroqAPI(keyToUse, prompt, compressedBase64);
-                } else if (provider === 'openai') {
-                    if (!keyToUse) throw new Error("OpenAI Key Missing");
-                    responseText = await callOpenAIAPI(keyToUse, prompt, compressedBase64);
-                } else if (provider === 'deepseek') {
-                    if (!keyToUse) throw new Error("DeepSeek Key Missing");
-                    responseText = await callDeepSeekAPI(keyToUse, prompt, compressedBase64);
+                const listRes = await fetch('https://api.groq.com/openai/v1/models', {
+                    headers: { 'Authorization': `Bearer ${groqKey}` }
+                });
+                if (listRes.ok) {
+                    const listData = await listRes.json();
+                    const models = listData.data.map(m => m.id);
+                    const best = models.find(m => m.includes('llama-4-scout')) || 
+                                 models.find(m => m.includes('llama-4-maverick')) || 
+                                 models.find(m => m.includes('vision') && !m.includes('preview')) ||
+                                 models.find(m => m.includes('vision')) ||
+                                 models[0];
+                    if (best) groqVisionModel = best;
                 }
+            } catch (e) {
+                groqVisionModel = 'meta-llama/llama-4-scout-17b-16e-instruct';
+            }
 
-                if (responseText) {
-                    resultData = JSON.parse(responseText.replace(/\`\`\`json|\`\`\`/g, '').trim());
-                    success = true;
-                    break;
-                }
-            } catch (err) {
-                console.warn(`Provider ${provider} failed:`, err);
-                const msg = err.message.toLowerCase();
-                
-                if (provider === 'gemini' && (msg.includes("429") || msg.includes("quota"))) {
-                    showToast("Gemini کوٹہ ختم، دوسرے AI پر منتقل ہو رہے ہیں...", "warning");
-                } else if (provider === 'openai' && (msg.includes("quota") || msg.includes("balance") || msg.includes("insufficient"))) {
-                    showToast("OpenAI کوٹہ یا بیلنس ختم، بیک اپ AI سے چیک کیا جا رہا ہے...", "warning");
-                } else if (provider === 'groq' && (msg.includes("429") || msg.includes("rate_limit"))) {
-                    showToast("Groq بزی ہے، دوسرے AI پر منتقل ہو رہے ہیں...", "info");
+            const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${groqKey}`
+                },
+                body: JSON.stringify({
+                    model: groqVisionModel,
+                    messages: [{
+                        role: 'user',
+                        content: [
+                            { type: 'image_url', image_url: { url: compressedBase64 } },
+                            { type: 'text', text: prompt }
+                        ]
+                    }],
+                    response_format: { type: 'json_object' },
+                    temperature: 0.1
+                })
+            });
+
+            const groqData = await groqRes.json();
+            if (!groqRes.ok || groqData.error) {
+                throw new Error(`Groq API خطا (${groqRes.status}): ${groqData.error?.message || groqData.message || "Error"}`);
+            }
+            const groqText = groqData.choices?.[0]?.message?.content;
+            if (!groqText) throw new Error("Groq نے کوئی جواب نہیں دیا۔");
+            
+            const resultData = JSON.parse(groqText.replace(/\`\`\`json|\`\`\`/g, '').trim());
+            if (scanStatusText) scanStatusText.innerText = "نتائج دکھائے جا رہے ہیں...";
+            displayResults(resultData);
+            
+            if (userState.loggedIn) {
+                saveAnalysisToHistory(resultData, compressedBase64);
+                checkAndSaveBestDesign(resultData, compressedBase64);
+                handleExpertSuggestion(resultData);
+            }
+            if (userState.loggedIn && !userState.isAdmin && userState.licenseStatus !== 'approved') {
+                deductCredit().catch(e => console.log("Credit deduction failed."));
+            }
+            console.log("v4.18.15: Groq Analysis SUCCESS.");
+            return;
+        }
+
+        const safetySettings = [
+            { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+            { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+            { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+            { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
+        ];
+
+        let lastErrorMsg = null;
+        let quotaHit = false;
+        let response = null;
+        let dataJson = null;
+        let modelToUse = "gemini-1.5-flash";
+
+        try {
+            const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${keyToUse}`);
+            const listData = await listRes.json();
+            if (listData.models && listData.models.length > 0) {
+                const bestModel = listData.models.find(m => m.supportedGenerationMethods.includes("generateContent") && m.name.includes("flash") && !m.name.includes("exp")) || listData.models.find(m => m.supportedGenerationMethods.includes("generateContent"));
+                if (bestModel) modelToUse = bestModel.name.split('/').pop();
+            }
+        } catch (e) {
+            console.warn("Model detection failed.");
+        }
+
+        const controller = new AbortController();
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelToUse}:generateContent?key=${keyToUse}`;
+        
+        try {
+            const fetchSignal = AbortSignal.timeout ? AbortSignal.timeout(45000) : controller.signal;
+            if (!AbortSignal.timeout) setTimeout(() => controller.abort(), 45000);
+
+            const payload = {
+                contents: [{ parts: [{ text: prompt }, { inline_data: { mime_type: mimeType, data: base64Data } }] }],
+                generationConfig: { response_mime_type: "application/json" },
+                safetySettings: safetySettings
+            };
+
+            response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+                signal: fetchSignal
+            });
+            
+            dataJson = await response.json();
+            if (response.ok) {
+                console.log(`v4.5.0 SUCCESS: ${modelToUse}`);
+            } else {
+                lastErrorMsg = dataJson.error?.message || response.statusText;
+                if (response.status === 429) quotaHit = true;
+                if ((lastErrorMsg && (lastErrorMsg.toLowerCase().includes("block") || response.status === 403)) && masterKeys.groq) {
+                    showToast("Gemini Blocked: Switching to Backup AI...", "warning");
+                    window.forceGroqFailover = true;
+                    setTimeout(() => window.runAnalysis(), 100); 
+                    return;
                 }
             }
+        } catch (err) {
+            lastErrorMsg = err.message;
         }
 
-        if (!success || !resultData) {
-            throw new Error("تمام AI ماڈلز مصروف ہیں یا کوٹہ ختم ہو گیا ہے۔ براہ کرم اپنی API Key چیک کریں۔");
+        if (!response?.ok) {
+            const errLower = (lastErrorMsg || "").toLowerCase();
+            if (errLower.includes("blocked") || errLower.includes("generativeservice")) {
+                if (scanModal) scanModal.classList.add('hidden');
+                if (runBtn) runBtn.disabled = false;
+                clearTimeout(killSwitch);
+                window.showAiDiagnosticModal(lastErrorMsg, lastErrorMsg);
+                return;
+            }
+            throw new Error(`تجزیہ میں ایرر: ${lastErrorMsg || "رابطہ سست ہے"}`);
         }
 
-        // Handle SUCCESS
         if (scanStatusText) scanStatusText.innerText = "نتائج دکھائے جا رہے ہیں...";
-        lastAnalysisData = resultData;
-        displayResults(resultData);
+        const text = dataJson.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!text) throw new Error("AI نے کوئی جواب نہیں دیا۔");
+        
+        const parsedResults = JSON.parse(text);
+        lastAnalysisData = parsedResults;
+        displayResults(parsedResults);
 
         if (userState.loggedIn) {
-            saveAnalysisToHistory(resultData, compressedBase64);
-            checkAndSaveBestDesign(resultData, compressedBase64);
-            handleExpertSuggestion(resultData);
+            saveAnalysisToHistory(parsedResults, compressedBase64);
+            checkAndSaveBestDesign(parsedResults, compressedBase64);
+            handleExpertSuggestion(parsedResults);
         }
 
         if (userState.loggedIn && !userState.isAdmin && userState.licenseStatus !== 'approved') {
             deductCredit().catch(e => console.log("Credit deduction failed."));
         }
-        
+        console.log("v4.5.1: Success - Credit deduction active.");
+
     } catch (err) {
         console.error("ANALYSIS ERROR:", err);
-        alert("مسلہ: " + err.message);
+        const errLower = (err.message || "").toLowerCase();
+        
+        // v5.6.6: Automatic Failover from Gemini to Groq
+        if (selectedProvider === 'gemini' && masterKeys.groq) {
+            showToast("Gemini مصروف ہے، بیک اپ AI سے چیک کیا جا رہا ہے...", "info");
+            console.log("v5.6.6: Gemini Failed. Attempting Auto-Failover to Groq.");
+            window.forceGroqFailover = true;
+            return runAnalysis(); 
+        }
+
+        if (errLower.includes("blocked") || errLower.includes("generativeservice") || errLower.includes("quota")) {
+            window.showAiDiagnosticModal(err.message, err.message);
+        } else {
+            alert("مسلہ: " + err.message);
+        }
     } finally {
         clearTimeout(killSwitch);
         if (scanModal) scanModal.classList.add('hidden');
@@ -2070,66 +2044,6 @@ window.runAnalysis = async (overrideProvider = null) => {
         console.timeEnd("AnalysisPhase");
     }
 };
-
-async function callGeminiAPI(key, prompt, base64Data, mimeType) {
-    const modelToUse = "gemini-1.5-flash";
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelToUse}:generateContent?key=${key}`;
-    const payload = {
-        contents: [{ parts: [{ text: prompt }, { inline_data: { mime_type: mimeType, data: base64Data } }] }],
-        generationConfig: { response_mime_type: "application/json" }
-    };
-    const res = await fetch(url, { method: 'POST', body: JSON.stringify(payload) });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error?.message || "Gemini Error");
-    return data.candidates?.[0]?.content?.parts?.[0]?.text;
-}
-
-async function callGroqAPI(key, prompt, imageBase64) {
-    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
-        body: JSON.stringify({
-            model: 'llama-3.2-11b-vision-preview',
-            messages: [{ role: 'user', content: [{ type: 'image_url', image_url: { url: imageBase64 } }, { type: 'text', text: prompt }] }],
-            response_format: { type: 'json_object' }
-        })
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error?.message || "Groq Error");
-    return data.choices?.[0]?.message?.content;
-}
-
-async function callOpenAIAPI(key, prompt, imageBase64) {
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
-        body: JSON.stringify({
-            model: 'gpt-4o',
-            messages: [{ role: 'user', content: [{ type: 'image_url', image_url: { url: imageBase64 } }, { type: 'text', text: prompt }] }],
-            response_format: { type: 'json_object' }
-        })
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error?.message || "OpenAI Error");
-    return data.choices?.[0]?.message?.content;
-}
-
-async function callDeepSeekAPI(key, prompt, imageBase64) {
-    // Note: DeepSeek doesn't natively support images in standard chat completions yet (v3/r1).
-    // Using current V3 for intelligence but will likely fail vision tasks unless using VL model.
-    // For now, attempting standard OpenAI-compatible vision call as placeholder for future VL support.
-    const res = await fetch('https://api.deepseek.com/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
-        body: JSON.stringify({
-            model: 'deepseek-chat', 
-            messages: [{ role: 'user', content: prompt + "\n[Note: This is a design analysis task. Please use your best architectural knowledge.]" }]
-        })
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error?.message || "DeepSeek Error");
-    return data.choices?.[0]?.message?.content;
-}
 
 
 async function deductCredit() {
@@ -2347,18 +2261,6 @@ const savedGroq = getGroqApiKey();
 if (savedGroq) {
     const groqInput = document.getElementById('groqKeyInput');
     if (groqInput) groqInput.value = savedGroq;
-}
-
-const savedOpenAI = getOpenAIApiKey();
-if (savedOpenAI) {
-    const openaiInput = document.getElementById('openaiKeyInput');
-    if (openaiInput) openaiInput.value = savedOpenAI;
-}
-
-const savedDeepSeek = getDeepSeekApiKey();
-if (savedDeepSeek) {
-    const deepseekInput = document.getElementById('deepseekKeyInput');
-    if (deepseekInput) deepseekInput.value = savedDeepSeek;
 }
 
 // v4.20.0: Personalization Core Logic

@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DesignCheck AI Design Studio (v5.8.0 - Cache Buster)</title>
+    <title>DesignCheck AI Design Studio (v5.6.4 - Master Access Fix)</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="style.css?v=5.8.0">
+    <link rel="stylesheet" href="style.css?v=5.6.4">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
@@ -173,19 +173,13 @@
 
                     <div class="modal-section">
                         <h4><i class="fa-solid fa-robot" style="color:var(--neon-cyan);"></i> AI Provider سلیکٹ کریں</h4>
-                        <!-- Provider Tabs (Updated v5.7.2 for OpenAI/DeepSeek) -->
-                        <div style="display: flex; gap: 4px; margin-bottom: 14px;">
-                            <button id="tab-gemini" class="provider-tab active-tab" onclick="setProvider('gemini')" style="flex:1; padding: 6px; border-radius: 8px; border: 1px solid var(--neon-cyan); background: rgba(0,229,255,0.1); color: var(--neon-cyan); font-size: 0.75rem; cursor: pointer; font-weight: 700;">
+                        <!-- Provider Tabs -->
+                        <div style="display: flex; gap: 8px; margin-bottom: 14px;">
+                            <button id="tab-gemini" class="provider-tab active-tab" onclick="setProvider('gemini')" style="flex:1; padding: 8px; border-radius: 8px; border: 1px solid var(--neon-cyan); background: rgba(0,229,255,0.1); color: var(--neon-cyan); font-size: 0.8rem; cursor: pointer; font-weight: 700;">
                                 <i class="fa-solid fa-gem"></i> Gemini
                             </button>
-                            <button id="tab-groq" class="provider-tab" onclick="setProvider('groq')" style="flex:1; padding: 6px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.03); color: var(--text-muted); font-size: 0.75rem; cursor: pointer; font-weight: 700;">
-                                <i class="fa-solid fa-bolt"></i> Groq
-                            </button>
-                            <button id="tab-openai" class="provider-tab" onclick="setProvider('openai')" style="flex:1; padding: 6px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.03); color: var(--text-muted); font-size: 0.75rem; cursor: pointer; font-weight: 700;">
-                                <i class="fa-solid fa-robot"></i> GPT-4o
-                            </button>
-                            <button id="tab-deepseek" class="provider-tab" onclick="setProvider('deepseek')" style="flex:1; padding: 6px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.03); color: var(--text-muted); font-size: 0.75rem; cursor: pointer; font-weight: 700;">
-                                <i class="fa-solid fa-brain"></i> DeepSeek
+                            <button id="tab-groq" class="provider-tab" onclick="setProvider('groq')" style="flex:1; padding: 8px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.03); color: var(--text-muted); font-size: 0.8rem; cursor: pointer; font-weight: 700;">
+                                <i class="fa-solid fa-bolt"></i> Groq (Free)
                             </button>
                         </div>
 
@@ -208,46 +202,18 @@
                                 <p id="apiVerifyStatus" style="font-size: 0.7rem; margin-top: 5px; display: none;"></p>
                             </div>
 
-                            <!-- Groq API Key -->
+                            <!-- Groq API Key (Free Alternative) -->
                             <div id="groq-section" style="margin-top: 14px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.06);">
-                                <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 6px;">Groq Cloud API Key:</div>
+                                <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 6px;">Groq Cloud API Key (<a href="https://console.groq.com" target="_blank" style="color:var(--neon-cyan);">console.groq.com</a> سے حاصل کریں):</div>
                                 <input type="password" id="groqKeyInput" class="custom-input" placeholder="gsk_...">
                                 <div style="display: flex; gap: 5px; margin-top:5px;">
-                                    <button onclick="saveGroqApiKey()" class="btn secondary-btn" style="flex: 1; padding: 10px;">سیو کریں</button>
+                                    <button onclick="saveGroqApiKey()" class="btn secondary-btn" style="flex: 1; padding: 10px;">Groq Key سیو کریں</button>
                                     <button onclick="verifyGroqApiKey()" class="btn warning-btn" style="flex: 1; padding: 10px; font-size: 0.8rem; background: rgba(255,165,0,0.1); border: 1px solid orange; color: orange;">
                                         <i class="fa-solid fa-satellite-dish"></i> ٹیسٹ
                                     </button>
                                 </div>
                                 <p id="groqSaveStatusMsg" style="color: var(--success-green); font-size: 0.7rem; margin-top: 5px; display: none;">Groq Key محفوظ!</p>
                                 <p id="groqVerifyStatus" style="font-size: 0.7rem; margin-top: 5px; display: none;"></p>
-                            </div>
-
-                            <!-- OpenAI API Key -->
-                            <div id="openai-section" style="margin-top: 14px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.06);">
-                                <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 6px;">OpenAI (ChatGPT-4o) API Key:</div>
-                                <input type="password" id="openaiKeyInput" class="custom-input" placeholder="sk-...">
-                                <div style="display: flex; gap: 5px; margin-top:5px;">
-                                    <button onclick="saveOpenAIApiKey()" class="btn secondary-btn" style="flex: 1; padding: 10px;">سیو کریں</button>
-                                    <button onclick="verifyOpenAIApiKey()" class="btn warning-btn" style="flex: 1; padding: 10px; font-size: 0.8rem; background: rgba(0,255,157,0.1); border: 1px solid #00ff9d; color: #00ff9d;">
-                                        <i class="fa-solid fa-satellite-dish"></i> ٹیسٹ
-                                    </button>
-                                </div>
-                                <p id="openaiSaveStatusMsg" style="color: var(--success-green); font-size: 0.7rem; margin-top: 5px; display: none;">OpenAI Key محفوظ!</p>
-                                <p id="openaiVerifyStatus" style="font-size: 0.7rem; margin-top: 5px; display: none;"></p>
-                            </div>
-
-                            <!-- DeepSeek API Key -->
-                            <div id="deepseek-section" style="margin-top: 14px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.06);">
-                                <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 6px;">DeepSeek V3 API Key:</div>
-                                <input type="password" id="deepseekKeyInput" class="custom-input" placeholder="sk-...">
-                                <div style="display: flex; gap: 5px; margin-top:5px;">
-                                    <button onclick="saveDeepSeekApiKey()" class="btn secondary-btn" style="flex: 1; padding: 10px;">سیو کریں</button>
-                                    <button onclick="verifyDeepSeekApiKey()" class="btn warning-btn" style="flex: 1; padding: 10px; font-size: 0.8rem; background: rgba(157,0,255,0.1); border: 1px solid #9d00ff; color: #9d00ff;">
-                                        <i class="fa-solid fa-satellite-dish"></i> ٹیسٹ
-                                    </button>
-                                </div>
-                                <p id="deepseekSaveStatusMsg" style="color: var(--success-green); font-size: 0.7rem; margin-top: 5px; display: none;">DeepSeek Key محفوظ!</p>
-                                <p id="deepseekVerifyStatus" style="font-size: 0.7rem; margin-top: 5px; display: none;"></p>
                             </div>
                         </div>
 
@@ -338,7 +304,7 @@
                     <img id="designPreview" alt="Design Preview">
                     <div id="workspaceActions" style="margin-top: 20px; width: 100%;">
                         <!-- Normal Analyze Button -->
-                        <button id="runAnalysisBtn" class="btn primary-btn" style="width: 100%; font-size: 1.1rem; padding: 15px;" onclick="showAuditSelection()">
+                        <button id="runAnalysisBtn" class="btn primary-btn" style="width: 100%; font-size: 1.1rem; padding: 15px;" onclick="runAnalysis()">
                             <i class="fa-solid fa-wand-magic-sparkles"></i> AI کے ساتھ تجزیہ کریں
                         </button>
                         <!-- Premium Buy Credits Button -->
@@ -644,63 +610,6 @@
 
     <!-- Modals -->
 
-    <!-- v5.7.0: Audit Selection Modal -->
-    <div id="auditSelectionModal" class="modal hidden">
-        <div class="modal-content" style="max-width: 450px; border-color: var(--neon-cyan); padding: 30px;">
-            <span class="close-btn" onclick="toggleModal('auditSelectionModal', false)">&times;</span>
-            <div style="text-align: center; margin-bottom: 20px;">
-                <i class="fa-solid fa-magnifying-glass-chart" style="font-size: 2.5rem; color: var(--neon-cyan); margin-bottom: 10px;"></i>
-                <h2 style="color: #fff; margin: 0;">تجزیہ شروع کریں</h2>
-                <p style="color: var(--text-muted); font-size: 0.85rem;">ماڈل اور زبان منتخب کریں</p>
-            </div>
-
-            <div class="modal-section" style="margin-bottom: 20px;">
-                <label style="display: block; font-size: 0.85rem; color: var(--neon-cyan); margin-bottom: 8px; font-weight: 600;">
-                    <i class="fa-solid fa-robot"></i> AI ماڈل منتخب کریں:
-                </label>
-                <div class="model-selection-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                    <div class="model-option active" data-model="gemini" onclick="selectAuditModel('gemini')">
-                        <i class="fa-solid fa-gem"></i>
-                        <span>Gemini</span>
-                        <div class="model-badge">Recommended</div>
-                    </div>
-                    <div class="model-option" data-model="groq" onclick="selectAuditModel('groq')">
-                        <i class="fa-solid fa-bolt"></i>
-                        <span>Groq</span>
-                        <div class="model-badge">Fast</div>
-                    </div>
-                    <div class="model-option" data-model="openai" onclick="selectAuditModel('openai')">
-                        <i class="fa-brands fa-openai"></i>
-                        <span>ChatGPT</span>
-                        <div class="model-badge">Pro</div>
-                    </div>
-                    <div class="model-option" data-model="deepseek" onclick="selectAuditModel('deepseek')">
-                        <i class="fa-solid fa-brain"></i>
-                        <span>DeepSeek</span>
-                        <div class="model-badge">New</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="modal-section" style="margin-bottom: 25px;">
-                <label style="display: block; font-size: 0.85rem; color: var(--neon-cyan); margin-bottom: 8px; font-weight: 600;">
-                    <i class="fa-solid fa-language"></i> نتائج کی زبان:
-                </label>
-                <select id="auditLanguageSelect" class="custom-input" style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(157,0,255,0.3); color: #fff; border-radius: 10px;">
-                    <option value="Urdu" selected>Urdu (اردو)</option>
-                    <option value="English">English</option>
-                    <option value="Arabic">Arabic (العربية)</option>
-                    <option value="Pashto">Pashto (پښتو)</option>
-                </select>
-            </div>
-
-            <button onclick="startAuditProcess()" class="btn primary-btn" style="width: 100%; padding: 15px; font-size: 1rem; border-radius: 12px; box-shadow: 0 0 20px rgba(0, 229, 255, 0.2);">
-                <i class="fa-solid fa-play"></i> تجزیہ شروع کریں (Start Audit)
-            </button>
-        </div>
-    </div>
-
-
     <div id="creditClaimModal" class="modal hidden">
         <div class="modal-content" style="max-width: 400px; border-color: var(--neon-purple);">
             <span class="close-btn" onclick="toggleModal('creditClaimModal', false)">&times;</span>
@@ -883,12 +792,12 @@
 
     <footer style="padding: 20px; border-top: 1px solid rgba(255,255,255,0.05); text-align: center;">
         <div style="display: flex; align-items: center; justify-content: center; width: 100%;">
-            <div><span id="uiVersion" style="color: var(--neon-cyan); font-family: monospace;">DesignCheck Studio v5.8.0 (Live Fix)</span></div>
+            <div><span id="uiVersion" style="color: var(--neon-cyan); font-family: monospace;">DesignCheck Studio v5.6.4 (Master Access Fix)</span></div>
         </div>
     </footer>
 
-    <script type="module" src="analyze.js?v=5.8.0"></script>
-    <script src="editor.js?v=5.8.0"></script>
+    <script type="module" src="analyze.js?v=5.6.4"></script>
+    <script src="editor.js?v=5.6.4"></script>
     <script>
         // *v4.23.1 - The Enhanced Auth Gate Update*
         window.hardResetApp = async function() {
@@ -921,18 +830,6 @@
                 }
             });
         }
-
-        // v5.7.2: Safety Timeout for Login Gate
-        // If the JS takes > 8 seconds to hide the "Checking Access" loader, reveal the Login UI as fallback
-        setTimeout(() => {
-            const loading = document.getElementById('loginLoading');
-            const main = document.getElementById('loginMain');
-            if (loading && !loading.classList.contains('hidden')) {
-                console.warn("Gate Safety Timeout: Force revealing login UI.");
-                loading.classList.add('hidden');
-                if (main) main.classList.remove('hidden');
-            }
-        }, 8000);
     </script>
 
     <!-- ====== v4.22.3: PERSONALIZATION MODAL (Dedicated Popup) ====== -->
