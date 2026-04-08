@@ -954,6 +954,106 @@
     </div>
     <!-- ====== END PERSONALIZATION MODAL ====== -->
 
+    <!-- ====== v5.7.0: ANALYSIS SETUP MODAL (Selection Step) ====== -->
+    <div id="analysisSetupModal" class="hidden" style="
+        position: fixed; inset: 0; z-index: 10000;
+        background: rgba(0,0,0,0.8); backdrop-filter: blur(12px);
+        display: none; align-items: center; justify-content: center;
+        padding: 20px;
+    ">
+        <div style="
+            background: linear-gradient(145deg, #0f0f1a, #1a1a2e);
+            border: 2px solid var(--neon-cyan);
+            border-radius: 24px;
+            padding: 35px;
+            width: 100%;
+            max-width: 450px;
+            box-shadow: 0 0 80px rgba(0,229,255,0.25);
+            position: relative;
+            text-align: center;
+        ">
+            <div style="margin-bottom: 25px;">
+                <div style="
+                    width: 60px; height: 60px; border-radius: 50%;
+                    background: rgba(0,229,255,0.1);
+                    border: 1px solid var(--neon-cyan);
+                    display: flex; align-items: center; justify-content: center;
+                    margin: 0 auto 15px;
+                ">
+                    <i class="fa-solid fa-wand-magic-sparkles" style="font-size: 1.5rem; color: var(--neon-cyan);"></i>
+                </div>
+                <h2 style="margin: 0; font-size: 1.4rem; color: #fff;">تیار ہیں؟</h2>
+                <p style="margin: 8px 0 0; font-size: 0.85rem; color: var(--text-muted);">تجزیہ شروع کرنے سے پہلے انتخاب کریں</p>
+            </div>
+
+            <!-- Model Selection -->
+            <div style="margin-bottom: 20px; text-align: right;">
+                <label style="display: block; font-size: 0.8rem; color: var(--neon-cyan); margin-bottom: 10px; font-weight: 600;">
+                    <i class="fa-solid fa-robot"></i> AI ماڈل منتخب کریں:
+                </label>
+                <div style="display: flex; gap: 10px;">
+                    <button id="setup-model-gemini" onclick="setSetupModel('gemini')" style="
+                        flex: 1; padding: 12px; border-radius: 12px; border: 1px solid var(--neon-cyan);
+                        background: rgba(0,229,255,0.1); color: var(--neon-cyan); cursor: pointer;
+                        font-weight: 700; transition: all 0.2s;
+                    ">
+                        <i class="fa-solid fa-gem"></i> Gemini
+                    </button>
+                    <button id="setup-model-groq" onclick="setSetupModel('groq')" style="
+                        flex: 1; padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);
+                        background: rgba(255,255,255,0.05); color: #888; cursor: pointer;
+                        font-weight: 700; transition: all 0.2s;
+                    ">
+                        <i class="fa-solid fa-bolt"></i> Groq (Free)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Language Selection -->
+            <div style="margin-bottom: 30px; text-align: right;">
+                <label style="display: block; font-size: 0.8rem; color: var(--neon-cyan); margin-bottom: 10px; font-weight: 600;">
+                    <i class="fa-solid fa-language"></i> نتائج کی زبان:
+                </label>
+                <div class="custom-select-wrapper" style="position: relative;">
+                    <select id="setupLanguageSelect" style="
+                        width: 100%; padding: 14px 16px;
+                        background: #0f0f1a;
+                        border: 1px solid rgba(255,255,255,0.1);
+                        border-radius: 12px; color: #fff;
+                        font-size: 0.95rem; cursor: pointer; outline: none;
+                        appearance: none; -webkit-appearance: none;
+                        direction: rtl; font-family: 'Noto Nastaliq Urdu', sans-serif;
+                    ">
+                        <option value="Urdu" selected>اردو (Urdu)</option>
+                        <option value="English">English (انگریزی)</option>
+                        <option value="Arabic">العربية (Arabic)</option>
+                        <option value="Pashto">پښتو (Pashto)</option>
+                        <option value="Punjabi">شاہ مکھی (Punjabi)</option>
+                    </select>
+                    <div style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--neon-cyan);">
+                        <i class="fa-solid fa-chevron-down"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 10px;">
+                <button onclick="toggleModal('analysisSetupModal', false)" style="
+                    flex: 1; padding: 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);
+                    background: transparent; color: #888; cursor: pointer; font-size: 0.9rem;
+                ">منسوخ کریں</button>
+                <button onclick="confirmAnalysis()" style="
+                    flex: 2; padding: 14px; border-radius: 12px; border: none;
+                    background: linear-gradient(135deg, var(--neon-cyan), #00b8d4);
+                    color: #000; cursor: pointer; font-weight: 800; font-size: 1rem;
+                    box-shadow: 0 10px 20px rgba(0,229,255,0.25);
+                ">تجزیہ شروع کریں  <i class="fa-solid fa-arrow-right"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== END ANALYSIS SETUP MODAL ====== -->
+
 </body>
+
 </html>
 

@@ -2076,3 +2076,45 @@ input:checked + .ts-slider:before { transform: translateX(20px); }
 }
 .view-hist-btn { background: var(--neon-cyan); color: #000; }
 .del-hist-btn { background: rgba(255, 82, 82, 0.2); color: #ff5252; border: 1px solid #ff5252; }
+ 
+/* v5.7.0: Analysis Setup Modal & Language Visibility Fix */
+#setupLanguageSelect option {
+    background: #1a1a2e !important;
+    color: #fff !important;
+    padding: 10px;
+}
+
+#setupLanguageSelect:focus option:checked {
+    background: var(--neon-cyan) !important;
+    color: #000 !important;
+}
+
+#setup-model-gemini.active, #setup-model-groq.active {
+    border-color: var(--neon-cyan) !important;
+    background: rgba(0,229,255,0.1) !important;
+    color: var(--neon-cyan) !important;
+}
+
+/* Ensure all selects have consistent styling */
+select {
+    color-scheme: dark;
+}
+
+/* Fix for the white box issue on some browsers */
+select option {
+    background-color: #1a1a2e;
+    color: white;
+}
+
+.custom-select-wrapper::after {
+    content: '\f107';
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--neon-cyan);
+    pointer-events: none;
+}
+

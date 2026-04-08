@@ -61,6 +61,12 @@ window.globalConfig = {
     allFeaturesEnabled: false
 };
 
+// v5.7.0: Analysis Setup State
+let selectionState = {
+    model: 'gemini',
+    language: 'Urdu'
+};
+
 // ================ UI REGISTRY (v5.6.0 SAFETY) ================
 // These MUST be declared at the top before any listeners use them to prevent ReferenceError.
 const elements = {
@@ -108,7 +114,9 @@ const elements = {
     exportGroup: document.getElementById('exportGroup'),
     loginGate: document.getElementById('loginGate'),
     loginLoading: document.getElementById('loginLoading'),
-    loginMain: document.getElementById('loginMain')
+    loginMain: document.getElementById('loginMain'),
+    analysisSetupModal: document.getElementById('analysisSetupModal'),
+    setupLanguageSelect: document.getElementById('setupLanguageSelect')
 };
 
 const FONT_LIST = [
@@ -1743,11 +1751,8 @@ async function compressImage(base64Str, maxWidth = 500, maxHeight = 500) {
     });
 }
 
-// ================ AI ANALYSIS (v5.6.5 - Master Key Fixed) ================
+// v5.7.0: New runAnalysis opens the setup modal
 window.runAnalysis = async () => {
-    console.time("AnalysisPhase");
-    console.log("v5.6.5: Analysis started...");
-
     if (!currentImageBase64) {
         alert("پہلے ڈیزائن اپلوڈ کریں۔");
         return;
@@ -1759,6 +1764,54 @@ window.runAnalysis = async () => {
         showToast("تجزیہ شروع کرنے کے لیے کریڈٹس یا پریمیم پلان کی ضرورت ہے", "info");
         return;
     }
+
+    // Reset setup modal state from current settings
+    selectionState.language = userSettings.language || 'Urdu';
+    selectionState.model = window.getSelectedProvider?.() || 'gemini';
+    
+    // Sync UI
+    if (elements.setupLanguageSelect) elements.setupLanguageSelect.value = selectionState.language;
+    window.setSetupModel(selectionState.model);
+
+    toggleModal('analysisSetupModal', true);
+};
+
+window.setSetupModel = (provider) => {
+    selectionState.model = provider;
+    const geminiBtn = document.getElementById('setup-model-gemini');
+    const groqBtn = document.getElementById('setup-model-groq');
+    
+    if (geminiBtn && groqBtn) {
+        if (provider === 'gemini') {
+            geminiBtn.classList.add('active');
+            groqBtn.classList.remove('active');
+        } else {
+            groqBtn.classList.add('active');
+            geminiBtn.classList.remove('active');
+        }
+    }
+};
+
+window.confirmAnalysis = () => {
+    const langSelect = document.getElementById('setupLanguageSelect');
+    if (langSelect) {
+        selectionState.language = langSelect.value;
+        // Update user settings globally
+        userSettings.language = selectionState.language;
+        if (typeof saveSettings === 'function') saveSettings();
+    }
+    
+    // Update provider
+    if (typeof setProvider === 'function') setProvider(selectionState.model);
+    
+    toggleModal('analysisSetupModal', false);
+    executeAnalysis();
+};
+
+// ================ ACTUAL AI ANALYSIS EXECUTION ================
+async function executeAnalysis() {
+    console.time("AnalysisPhase");
+    console.log("v5.7.0: Analysis execution started...");
 
     const runBtn = elements.runAnalysisBtn;
     if (runBtn) runBtn.disabled = true;
@@ -1779,17 +1832,16 @@ window.runAnalysis = async () => {
 
     try {
 
-        // v5.6.5: Robust Master Key Retrieval (Crucial for Mobile/Guest users)
-        let selectedProvider = window.getSelectedProvider?.() || 'gemini';
+        // v5.7.0: Use choices from setup modal
+        let selectedProvider = selectionState.model;
         if (window.forceGroqFailover) {
             selectedProvider = 'groq';
-            window.forceGroqFailover = false; // Reset
+            window.forceGroqFailover = false; 
         }
 
         const typedKey = elements.apiKeyInput ? elements.apiKeyInput.value.trim() : "";
         let keyToUse = typedKey || getApiKey();
         
-        // v5.6.6: Fallback to Master Key if no personal key is found (Wait for sync if needed)
         if (!keyToUse) {
             await waitForKeySync();
             keyToUse = masterKeys && (selectedProvider === 'groq' ? masterKeys.groq : masterKeys.gemini);
