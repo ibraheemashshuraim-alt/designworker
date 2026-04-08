@@ -1705,7 +1705,13 @@ window.verifyOpenAIApiKey = async () => {
             statusEl.innerHTML = "<span style='color:var(--success-green);'><i class='fa-solid fa-check-circle'></i> OpenAI کنکشن کامیاب!</span>";
         } else {
             const data = await res.json();
-            statusEl.innerHTML = `<span style='color:#ff5252;'><i class='fa-solid fa-ban'></i> ${data.error?.message || 'Key غلط ہے۔'}</span>`;
+            const msg = (data.error?.message || '').toLowerCase();
+            
+            if (msg.includes("quota") || msg.includes("balance") || msg.includes("insufficient")) {
+                statusEl.innerHTML = "<span style='color:var(--neon-cyan);'><i class='fa-solid fa-shield-halved'></i> کوٹہ ختم، لیکن فری بیک اپ فعال ہے!</span>";
+            } else {
+                statusEl.innerHTML = `<span style='color:#ff5252;'><i class='fa-solid fa-ban'></i> ${data.error?.message || 'Key غلط ہے۔'}</span>`;
+            }
         }
     } catch (e) {
         statusEl.innerHTML = `<span style='color:#ff5252;'><i class='fa-solid fa-xmark'></i> نیٹ ورک مسئلہ: ${e.message}</span>`;
@@ -1766,7 +1772,13 @@ window.verifyDeepSeekApiKey = async () => {
             statusEl.innerHTML = "<span style='color:var(--success-green);'><i class='fa-solid fa-check-circle'></i> DeepSeek کنکشن کامیاب!</span>";
         } else {
             const data = await res.json();
-            statusEl.innerHTML = `<span style='color:#ff5252;'><i class='fa-solid fa-ban'></i> ${data.error?.message || 'Key غلط ہے۔'}</span>`;
+            const msg = (data.error?.message || '').toLowerCase();
+            
+            if (msg.includes("quota") || msg.includes("balance") || msg.includes("insufficient")) {
+                statusEl.innerHTML = "<span style='color:var(--neon-cyan);'><i class='fa-solid fa-shield-halved'></i> کوٹہ ختم، لیکن فری بیک اپ فعال ہے!</span>";
+            } else {
+                statusEl.innerHTML = `<span style='color:#ff5252;'><i class='fa-solid fa-ban'></i> ${data.error?.message || 'Key غلط ہے۔'}</span>`;
+            }
         }
     } catch (e) {
         statusEl.innerHTML = `<span style='color:#ff5252;'><i class='fa-solid fa-xmark'></i> نیٹ ورک مسئلہ: ${e.message}</span>`;
@@ -2102,13 +2114,22 @@ async function callGroqAPI(key, prompt, imageBase64) {
 
 // ================ TRIPLE-LAYER FREE PROXY ENGINE (v6.2.0) ================
 // This engine attempts to use multiple public/free endpoints to bypass official paid APIs.
-async function callFreeAI(provider, prompt) {
+async function callFreeAI(provider, prompt, imageBase64 = null) {
     if (typeof showToast === 'function') showToast(`[Free AI] ${provider.toUpperCase()} سرور سے رابطہ کیا جا رہا ہے...`, "info");
-    console.log(`[Free AI] Attempting Triple-Layer Free Path for ${provider}...`);
+    console.log(`[Free AI] Attempting Vision-Ready Free Path for ${provider}...`);
     
-    // Layer 1: OpenRouter Free Models (Most Stable)
+    // Layer 1: OpenRouter Free Models (Stable Vision Support)
     try {
-        console.log("[Layer 1] Trying OpenRouter Free...");
+        console.log("[Layer 1] Trying OpenRouter Vision Free...");
+        
+        const messages = [{
+            role: 'user',
+            content: imageBase64 ? [
+                { type: 'text', text: prompt },
+                { type: 'image_url', image_url: { url: imageBase64 } }
+            ] : prompt
+        }];
+
         const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
             method: 'POST',
             headers: { 
@@ -2116,8 +2137,8 @@ async function callFreeAI(provider, prompt) {
                 'Authorization': `Bearer sk-or-v1-ae896d88470a48a90d3e46b0a1d9f0db82039df41e9a74aadd90d3e46b0` 
             },
             body: JSON.stringify({
-                model: (provider === 'openai') ? 'google/gemini-flash-1.5:free' : 'meta-llama/llama-3-8b-instruct:free',
-                messages: [{ role: 'user', content: prompt }]
+                model: 'google/gemini-flash-1.5:free', // Universal Vision Free Model
+                messages: messages
             })
         });
         if (res.ok) {
@@ -2130,7 +2151,7 @@ async function callFreeAI(provider, prompt) {
         }
     } catch (e) { console.warn("Layer 1 Failed:", e); }
 
-    // Layer 2: DuckDuckGo AI / Pawan Aggregator
+    // Layer 2: DuckDuckGo AI / Pawan Aggregator (Text Only Fallback)
     try {
         console.log("[Layer 2] Trying Backup Proxy...");
         const res = await fetch('https://api.pawan.krd/v1/chat/completions', {
@@ -2163,7 +2184,7 @@ async function callFreeAI(provider, prompt) {
 
 async function callOpenAIAPI(key, prompt, imageBase64) {
     // Stage 1: Attempt Free Path FIRST
-    const freeResponse = await callFreeAI('openai', prompt);
+    const freeResponse = await callFreeAI('openai', prompt, imageBase64);
     if (freeResponse) {
         window.isFreePathActive = true; 
         return freeResponse;
@@ -2188,7 +2209,7 @@ async function callOpenAIAPI(key, prompt, imageBase64) {
 
 async function callDeepSeekAPI(key, prompt, imageBase64) {
     // Stage 1: Attempt Free Path FIRST
-    const freeResponse = await callFreeAI('deepseek', prompt);
+    const freeResponse = await callFreeAI('deepseek', prompt, imageBase64);
     if (freeResponse) {
         window.isFreePathActive = true;
         return freeResponse;
