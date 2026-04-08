@@ -2037,9 +2037,17 @@ window.runAnalysis = async (overrideProvider = null) => {
                 }
 
                 if (responseText) {
-                    resultData = JSON.parse(responseText.replace(/\`\`\`json|\`\`\`/g, '').trim());
-                    success = true;
-                    break;
+                    // v6.4.0: Robust JSON Extraction
+                    const cleanedResponse = responseText.replace(/```json|```/g, '').trim();
+                    const jsonMatch = cleanedResponse.match(/\{[\s\S]*\}/);
+                    
+                    if (jsonMatch) {
+                        resultData = JSON.parse(jsonMatch[0]);
+                        success = true;
+                        break;
+                    } else {
+                        throw new Error("Invalid JSON from AI");
+                    }
                 }
             } catch (err) {
                 console.warn(`Provider ${provider} failed (Silent Failover):`, err);
@@ -2121,38 +2129,46 @@ async function callFreeAI(provider, prompt, imageBase64 = null) {
     if (typeof showToast === 'function') showToast(`[Free AI] ${provider.toUpperCase()} سرور سے رابطہ کیا جا رہا ہے...`, "info");
     console.log(`[Free AI] Attempting Vision-Ready Free Path for ${provider}...`);
     
-    // Layer 1: OpenRouter Free Models (Stable Vision Support)
-    try {
-        console.log("[Layer 1] Trying OpenRouter Vision Free...");
-        
-        const messages = [{
-            role: 'user',
-            content: imageBase64 ? [
-                { type: 'text', text: prompt },
-                { type: 'image_url', image_url: { url: imageBase64 } }
-            ] : prompt
-        }];
+    // Layer 1: OpenRouter Multi-Model Vision Fallback (Ultra Robust)
+    const freeModels = [
+        'google/gemini-flash-1.5:free',
+        'meta-llama/llama-3.2-11b-vision-instruct:free',
+        'mistralai/pixtral-12b:free'
+    ];
 
-        const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer sk-or-v1-ae896d88470a48a90d3e46b0a1d9f0db82039df41e9a74aadd90d3e46b0` 
-            },
-            body: JSON.stringify({
-                model: 'google/gemini-flash-1.5:free', // Universal Vision Free Model
-                messages: messages
-            })
-        });
-        if (res.ok) {
-            const data = await res.json();
-            const content = data.choices?.[0]?.message?.content;
-            if (content) {
-                if (typeof showToast === 'function') showToast(`[Free AI] مفت سرور کنکٹ ہو گیا! (Layer 1)`, "success");
-                return content;
+    for (const model of freeModels) {
+        try {
+            console.log(`[Layer 1] Trying OpenRouter Vision Free (${model})...`);
+            
+            const messages = [{
+                role: 'user',
+                content: imageBase64 ? [
+                    { type: 'text', text: prompt },
+                    { type: 'image_url', image_url: { url: imageBase64 } }
+                ] : prompt
+            }];
+
+            const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer sk-or-v1-ae896d88470a48a90d3e46b0a1d9f0db82039df41e9a74aadd90d3e46b0` 
+                },
+                body: JSON.stringify({ model: model, messages: messages })
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                const content = data.choices?.[0]?.message?.content;
+                if (content && content.includes('{')) {
+                    if (typeof showToast === 'function') showToast(`[Free AI] مفت سرور کنکٹ ہو گیا!`, "success");
+                    return content;
+                }
             }
-        }
-    } catch (e) { console.warn("Layer 1 Failed:", e); }
+        } catch (e) { console.warn(`Model ${model} failed:`, e); }
+        // Small delay between model switches
+        await new Promise(r => setTimeout(r, 300));
+    }
 
     // v6.3.0: Tiny delay before fallback to Layer 2
     await new Promise(r => setTimeout(r, 400));
