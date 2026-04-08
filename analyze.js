@@ -2015,8 +2015,9 @@ window.runAnalysis = async (overrideProvider = null) => {
 
         for (const provider of attemptOrder) {
             try {
-                if (scanStatusText) scanStatusText.innerText = `${provider.toUpperCase()} AI تجزیہ کر رہا ہے...`;
-                console.log(`v5.7.0: Trying ${provider}...`);
+                // v6.3.0: Silent UI - Don't flicker model names
+                if (scanStatusText) scanStatusText.innerText = `اے آئی آپ کے ڈیزائن کا تجزیہ کر رہا ہے...`;
+                console.log(`v6.3.0: Trying ${provider} (Silent Path)...`);
                 
                 let responseText = "";
                 let keyToUse = (elements.apiKeyInput ? elements.apiKeyInput.value.trim() : "") || masterKeys[provider];
@@ -2041,9 +2042,10 @@ window.runAnalysis = async (overrideProvider = null) => {
                     break;
                 }
             } catch (err) {
-                console.warn(`Provider ${provider} failed:`, err);
+                console.warn(`Provider ${provider} failed (Silent Failover):`, err);
+                // v6.3.0: Silenced failover toasts to reduce UI noise
+                /*
                 const msg = err.message.toLowerCase();
-                
                 if (provider === 'gemini' && (msg.includes("429") || msg.includes("quota"))) {
                     showToast("Gemini کوٹہ ختم، دوسرے AI پر منتقل ہو رہے ہیں...", "warning");
                 } else if (provider === 'openai' && (msg.includes("quota") || msg.includes("balance") || msg.includes("insufficient"))) {
@@ -2051,6 +2053,7 @@ window.runAnalysis = async (overrideProvider = null) => {
                 } else if (provider === 'groq' && (msg.includes("429") || msg.includes("rate_limit"))) {
                     showToast("Groq بزی ہے، دوسرے AI پر منتقل ہو رہے ہیں...", "info");
                 }
+                */
             }
         }
 
@@ -2145,11 +2148,14 @@ async function callFreeAI(provider, prompt, imageBase64 = null) {
             const data = await res.json();
             const content = data.choices?.[0]?.message?.content;
             if (content) {
-                if (typeof showToast === 'function') showToast(`[Free AI] ${provider.toUpperCase()} مفت سرور کنکٹ ہو گیا! (Layer 1)`, "success");
+                if (typeof showToast === 'function') showToast(`[Free AI] مفت سرور کنکٹ ہو گیا! (Layer 1)`, "success");
                 return content;
             }
         }
     } catch (e) { console.warn("Layer 1 Failed:", e); }
+
+    // v6.3.0: Tiny delay before fallback to Layer 2
+    await new Promise(r => setTimeout(r, 400));
 
     // Layer 2: DuckDuckGo AI / Pawan Aggregator (Text Only Fallback)
     try {
