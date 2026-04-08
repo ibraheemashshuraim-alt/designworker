@@ -1808,22 +1808,23 @@ window.confirmAnalysis = () => {
     executeAnalysis();
 };
 
-// v5.7.1: Robust JSON Cleanup for AI Responses
+// v5.7.2: Robust JSON Cleanup with Deep Extraction
 function cleanAndParseAIJSON(text) {
     if (!text) return null;
     try {
-        // Remove markdown code block markers
-        const cleaned = text.replace(/\`\`\`json|\`\`\`/g, '').trim();
-        return JSON.parse(cleaned);
+        // Step 1: Clean markdown and common AI noise
+        let cleaned = text.replace(/\`\`\`json|\`\`\`|[\u200B-\u200D\uFEFF]/g, '').trim();
+        
+        // Step 2: Direct parse attempt
+        try { return JSON.parse(cleaned); } catch(e) {}
+
+        // Step 3: Regex extraction for nested/damaged JSON
+        const match = cleaned.match(/\{[\s\S]*\}/);
+        if (match) return JSON.parse(match[0]);
+
+        return null;
     } catch (e) {
-        console.warn("Direct JSON parse failed, attempting regex extraction...");
-        try {
-            // Attempt to extract anything between the first { and last }
-            const match = text.match(/\{[\s\S]*\}/);
-            if (match) return JSON.parse(match[0]);
-        } catch (e2) {
-            console.error("Critical JSON Parsing Error:", e2);
-        }
+        console.error("Advanced JSON Parsing Failure:", e);
         return null;
     }
 }
@@ -1881,44 +1882,48 @@ async function executeAnalysis() {
         const base64Data = compressedBase64.split(',')[1];
 
         const prompt = `
-            You are a World-Class Creative Director and Senior UI/Graphic Designer.
-            Objective: Analyze the provided design with surgical precision and artistic depth.
+            ### PERSONA: Senior Creative Director & Expert Visual Auditor
+            You are auditing a graphic design with surgical precision. Your goal is to provide elite-level feedback that focuses on the core principles of design:
 
-            ### STEP 1: CONTEXT & MEDIUM IDENTIFICATION
-            - Sector: (e.g., Religious, Educational, Commercial, Corporate).
-            - Medium: (e.g., Print: Flex/Banner OR Digital: UI/Social Media).
+            ### STEP 1: VISUAL AUDIT PARAMETERS
+            1. **Visual Hierarchy**: Does the "Hook" or main message stand out? Is the reading order intuitive?
+            2. **Typography Integrity**: Are the fonts harmonious? Is the letter-spacing (kerning) and line-height professional? Are headings distinct from body text?
+            3. **Color Strategy**: Do the colors reflect the sector's psychology (e.g., trust for Medical, urgency for Sales, respect for Religious)?
+            4. **Negative Space (White Space)**: Is the design cluttered? Does the content have room to breathe?
+            5. **Grid & Alignment**: Is the alignment consistent? Are elements placed with intent or randomly?
 
-            ### STEP 2: ANALYSIS RULES
-            1. **Religious Sensitivity**: If the design is for an Islamic/Traditional institution, do NOT suggest human/animal imagery. Focus on Calligraphy, Colors, and Patterns.
-            2. **Medium-Specific**: If Print, do NOT suggest links. If Digital, focus on CTAs.
-            3. **Language Requirement**: All feedback text values (descriptions, lists, strengths, etc.) MUST be strictly in ${userSettings.language}.
+            ### STEP 2: CONTEXTUAL AWARENESS
+            - **Sector Detection**: Detect if the design is for a ${selectionState.model === 'gemini' ? 'Religious/Educational' : 'Commercial/Corporate'} entity.
+            - **Medium Rule**: If PRINT (Flex/Banner), focus on physical readability. If DIGITAL (UI/Social), focus on interaction and CTA.
+            - **Religious Rule**: If it's an Islamic/Traditional design, avoid suggesting human/animal imagery. Suggest better calligraphy, geometric patterns, or texture improvements instead.
 
-            ### STEP 3: OUTPUT SPECIFICATIONS
-            - Format: Valid JSON.
-            - Language: ${userSettings.language} only.
+            ### STEP 3: OUTPUT LANGUAGE
+            - All descriptive text MUST be strictly in ${userSettings.language}.
+            - Structure: Valid JSON ONLY.
 
+            ### SCHEMA:
             {
-                "score": 85,
-                "category": "Sector and Medium description in ${userSettings.language}",
-                "accessibility": "Detailed feedback on accessibility in ${userSettings.language}",
-                "contrast": "Color balance feedback in ${userSettings.language}",
-                "strengths": ["Trait 1 in ${userSettings.language}", "Trait 2", "Trait 3"],
-                "improvements": ["Issue 1 in ${userSettings.language}", "Issue 2", "Issue 3"],
+                "score": 0-100,
+                "category": "Sector + Medium (in ${userSettings.language})",
+                "accessibility": "Critical audit of readability and focus (in ${userSettings.language})",
+                "contrast": "Professional color/balance audit (in ${userSettings.language})",
+                "strengths": ["Elite strength 1", "Strength 2", "Strength 3"],
+                "improvements": ["Critical improvement 1", "Improvement 2", "Improvement 3"],
                 "detailed_improvements": [
-                    { "text": "Mandatory improvement in ${userSettings.language}", "priority": "mandatory" },
-                    { "text": "Optional suggestion in ${userSettings.language}", "priority": "optional" }
+                    { "text": "Strategic mandatory upgrade (in ${userSettings.language})", "priority": "mandatory" },
+                    { "text": "Tactical optional upgrade (in ${userSettings.language})", "priority": "optional" }
                 ],
                 "pricing": {
-                    "current": "Current market rate (Local Currency)",
-                    "improved": "Improved market rate (Local Currency)"
+                    "current": "Market estimation based on quality (Local Currency)",
+                    "improved": "Potential value after suggested fixes (Local Currency)"
                 },
                 "client_impression": {
-                    "level": "Experience Level (e.g. Amateur, Professional)",
-                    "feedback": "Deep psychological impact on client in ${userSettings.language}",
-                    "warning": "Critical errors or red flags in ${userSettings.language} (if any, else null)"
+                    "level": "Design Maturity (e.g. Amateur, Junior, Professional, Creative Director)",
+                    "feedback": "Psychological impact on the target audience (in ${userSettings.language})",
+                    "warning": "Any 'Deal Breakers' or red flags (in ${userSettings.language}) or null"
                 },
-                "colors": ["#hex1", "#hex2", "#hex3"],
-                "fonts": ["Font 1", "Font 2"]
+                "colors": ["Hex1", "Hex2", "Hex3"],
+                "fonts": ["Font1", "Font2"]
             }
         `;
 
