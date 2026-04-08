@@ -2029,10 +2029,10 @@ window.runAnalysis = async (overrideProvider = null) => {
                     if (!keyToUse) throw new Error("Groq Key Missing");
                     responseText = await callGroqAPI(keyToUse, prompt, compressedBase64);
                 } else if (provider === 'openai') {
-                    if (!keyToUse) throw new Error("OpenAI Key Missing");
+                    // v6.5.0: Proceed even without key (callOpenAIAPI handles internal free-path + key check)
                     responseText = await callOpenAIAPI(keyToUse, prompt, compressedBase64);
                 } else if (provider === 'deepseek') {
-                    if (!keyToUse) throw new Error("DeepSeek Key Missing");
+                    // v6.5.0: Proceed even without key
                     responseText = await callDeepSeekAPI(keyToUse, prompt, compressedBase64);
                 }
 
@@ -2126,7 +2126,7 @@ async function callGroqAPI(key, prompt, imageBase64) {
 // ================ TRIPLE-LAYER FREE PROXY ENGINE (v6.2.0) ================
 // This engine attempts to use multiple public/free endpoints to bypass official paid APIs.
 async function callFreeAI(provider, prompt, imageBase64 = null) {
-    if (typeof showToast === 'function') showToast(`[Free AI] ${provider.toUpperCase()} سرور سے رابطہ کیا جا رہا ہے...`, "info");
+    // v6.5.0: Removed initial showToast for silent operation
     console.log(`[Free AI] Attempting Vision-Ready Free Path for ${provider}...`);
     
     // Layer 1: OpenRouter Multi-Model Vision Fallback (Ultra Robust)
@@ -2214,6 +2214,7 @@ async function callOpenAIAPI(key, prompt, imageBase64) {
 
     // Stage 2: Fallback to Official API if Free Path fails
     window.isFreePathActive = false;
+    if (!key) throw new Error("OpenAI Key Missing"); 
     console.log("[Free AI] Falling back to Official OpenAI API...");
     const res = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
@@ -2239,6 +2240,7 @@ async function callDeepSeekAPI(key, prompt, imageBase64) {
 
     // Stage 2: Fallback to Official API
     window.isFreePathActive = false;
+    if (!key) throw new Error("DeepSeek Key Missing");
     console.log("[Free AI] Falling back to Official DeepSeek API...");
     const res = await fetch('https://api.deepseek.com/v1/chat/completions', {
         method: 'POST',
